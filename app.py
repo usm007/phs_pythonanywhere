@@ -63,52 +63,6 @@ def _connect_sqlite():
     return conn
 
 
-def _ensure_local_meta_table():
-    conn = _connect_sqlite()
-    try:
-        execute_stmt(
-            conn,
-            """
-            CREATE TABLE IF NOT EXISTS app_meta (
-                meta_key TEXT PRIMARY KEY,
-                meta_value TEXT NOT NULL
-            )
-            """,
-        )
-        conn.commit()
-    finally:
-        conn.close()
-
-
-def get_local_meta(key):
-    _ensure_local_meta_table()
-    conn = _connect_sqlite()
-    try:
-        row = fetch_one(conn, "SELECT meta_value FROM app_meta WHERE meta_key = %s", (key,))
-        return row["meta_value"] if row else None
-    finally:
-        conn.close()
-
-
-def set_local_meta(key, value):
-    _ensure_local_meta_table()
-    conn = _connect_sqlite()
-    try:
-        execute_stmt(
-            conn,
-            """
-            INSERT INTO app_meta (meta_key, meta_value)
-            VALUES (%s, %s)
-            ON CONFLICT(meta_key) DO UPDATE SET
-                meta_value = excluded.meta_value
-            """,
-            (key, value),
-        )
-        conn.commit()
-    finally:
-        conn.close()
-
-
 def get_db_connection():
     if DB_MODE == "sqlite":
         return _connect_sqlite()
@@ -318,50 +272,6 @@ def canonicalize_class_name(value):
     return CLASS_IMPORT_ALIASES.get(_normalize_class_token(value))
 
 
-def get_runtime_backend():
-    if DB_MODE in {"tidb", "sqlite"}:
-        return DB_MODE
-
-    conn = None
-    try:
-        conn = get_db_connection()
-        return "sqlite" if _is_sqlite_connection(conn) else "tidb"
-    except Exception:
-        return "unavailable"
-    finally:
-        if conn is not None:
-            conn.close()
-
-
-def is_local_request(req):
-    host = (req.host or "").split(":")[0].lower()
-    if host in {"localhost", "127.0.0.1", "0.0.0.0", "::1"}:
-        return True
-    if host.startswith("192.168.") or host.startswith("10."):
-        return True
-    if host.startswith("172."):
-        parts = host.split(".")
-        if len(parts) >= 2:
-            try:
-                second = int(parts[1])
-                return 16 <= second <= 31
-            except ValueError:
-                return False
-    return False
-
-
-def is_tidb_available():
-    conn = None
-    try:
-        conn = _connect_tidb()
-        return True
-    except Exception:
-        return False
-    finally:
-        if conn is not None:
-            conn.close()
-
-
 def get_csrf_token():
     token = session.get("_csrf_token")
     if not token:
@@ -384,170 +294,10 @@ def validate_post_requests():
 
 @app.context_processor
 def inject_class_label_helper():
-    runtime_backend = get_runtime_backend()
     return {
         "class_label": class_label,
-        "is_offline_mode": runtime_backend == "sqlite",
         "csrf_token": get_csrf_token,
     }
-
-
-def sync_sqlite_to_tidb():
-    local_conn = _connect_sqlite()
-    cloud_conn = _connect_tidb()
-
-    try:
-        students = fetch_all(
-            local_conn,
-            "SELECT id, roll_no, name, class_name FROM students ORDER BY id",
-        )
-        marks = fetch_all(
-            local_conn,
-            "SELECT id, student_id, subject, marks_obtained FROM marks ORDER BY id",
-        )
-
-        # Ensure target schema exists before upload.
-        execute_stmt(
-            cloud_conn,
-            """
-            CREATE TABLE IF NOT EXISTS students (
-                id BIGINT PRIMARY KEY AUTO_INCREMENT,
-                roll_no VARCHAR(32) NOT NULL,
-                name VARCHAR(255) NOT NULL,
-                class_name VARCHAR(32) NOT NULL
-            )
-            """,
-        )
-        execute_stmt(
-            cloud_conn,
-            """
-            CREATE TABLE IF NOT EXISTS marks (
-                id BIGINT PRIMARY KEY AUTO_INCREMENT,
-                student_id BIGINT NOT NULL,
-                subject VARCHAR(255) NOT NULL,
-                marks_obtained INT NOT NULL,
-                UNIQUE KEY uq_student_subject (student_id, subject),
-                CONSTRAINT fk_marks_student
-                    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
-            )
-            """,
-        )
-
-        execute_stmt(cloud_conn, "SET FOREIGN_KEY_CHECKS = 0")
-        execute_stmt(cloud_conn, "DELETE FROM marks")
-        execute_stmt(cloud_conn, "DELETE FROM students")
-        execute_stmt(cloud_conn, "SET FOREIGN_KEY_CHECKS = 1")
-
-        if students:
-            executemany_stmt(
-                cloud_conn,
-                "INSERT INTO students (id, roll_no, name, class_name) VALUES (%s, %s, %s, %s)",
-                [
-                    (row["id"], row["roll_no"], row["name"], row["class_name"])
-                    for row in students
-                ],
-            )
-
-        if marks:
-            executemany_stmt(
-                cloud_conn,
-                "INSERT INTO marks (id, student_id, subject, marks_obtained) VALUES (%s, %s, %s, %s)",
-                [
-                    (row["id"], row["student_id"], row["subject"], row["marks_obtained"])
-                    for row in marks
-                ],
-            )
-
-        cloud_conn.commit()
-        return len(students), len(marks)
-    except Exception:
-        cloud_conn.rollback()
-        raise
-    finally:
-        local_conn.close()
-        cloud_conn.close()
-
-
-def sync_tidb_to_sqlite_merge():
-    local_conn = _connect_sqlite()
-    cloud_conn = _connect_tidb()
-
-    try:
-        students = fetch_all(
-            cloud_conn,
-            "SELECT id, roll_no, name, class_name FROM students ORDER BY id",
-        )
-        marks = fetch_all(
-            cloud_conn,
-            "SELECT id, student_id, subject, marks_obtained FROM marks ORDER BY id",
-        )
-
-        # Ensure local schema exists before merge.
-        execute_stmt(
-            local_conn,
-            """
-            CREATE TABLE IF NOT EXISTS students (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                roll_no TEXT NOT NULL,
-                name TEXT NOT NULL,
-                class_name TEXT NOT NULL
-            )
-            """,
-        )
-        execute_stmt(
-            local_conn,
-            """
-            CREATE TABLE IF NOT EXISTS marks (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                student_id INTEGER NOT NULL,
-                subject TEXT NOT NULL,
-                marks_obtained INTEGER NOT NULL,
-                UNIQUE(student_id, subject),
-                FOREIGN KEY(student_id) REFERENCES students(id) ON DELETE CASCADE
-            )
-            """,
-        )
-
-        for row in students:
-            execute_stmt(
-                local_conn,
-                """
-                INSERT INTO students (id, roll_no, name, class_name)
-                VALUES (%s, %s, %s, %s)
-                ON CONFLICT(id) DO UPDATE SET
-                    roll_no = excluded.roll_no,
-                    name = excluded.name,
-                    class_name = excluded.class_name
-                """,
-                (row["id"], row["roll_no"], row["name"], row["class_name"]),
-            )
-
-        for row in marks:
-            execute_stmt(
-                local_conn,
-                """
-                INSERT INTO marks (id, student_id, subject, marks_obtained)
-                VALUES (%s, %s, %s, %s)
-                ON CONFLICT(student_id, subject) DO UPDATE SET
-                    id = excluded.id,
-                    marks_obtained = excluded.marks_obtained
-                """,
-                (
-                    row["id"],
-                    row["student_id"],
-                    row["subject"],
-                    row["marks_obtained"],
-                ),
-            )
-
-        local_conn.commit()
-        return len(students), len(marks)
-    except Exception:
-        local_conn.rollback()
-        raise
-    finally:
-        local_conn.close()
-        cloud_conn.close()
 
 
 def init_db():
@@ -763,81 +513,6 @@ def results_center():
             }
         )
     return render_template("results_center.html", class_cards=class_cards)
-
-
-@app.route("/sync_to_online", methods=["POST"])
-def sync_to_online():
-    if get_runtime_backend() != "sqlite":
-        flash("Sync option is available only in offline mode.", "warning")
-        return redirect(url_for("index"))
-
-    try:
-        student_count, marks_count = sync_sqlite_to_tidb()
-    except Exception as exc:
-        flash(f"Sync failed: {exc}", "danger")
-        return redirect(url_for("index"))
-
-    flash(
-        f"Sync completed. Uploaded {student_count} students and {marks_count} marks rows to online database.",
-        "success",
-    )
-    conn = get_db_connection()
-    try:
-        log_change(
-            conn,
-            action="sync_to_online",
-            entity_type="system",
-            details=f"Uploaded {student_count} students and {marks_count} marks rows to online database.",
-            affected_count=student_count + marks_count,
-        )
-        conn.commit()
-    finally:
-        conn.close()
-    last_push = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    session["last_push_to_online_at"] = last_push
-    set_local_meta("last_push_to_online_at", last_push)
-    return redirect(url_for("index"))
-
-
-@app.route("/sync_from_online_merge", methods=["POST"])
-def sync_from_online_merge():
-    if not is_local_request(request):
-        flash("This sync option is available only in local server mode.", "warning")
-        return redirect(url_for("index"))
-
-    try:
-        student_count, marks_count = sync_tidb_to_sqlite_merge()
-    except Exception as exc:
-        flash(f"Sync from online failed: {exc}", "danger")
-        return redirect(url_for("index"))
-
-    session["hide_pull_from_online_prompt"] = True
-    last_pull = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    session["last_pull_from_online_at"] = last_pull
-    set_local_meta("last_pull_from_online_at", last_pull)
-    flash(
-        f"Pulled and merged {student_count} students and {marks_count} marks rows from online database.",
-        "success",
-    )
-    conn = get_db_connection()
-    try:
-        log_change(
-            conn,
-            action="sync_from_online_merge",
-            entity_type="system",
-            details=f"Pulled and merged {student_count} students and {marks_count} marks rows from online database.",
-            affected_count=student_count + marks_count,
-        )
-        conn.commit()
-    finally:
-        conn.close()
-    return redirect(url_for("index"))
-
-
-@app.route("/dismiss_pull_prompt", methods=["POST"])
-def dismiss_pull_prompt():
-    session["hide_pull_from_online_prompt"] = True
-    return redirect(url_for("index"))
 
 
 @app.route("/subject_entry", methods=["GET", "POST"])
@@ -1364,8 +1039,15 @@ def _parse_student_csv(file_stream, single_class_name=None):
                 return raw
         return None
 
-    text = io.TextIOWrapper(file_stream, encoding="utf-8-sig", errors="replace")
-    reader = csv.DictReader(text)
+    # PythonAnywhere/Werkzeug may provide upload streams that don't implement
+    # the full file API expected by TextIOWrapper (e.g. readable()).
+    raw = file_stream.read()
+    if isinstance(raw, bytes):
+        decoded = raw.decode("utf-8-sig", errors="replace")
+    else:
+        decoded = str(raw)
+
+    reader = csv.DictReader(io.StringIO(decoded))
     fieldnames = reader.fieldnames or []
 
     if not fieldnames:

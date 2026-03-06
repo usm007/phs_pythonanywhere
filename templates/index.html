@@ -447,13 +447,6 @@
                         <a href="{{ url_for('manage_students') }}" class="btn btn-phs-gold fw-semibold">👥 Manage Students</a>
                         <a href="{{ url_for('view_marks') }}" class="btn btn-phs-outline">📚 View Master Register</a>
                         <a href="{{ url_for('view_logs') }}" target="_blank" rel="noopener" class="btn btn-phs-outline btn-logs-mini">🧾 See Logs</a>
-                        {% if is_offline_mode %}
-                            <form method="POST" action="{{ url_for('sync_to_online') }}" onsubmit="if(!confirm('Sync offline data to online database now?')) return false; return requestEditPassword(this);">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <input type="hidden" name="edit_password" value="">
-                                <button type="submit" class="btn btn-phs-green w-100">☁ Sync Offline Data To Online</button>
-                            </form>
-                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -489,17 +482,6 @@
             });
         });
 
-        function requestEditPassword(form) {
-            const password = prompt('Enter edit password');
-            if (password === null) {
-                return false;
-            }
-            const field = form.querySelector('input[name="edit_password"]');
-            if (field) {
-                field.value = password;
-            }
-            return true;
-        }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
