@@ -3,15 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Master Register — PHS</title>
+    <title>Class-wise Marks Register - PHS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --navy: #0a1931; --gold: #c9972a;
+            --navy: #0a1931;
+            --gold: #c9972a;
             --green: #14633a;
-            --bg: #f0ede8; --surface: #faf8f5; --border: #d6cfc4;
-            --text: #1a1612; --muted: #6b6058;
+            --bg: #f0ede8;
+            --surface: #faf8f5;
+            --border: #d6cfc4;
+            --text: #1a1612;
+            --muted: #6b6058;
         }
         html, body { height: 100%; }
         body {
@@ -22,231 +26,263 @@
             overflow-x: hidden;
             overflow-y: auto;
         }
-
         .app-shell {
             min-height: 100dvh;
             height: auto;
             display: flex;
             flex-direction: column;
         }
-
         .main-scroll {
             flex: 1;
             overflow: auto;
-            padding: 0;
+            -webkit-overflow-scrolling: touch;
+            padding: 10px 0 18px;
         }
 
         .site-header {
             background: var(--navy);
             border-bottom: 4px solid var(--gold);
-            padding: 14px 24px;
-            position: sticky; top: 0; z-index: 200;
-            flex-shrink: 0;
+            padding: 12px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
-        .header-title { font-family: 'Fraunces', serif; font-size: 1.1rem; font-weight: 700; color: #fff; }
-        .header-sub { font-size: 0.7rem; color: rgba(255,255,255,0.45); letter-spacing:.08em; text-transform: uppercase; }
+        .header-title {
+            font-family: 'Fraunces', serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #fff;
+            margin: 0;
+        }
+        .header-sub {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.45);
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
         .btn-back {
-            background: transparent; color: rgba(255,255,255,0.65);
+            background: transparent;
+            color: rgba(255,255,255,0.7);
             border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 7px; font-size: 0.8rem; padding: 6px 14px; text-decoration: none;
+            border-radius: 7px;
+            padding: 6px 12px;
+            font-size: .8rem;
+            text-decoration: none;
         }
         .btn-back:hover { background: rgba(255,255,255,0.1); color: #fff; }
 
-        .search-bar-wrap {
-            position: sticky; top: 0; z-index: 100;
-            background: var(--bg); padding: 12px 0;
-            border-bottom: 1px solid var(--border);
-            margin-bottom: 24px;
-        }
-        .filter-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            align-items: center;
-        }
-        #classFilter {
-            border: 1.5px solid var(--border);
-            border-radius: 8px;
-            padding: 10px 12px;
-            font-size: 0.875rem;
-            background: #fff;
-            min-width: 240px;
-            color: var(--text);
-        }
-        #searchInput {
-            border: 1.5px solid var(--border); border-radius: 8px;
-            padding: 10px 16px; font-size: 0.875rem;
-            background: #fff; max-width: 400px; width: 100%;
-        }
-        #classFilter:focus,
-        #searchInput:focus { border-color: var(--gold); outline: none; box-shadow: 0 0 0 3px rgba(201,151,42,0.15); }
-
-        .class-header {
-            display: flex; align-items: center; gap: 12px;
-            margin-bottom: 8px; margin-top: 32px;
-        }
-        .class-title {
-            font-family: 'Fraunces', serif;
-            font-size: 1.2rem; font-weight: 700; color: var(--navy);
-        }
-        .class-section {
-            margin-bottom: 12px;
+        .page-card {
+            background: var(--surface);
             border: 1px solid var(--border);
             border-radius: 12px;
-            background: #f7f3ee;
+            padding: 12px;
+            margin-top: 12px;
         }
-        .class-section summary {
-            list-style: none;
-            cursor: pointer;
-            padding: 14px 16px;
+        .mini-help {
+            font-size: .8rem;
+            color: var(--muted);
+            margin-bottom: 10px;
         }
-        .class-section summary::-webkit-details-marker { display: none; }
-        .class-section .class-header { margin: 0; }
-        .class-section .section-inner { padding: 0 16px 14px; }
 
-        .stat-row { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+        .class-tabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .class-tab {
+            display: inline-block;
+            text-decoration: none;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: #fff;
+            color: var(--navy);
+            padding: 6px 12px;
+            font-size: .78rem;
+            font-weight: 600;
+        }
+        .class-tab.active {
+            background: var(--navy);
+            color: #fff;
+            border-color: var(--navy);
+        }
+
+        .stat-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
         .stat-chip {
-            font-size: 0.68rem; font-weight: 600; padding: 3px 9px;
-            border-radius: 20px; border: 1px solid var(--border);
-            background: #fff; color: var(--muted);
+            border: 1px solid var(--border);
+            background: #fff;
+            color: var(--muted);
+            border-radius: 20px;
+            padding: 4px 10px;
+            font-size: .74rem;
+            font-weight: 600;
         }
-        .stat-chip.pass { border-color: #a8d5ba; background: #edf7f1; color: var(--green); }
-        .stat-chip.fail { border-color: #f4a0a0; background: #fdf0f0; color: #a02020; }
+        .stat-chip.good { border-color: #a8d5ba; background: #edf7f1; color: #14633a; }
+        .stat-chip.warn { border-color: #f4a0a0; background: #fdf0f0; color: #a02020; }
 
-        .phs-table { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.04); }
+        .tools-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        #searchInput {
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            padding: 9px 12px;
+            font-size: .86rem;
+            width: min(420px, 100%);
+            background: #fff;
+        }
+        #searchInput:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(201,151,42,0.15);
+            outline: none;
+        }
+
+        .phs-table {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+        }
         .phs-table thead th {
-            background: var(--navy); color: rgba(255,255,255,0.85);
-            font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em;
-            text-transform: uppercase; padding: 11px 12px; border: none; white-space: nowrap;
+            background: var(--navy);
+            color: rgba(255,255,255,0.88);
+            font-size: .7rem;
+            font-weight: 600;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            padding: 10px 10px;
+            border: none;
+            white-space: nowrap;
         }
-        .phs-table tbody tr { border-bottom: 1px solid var(--border); }
-        .phs-table tbody tr:last-child { border-bottom: none; }
-        .phs-table tbody tr:hover { background: #f4f1ec; }
-        .phs-table td { padding: 9px 12px; vertical-align: middle; font-size: 0.82rem; border: none; }
+        .phs-table td {
+            padding: 8px 10px;
+            border: none;
+            border-bottom: 1px solid var(--border);
+            font-size: .82rem;
+            vertical-align: middle;
+        }
+        .phs-table tbody tr:last-child td { border-bottom: none; }
+        .phs-table tbody tr:hover { background: #f6f2ec; }
 
-        .status-pass { color: var(--green); font-weight: 700; font-size: 0.75rem; }
-        .status-fail { color: #a02020; font-weight: 700; font-size: 0.75rem; }
-        .status-absent { color: var(--muted); font-weight: 600; font-size: 0.75rem; }
+        .status-pass { color: #14633a; font-weight: 700; font-size: .75rem; }
+        .status-fail { color: #a02020; font-weight: 700; font-size: .75rem; }
+        .status-absent { color: var(--muted); font-weight: 700; font-size: .75rem; }
 
         .btn-clear {
-            background: transparent; color: #c0392b;
-            border: 1px solid #f4a0a0; border-radius: 5px;
-            font-size: 0.7rem; padding: 3px 8px;
-            text-decoration: none; transition: all 0.15s;
+            background: transparent;
+            color: #c0392b;
+            border: 1px solid #f4a0a0;
+            border-radius: 5px;
+            font-size: .7rem;
+            padding: 3px 8px;
         }
-        .btn-clear:hover { background: #c0392b; color: #fff; border-color: #c0392b; }
+        .btn-clear:hover { background: #c0392b; color: #fff; }
 
-        .flash-msg { border-radius: 8px; border: none; font-size: 0.875rem; }
-
-        .main-scroll::-webkit-scrollbar,
-        .phs-table .table-responsive::-webkit-scrollbar {
-            width: 10px;
-            height: 10px;
-        }
-        .main-scroll::-webkit-scrollbar-thumb,
-        .phs-table .table-responsive::-webkit-scrollbar-thumb {
-            background: #c7bfb5;
-            border-radius: 10px;
-        }
+        .flash-msg { border-radius: 8px; border: none; font-size: .85rem; }
 
         @media (max-width: 900px) {
-            body { overflow: auto; }
-            .app-shell { height: auto; min-height: 100dvh; }
-            .main-scroll {
-                overflow: auto;
-                -webkit-overflow-scrolling: touch;
-                padding-bottom: 16px;
-            }
-            .search-bar-wrap {
-                position: static;
-                margin-bottom: 12px;
-            }
+            .site-header { padding: 10px 12px; }
+            .header-title { font-size: 1rem; }
+            .main-scroll { padding-top: 8px; }
+            .page-card { padding: 10px; }
         }
     </style>
 </head>
 <body>
 <div class="app-shell">
-<header class="site-header d-flex justify-content-between align-items-center">
-    <div>
-        <div class="header-title">📚 Master Register</div>
-        <div class="header-sub">Phulani High School · All Classes</div>
-    </div>
-    <a href="{{ url_for('index') }}" class="btn-back">← Dashboard</a>
-</header>
-
-<main class="main-scroll">
-<div class="container-fluid px-4 pb-3">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert flash-msg alert-{{ category if category in ['success','danger','warning','info'] else 'secondary' }} mt-3">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
-
-    <div class="search-bar-wrap">
-        <div class="filter-row">
-            <select id="classFilter">
-                <option value="">Select Class to View Register</option>
-                {% for cname, data in grouped_data.items() %}
-                    <option value="{{ cname }}">{{ class_label(cname) }} ({{ data.stats.total_students }})</option>
-                {% endfor %}
-            </select>
-            <input id="searchInput" type="text" placeholder="Search by student name..." disabled>
+    <header class="site-header d-flex justify-content-between align-items-center">
+        <div>
+            <div class="header-title">📚 Class-wise Marks Register</div>
+            <div class="header-sub">Simple view for teachers</div>
         </div>
-    </div>
+        <a href="{{ url_for('index') }}" class="btn-back">← Home</a>
+    </header>
 
-    {% for cname, data in grouped_data.items() %}
-        <details id="class-{{ cname }}" class="class-section" data-class="{{ cname }}">
-            <summary>
-                <div class="class-header">
-                    <span class="class-title">{{ class_label(cname) }}</span>
+    <main class="main-scroll">
+        <div class="container-fluid px-3 px-md-4">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert flash-msg alert-{{ category if category in ['success','danger','warning','info'] else 'secondary' }} mt-3">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="page-card">
+                <div class="mini-help">Choose a class tab. You will then see that class student marks list below.</div>
+
+                <div class="class-tabs">
+                    {% for cname in classes %}
+                        {% set d = grouped_data[cname] %}
+                        <a class="class-tab {{ 'active' if cname == selected_class else '' }}" href="{{ url_for('view_marks', class_name=cname) }}">
+                            {{ class_label(cname) }} ({{ d.stats.total_students }})
+                        </a>
+                    {% endfor %}
                 </div>
-            </summary>
-            <div class="section-inner">
-                <div class="stat-row mb-2">
-                    <span class="stat-chip">Total: {{ data.stats.total_students }}</span>
-                    <span class="stat-chip">Appeared: {{ data.stats.appeared_count }}</span>
-                    <span class="stat-chip pass">✓ Pass: {{ data.stats.pass_count }} ({{ data.stats.pass_rate }}%)</span>
-                    <span class="stat-chip fail">✗ Fail: {{ data.stats.fail_count }}</span>
-                    {% if data.stats.absent_count > 0 %}
-                        <span class="stat-chip">• Absent: {{ data.stats.absent_count }}</span>
+
+                <div class="stat-row">
+                    <span class="stat-chip">Students: {{ selected_data.stats.total_students }}</span>
+                    <span class="stat-chip">Students with marks: {{ selected_data.students_with_marks }}</span>
+                    <span class="stat-chip">Marks entered: {{ selected_data.marks_entered }} / {{ selected_data.marks_expected }}</span>
+                    <span class="stat-chip good">Pass: {{ selected_data.stats.pass_count }}</span>
+                    <span class="stat-chip warn">Fail: {{ selected_data.stats.fail_count }}</span>
+                    {% if selected_data.stats.absent_count > 0 %}
+                        <span class="stat-chip">Absent: {{ selected_data.stats.absent_count }}</span>
                     {% endif %}
                 </div>
-                <div class="phs-table mb-2">
+
+                <div class="tools-row">
+                    <input id="searchInput" type="text" placeholder="Search student by name or roll number...">
+                </div>
+
+                <div class="phs-table">
                     <div class="table-responsive">
-                        <table class="table mb-0 search-table">
+                        <table class="table mb-0" id="marksTable">
                             <thead>
                                 <tr>
                                     <th>Roll</th>
-                                    <th>Name</th>
-                                    {% for sub in data.subjects %}<th title="{{ sub }}">{{ sub[:6] }}{% if sub|length > 6 %}…{% endif %}</th>{% endfor %}
+                                    <th>Student Name</th>
+                                    {% for sub in selected_data.subjects %}
+                                        <th title="{{ sub }}">{{ sub[:6] }}{% if sub|length > 6 %}…{% endif %}</th>
+                                    {% endfor %}
                                     <th>Total</th>
                                     <th>%</th>
-                                    <th>Status</th>
-                                    <th></th>
+                                    <th>Result</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for row in data.results %}
+                                {% for row in selected_data.results %}
                                     <tr>
-                                        <td style="color:var(--muted);font-weight:600;font-size:.78rem;">{{ row.roll_no }}</td>
-                                        <td class="student-name" style="font-weight:500;">{{ row.name }}</td>
-                                        {% for sub in data.subjects %}
+                                        <td class="student-roll">{{ row.roll_no }}</td>
+                                        <td class="student-name" style="font-weight: 600;">{{ row.name }}</td>
+                                        {% for sub in selected_data.subjects %}
                                             <td>{{ row.marks.get(sub, '—') }}</td>
                                         {% endfor %}
-                                        <td style="font-weight:600;">{{ row.total }}</td>
+                                        <td>{{ row.total }}</td>
                                         <td>{{ row.percentage }}</td>
                                         <td>
-                                            {% if row.status == 'PASS' %}<span class="status-pass">PASS</span>
-                                            {% elif row.status == 'FAIL' %}<span class="status-fail">FAIL</span>
-                                            {% else %}<span class="status-absent">ABSENT</span>{% endif %}
+                                            {% if row.status == 'PASS' %}
+                                                <span class="status-pass">PASS</span>
+                                            {% elif row.status == 'FAIL' %}
+                                                <span class="status-fail">FAIL</span>
+                                            {% else %}
+                                                <span class="status-absent">ABSENT</span>
+                                            {% endif %}
                                         </td>
                                         <td>
                                             <form method="POST" action="{{ url_for('clear_student_marks', student_id=row.id) }}" style="display:inline;" onsubmit="if(!confirm('Clear all marks for {{ row.name }}?')) return false; return requestEditPassword(this);">
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                 <input type="hidden" name="edit_password" value="">
-                                                <button type="submit" class="btn-clear">Clear</button>
+                                                <button type="submit" class="btn-clear">Clear Marks</button>
                                             </form>
                                         </td>
                                     </tr>
@@ -256,56 +292,32 @@
                     </div>
                 </div>
             </div>
-        </details>
-    {% endfor %}
-</div>
-</main>
+        </div>
+    </main>
 </div>
 
 <script>
-    const classFilter = document.getElementById('classFilter');
     const searchInput = document.getElementById('searchInput');
-    const detailsList = document.querySelectorAll('.class-section');
+    const tableRows = document.querySelectorAll('#marksTable tbody tr');
 
-    function applyFilters() {
-        const selectedClass = classFilter.value;
-        const q = searchInput.value.toLowerCase();
-
-        detailsList.forEach(section => {
-            const isSelected = selectedClass !== '' && section.dataset.class === selectedClass;
-            const rows = section.querySelectorAll('tbody tr');
-
-            rows.forEach(row => {
-                const name = row.querySelector('.student-name').textContent.toLowerCase();
-                row.style.display = name.includes(q) ? '' : 'none';
-            });
-
-            const visibleRows = section.querySelectorAll('tbody tr:not([style*="display: none"])').length;
-            section.style.display = isSelected && (visibleRows > 0 || q === '') ? '' : 'none';
-            if (isSelected) {
-                section.open = true;
-            }
+    searchInput.addEventListener('input', function () {
+        const q = this.value.trim().toLowerCase();
+        tableRows.forEach(row => {
+            const name = row.querySelector('.student-name')?.textContent.toLowerCase() || '';
+            const roll = row.querySelector('.student-roll')?.textContent.toLowerCase() || '';
+            row.style.display = (name.includes(q) || roll.includes(q)) ? '' : 'none';
         });
-    }
-
-    classFilter.addEventListener('change', function() {
-        searchInput.disabled = this.value === '';
-        if (this.value === '') {
-            searchInput.value = '';
-        }
-        applyFilters();
     });
-
-    searchInput.addEventListener('keyup', applyFilters);
-
-    applyFilters();
 
     function requestEditPassword(form) {
         const password = prompt('Enter edit password');
         if (password === null) {
             return false;
         }
-        form.querySelector('input[name="edit_password"]').value = password;
+        const field = form.querySelector('input[name="edit_password"]');
+        if (field) {
+            field.value = password;
+        }
         return true;
     }
 </script>

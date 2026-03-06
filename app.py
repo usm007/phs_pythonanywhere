@@ -735,14 +735,54 @@ def grid_entry():
 @app.route("/view")
 def view_marks():
     grouped = {}
-    for class_name in SUBJECTS_DICT.keys():
+    classes = list(SUBJECTS_DICT.keys())
+
+    for class_name in classes:
         results, subjects = get_class_results(class_name)
+        stats = calculate_class_stats(results)
+        marks_entered = sum(len(row["marks"]) for row in results)
+        marks_expected = len(results) * len(subjects)
+        students_with_marks = sum(1 for row in results if len(row["marks"]) > 0)
+
         grouped[class_name] = {
             "results": results,
             "subjects": subjects,
-            "stats": calculate_class_stats(results),
+            "stats": stats,
+            "marks_entered": marks_entered,
+            "marks_expected": marks_expected,
+            "students_with_marks": students_with_marks,
         }
-    return render_template("view.html", grouped_data=grouped)
+
+    selected_class = request.args.get("class_name")
+    if selected_class not in grouped:
+        selected_class = classes[0] if classes else None
+
+    selected_data = grouped.get(
+        selected_class,
+        {
+            "results": [],
+            "subjects": [],
+            "stats": {
+                "total_students": 0,
+                "appeared_count": 0,
+                "pass_count": 0,
+                "fail_count": 0,
+                "absent_count": 0,
+                "pass_rate": 0,
+            },
+            "marks_entered": 0,
+            "marks_expected": 0,
+            "students_with_marks": 0,
+        },
+    )
+
+    return render_template(
+        "view.html",
+        grouped_data=grouped,
+        classes=classes,
+        selected_class=selected_class,
+        selected_data=selected_data,
+    )
 
 
 @app.route("/download_csv/<string:class_name>")

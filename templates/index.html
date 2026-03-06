@@ -399,10 +399,10 @@
             <!-- ── SECTION A: ENTRY ── -->
             <div class="col-lg-6">
                 <div class="phs-card card-admin home-card d-flex flex-column">
-                    <div class="section-label">Section A | Entry and Administration</div>
+                    <div class="section-label">Section A | Enter Marks and Manage Students</div>
 
                     <div class="sub-panel">
-                        <div class="sub-panel-title">📑 Subject-wise Entry</div>
+                        <div class="sub-panel-title">📑 Enter Marks (One Subject)</div>
                         <form method="GET" action="{{ url_for('subject_entry') }}">
                             <div class="row g-2">
                                 <div class="col-6">
@@ -419,14 +419,14 @@
                                     </select>
                                 </div>
                                 <div class="col-12">
-                                    <button type="submit" class="btn btn-phs-primary w-100">Load Student List</button>
+                                    <button type="submit" class="btn btn-phs-primary w-100">Open Student List</button>
                                 </div>
                             </div>
                         </form>
                     </div>
 
                     <div class="sub-panel">
-                        <div class="sub-panel-title">▦ Bulk Entry Grid</div>
+                        <div class="sub-panel-title">▦ Enter Marks (All Subjects)</div>
                         <form method="GET" action="{{ url_for('grid_entry') }}" class="row g-2">
                             <div class="col-8">
                                 <select class="form-select form-select-sm" name="class_name" required>
@@ -437,16 +437,16 @@
                                 </select>
                             </div>
                             <div class="col-4">
-                                <button type="submit" class="btn btn-phs-outline w-100">Open Grid</button>
+                                <button type="submit" class="btn btn-phs-outline w-100">Open Marks Table</button>
                             </div>
                         </form>
                     </div>
 
-                    <div class="section-label mt-1">Data Maintenance</div>
+                    <div class="section-label mt-1">Student and Record Tools</div>
                     <div class="d-grid gap-2">
-                        <a href="{{ url_for('manage_students') }}" class="btn btn-phs-gold fw-semibold">👥 Manage Students</a>
-                        <a href="{{ url_for('view_marks') }}" class="btn btn-phs-outline">📚 View Master Register</a>
-                        <a href="{{ url_for('view_logs') }}" target="_blank" rel="noopener" class="btn btn-phs-outline btn-logs-mini">🧾 See Logs</a>
+                        <a href="{{ url_for('manage_students') }}" class="btn btn-phs-gold fw-semibold">👥 Add / Edit Students</a>
+                        <a href="{{ url_for('view_marks') }}" class="btn btn-phs-outline">📚 Class-wise Marks Register</a>
+                        <a href="{{ url_for('view_logs') }}" target="_blank" rel="noopener" class="btn btn-phs-outline btn-logs-mini">🧾 Change History</a>
                     </div>
                 </div>
             </div>
@@ -454,10 +454,10 @@
             <!-- ── SECTION B: RESULTS ── -->
             <div class="col-lg-4">
                 <div class="phs-card card-results home-card d-flex flex-column">
-                    <div class="section-label">Section B | Official Output</div>
+                    <div class="section-label">Section B | Results and Print</div>
                     <div class="result-hero flex-grow-1 d-flex flex-column justify-content-center mt-1">
-                        <div class="mb-3" style="font-size:0.75rem;letter-spacing:0.1em;opacity:0.75;">RESULT CENTER</div>
-                        <a href="{{ url_for('results_center') }}" class="result-hero-btn">📊 Open Result Center</a>
+                        <div class="mb-3" style="font-size:0.75rem;letter-spacing:0.1em;opacity:0.75;">CLASS RESULTS</div>
+                        <a href="{{ url_for('results_center') }}" class="result-hero-btn">📊 Open Results and Print</a>
                         <div class="session-tag">Session 2025–26 · Majuli</div>
                     </div>
                 </div>
