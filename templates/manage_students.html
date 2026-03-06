@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academic Setup - {{ school_shortcode }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --navy: #0a1931;
+            --gold: #c9972a;
+            --bg: #f0ede8;
+            --surface: #faf8f5;
+            --border: #d6cfc4;
+            --text: #1a1612;
+            --muted: #6b6058;
+            --danger: #c0392b;
+        }
+
+        html, body { height: 100%; }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--text);
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        .app-shell {
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .site-header {
+            background: var(--navy);
+            border-bottom: 4px solid var(--gold);
+            padding: 8px 16px;
+            flex-shrink: 0;
+        }
+
+        .header-title {
+            font-family: 'Fraunces', serif;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #fff;
+            margin: 0;
+        }
+
+        .header-sub {
+            font-size: 0.62rem;
+            color: rgba(255,255,255,0.45);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .btn-back {
+            background: transparent;
+            color: rgba(255,255,255,0.7);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 7px;
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            text-decoration: none;
+        }
+
+        .btn-back:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+        .main-scroll {
+            flex: 1;
+            overflow: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 10px 0 14px;
+            min-height: 0;
+        }
+
+        .page-frame {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .panel-shell {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px;
+        }
+
+        .panel-title {
+            font-size: 0.66rem;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--muted);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 7px;
+            margin-bottom: 10px;
+        }
+
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .category-item {
+            display: block;
+            text-decoration: none;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: #fff;
+            padding: 10px 8px;
+            color: var(--navy);
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-align: center;
+            transition: all 0.15s;
+        }
+
+        .category-item:hover {
+            border-color: var(--navy);
+            box-shadow: 0 0 0 2px rgba(10,25,49,0.08);
+            color: var(--navy);
+        }
+
+        .category-item.active {
+            background: var(--navy);
+            color: #fff;
+            border-color: var(--navy);
+        }
+
+        .focus-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .focus-name {
+            font-family: 'Fraunces', serif;
+            font-size: 1rem;
+            margin: 0;
+            color: var(--navy);
+        }
+
+        .focus-note {
+            font-size: 0.74rem;
+            color: var(--muted);
+            margin: 0;
+        }
+
+        .muted-chip {
+            font-size: 0.68rem;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 3px 10px;
+            background: #fff;
+            color: var(--muted);
+            white-space: nowrap;
+        }
+
+        .mini-panel {
+            background: #f4f1ec;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px;
+        }
+
+        .mini-title {
+            font-size: 0.62rem;
+            font-weight: 700;
+            letter-spacing: 0.13em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        .form-label {
+            font-size: 0.68rem;
+            color: var(--muted);
+            margin-bottom: 3px;
+        }
+
+        .form-select, .form-control {
+            border-color: var(--border);
+            background: #fff;
+            border-radius: 7px;
+            font-size: 0.8rem;
+            padding-top: 5px;
+            padding-bottom: 5px;
+        }
+
+        .form-select:focus, .form-control:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(201,151,42,0.15);
+        }
+
+        .btn-navy {
+            background: var(--navy);
+            color: #fff;
+            border: none;
+            border-radius: 7px;
+            font-weight: 600;
+            padding: 6px 14px;
+            font-size: 0.78rem;
+        }
+
+        .btn-navy:hover { background: #132342; color: #fff; }
+
+        .btn-gold {
+            background: var(--gold);
+            color: #fff;
+            border: none;
+            border-radius: 7px;
+            font-weight: 700;
+            padding: 6px 14px;
+            font-size: 0.78rem;
+        }
+
+        .btn-gold:hover { background: #b08222; color: #fff; }
+
+        .btn-danger-main {
+            background: var(--danger);
+            color: #fff;
+            border: none;
+            border-radius: 7px;
+            font-weight: 700;
+            padding: 6px 14px;
+            font-size: 0.78rem;
+        }
+
+        .btn-danger-main:hover { background: #a93226; color: #fff; }
+
+        .btn-danger-outline {
+            background: #fff;
+            color: #a93226;
+            border: 1.5px solid #e0a7a1;
+            border-radius: 7px;
+            font-weight: 700;
+            padding: 5px 12px;
+            font-size: 0.72rem;
+        }
+
+        .btn-danger-outline:hover {
+            background: #a93226;
+            color: #fff;
+            border-color: #a93226;
+        }
+
+        .btn-delete {
+            background: transparent;
+            color: #c0392b;
+            border: 1.5px solid #f4a0a0;
+            border-radius: 6px;
+            font-size: 0.68rem;
+            padding: 3px 8px;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .btn-delete:hover { background: #c0392b; color: #fff; border-color: #c0392b; }
+
+        .phs-table {
+            background: var(--surface);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            overflow: auto;
+            margin-bottom: 8px;
+        }
+
+        .phs-table thead th {
+            background: var(--navy);
+            color: rgba(255,255,255,0.85);
+            font-size: 0.62rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 7px 10px;
+            border: none;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .phs-table tbody tr { border-bottom: 1px solid var(--border); }
+        .phs-table tbody tr:last-child { border-bottom: none; }
+        .phs-table td { padding: 5px 10px; vertical-align: middle; border: none; }
+        .phs-table .form-control { font-size: 0.78rem; padding: 4px 8px; }
+
+        .flash-msg {
+            border-radius: 8px;
+            border: none;
+            font-size: 0.75rem;
+            padding: 7px 10px;
+            margin-bottom: 6px !important;
+        }
+
+        .import-note {
+            font-size: 0.67rem;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        .import-help {
+            margin-top: 8px;
+            padding: 8px;
+            background: #f7f3ee;
+            border: 1px dashed var(--border);
+            border-radius: 7px;
+            font-size: 0.68rem;
+        }
+
+        .import-help summary {
+            cursor: pointer;
+            font-weight: 700;
+            color: var(--navy);
+            margin-bottom: 6px;
+        }
+
+        .import-sample {
+            margin-top: 5px;
+            margin-bottom: 0;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 6px;
+            white-space: pre-wrap;
+            font-size: 0.65rem;
+            color: #3f3630;
+        }
+
+        .actions-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active { display: flex; }
+
+        .modal-box {
+            background: #fff;
+            border-radius: 12px;
+            padding: 24px 28px;
+            max-width: 380px;
+            width: 90%;
+            box-shadow: 0 4px 32px rgba(0,0,0,0.18);
+        }
+
+        .modal-title {
+            font-family: 'Fraunces', serif;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .modal-msg {
+            font-size: 0.8rem;
+            color: #555;
+            margin-bottom: 14px;
+        }
+
+        .main-scroll::-webkit-scrollbar,
+        .phs-table::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        .main-scroll::-webkit-scrollbar-thumb,
+        .phs-table::-webkit-scrollbar-thumb {
+            background: #c7bfb5;
+            border-radius: 10px;
+        }
+
+        @media (max-width: 1100px) {
+            .category-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .category-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="app-shell">
+    <header class="site-header d-flex justify-content-between align-items-center">
+        <div>
+            <div class="header-title">🏫 Academic Setup</div>
+            <div class="header-sub">{{ school_name }} · {{ exam_name }}</div>
+        </div>
+        <a href="{{ url_for('index') }}" class="btn-back">← Dashboard</a>
+    </header>
+
+    <main class="main-scroll">
+        <div class="container h-100" style="max-width: 1160px;">
+            <div class="page-frame">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert flash-msg alert-{{ category if category in ['success','danger','warning','info'] else 'secondary' }}">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                {% if portal_locked %}
+                    <div class="alert alert-warning flash-msg">Portal is locked. Setup and student modification actions are disabled.</div>
+                {% endif %}
+
+                <section class="panel-shell">
+                    <div class="panel-title">Step 1 | Choose Setup Category</div>
+                    <div class="category-grid">
+                        <a class="category-item {{ 'active' if setup_tab == 'classes' else '' }}" href="{{ url_for('manage_students', class_name=class_name, setup_tab='classes') }}">🏫 Class</a>
+                        <a class="category-item {{ 'active' if setup_tab == 'subjects' else '' }}" href="{{ url_for('manage_students', class_name=class_name, setup_tab='subjects') }}">📚 Subjects</a>
+                        <a class="category-item {{ 'active' if setup_tab == 'students' else '' }}" href="{{ url_for('manage_students', class_name=class_name, setup_tab='students') }}">👥 Students</a>
+                    </div>
+                </section>
+
+                <section class="panel-shell">
+                    <div class="panel-title">Step 2 | Manage Selected Category</div>
+                    <div class="focus-head">
+                        <div>
+                            <h2 class="focus-name">
+                                {% if setup_tab == 'classes' %}Class Setup{% elif setup_tab == 'subjects' %}Subject Setup{% else %}Student Setup{% endif %}
+                            </h2>
+                            <p class="focus-note">
+                                {% if setup_tab == 'classes' %}Create class groups such as Class 10(A) and manage them here.{% elif setup_tab == 'subjects' %}Add or remove subjects class-wise.{% else %}Select class, then add/import/update/delete students.{% endif %}
+                            </p>
+                        </div>
+                        <span class="muted-chip">Active: {{ setup_tab|capitalize }}</span>
+                    </div>
+
+                    {% if setup_tab == 'classes' %}
+                        <div class="row g-2">
+                            <div class="col-lg-6">
+                                <div class="mini-panel">
+                                    <div class="mini-title">Add Class</div>
+                                    <form method="POST" action="{{ url_for('manage_structure') }}" class="row g-2">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="setup_tab" value="classes">
+                                        <input type="hidden" name="structure_action" value="add_class">
+                                        <div class="col-12">
+                                            <input class="form-control" name="new_class_name" placeholder="e.g. Class 10(A)" {{ 'disabled' if portal_locked else '' }} required>
+                                        </div>
+                                        <div class="col-12">
+                                            <button class="btn btn-navy w-100" type="submit" {{ 'disabled' if portal_locked else '' }}>+ Add Class</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="mini-panel">
+                                    <div class="mini-title">Delete Class</div>
+                                    <form method="POST" action="{{ url_for('manage_structure') }}" class="row g-2" onsubmit="return confirm('Delete this class and all student/marks data?');">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="setup_tab" value="classes">
+                                        <input type="hidden" name="structure_action" value="delete_class">
+                                        <div class="col-12">
+                                            <select class="form-select" name="delete_class_name" {{ 'disabled' if portal_locked else '' }} required>
+                                                <option value="" disabled selected>Select class...</option>
+                                                {% for c in classes %}
+                                                    <option value="{{ c }}" {{ 'selected' if class_name == c else '' }}>{{ class_label(c) }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-12">
+                                            <button class="btn btn-danger-main w-100" type="submit" {{ 'disabled' if portal_locked else '' }}>Delete Class</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    {% elif setup_tab == 'subjects' %}
+                        <div class="row g-2">
+                            <div class="col-lg-4">
+                                <div class="mini-panel">
+                                    <div class="mini-title">Add Subject</div>
+                                    <form method="POST" action="{{ url_for('manage_structure') }}" class="row g-2">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="setup_tab" value="subjects">
+                                        <input type="hidden" name="structure_action" value="add_subject">
+                                        <div class="col-12">
+                                            <select class="form-select" name="class_name" {{ 'disabled' if portal_locked else '' }} required>
+                                                <option value="" disabled selected>Class...</option>
+                                                {% for c in classes %}
+                                                    <option value="{{ c }}" {{ 'selected' if class_name == c else '' }}>{{ class_label(c) }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-12">
+                                            <input class="form-control" name="new_subject" placeholder="Subject name" {{ 'disabled' if portal_locked else '' }} required>
+                                        </div>
+                                        <div class="col-12">
+                                            <button class="btn btn-navy w-100" type="submit" {{ 'disabled' if portal_locked else '' }}>+ Add Subject</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="col-lg-4">
+                                <div class="mini-panel">
+                                    <div class="mini-title">Delete Subject</div>
+                                    <form method="POST" action="{{ url_for('manage_structure') }}" class="row g-2" onsubmit="return confirm('Delete this subject and its related marks for the selected class?');">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="setup_tab" value="subjects">
+                                        <input type="hidden" name="structure_action" value="delete_subject">
+                                        <div class="col-12">
+                                            <select class="form-select" name="class_name" id="deleteSubjectClass" {{ 'disabled' if portal_locked else '' }} required>
+                                                <option value="" disabled selected>Class...</option>
+                                                {% for c in classes %}
+                                                    <option value="{{ c }}" {{ 'selected' if class_name == c else '' }}>{{ class_label(c) }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-12">
+                                            <select class="form-select" name="delete_subject" id="deleteSubjectName" {{ 'disabled' if portal_locked else '' }} required>
+                                                <option value="" disabled selected>Subject...</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-12">
+                                            <button class="btn btn-danger-main w-100" type="submit" {{ 'disabled' if portal_locked else '' }}>Delete Subject</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="col-lg-4"></div>
+                        </div>
+                    {% else %}
+                        <div class="row g-2 mb-2">
+                            <div class="col-lg-4">
+                                <div class="mini-panel">
+                                    <div class="mini-title">Select Class</div>
+                                    <form method="GET" action="{{ url_for('manage_students') }}" class="row g-2">
+                                        <input type="hidden" name="setup_tab" value="students">
+                                        <div class="col-8">
+                                            <select class="form-select" name="class_name" required>
+                                                <option value="" disabled {{ 'selected' if not class_name else '' }}>Choose a class...</option>
+                                                {% for c in classes %}
+                                                    <option value="{{ c }}" {{ 'selected' if class_name == c else '' }}>{{ class_label(c) }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-4">
+                                            <button class="btn btn-navy w-100" type="submit">Load</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="col-lg-4">
+                                <div class="mini-panel">
+                                    <div class="mini-title">Add Student</div>
+                                    <form method="POST" action="{{ url_for('manage_students') }}" class="row g-2 align-items-end">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="setup_tab" value="students">
+                                        <input type="hidden" name="class_name" value="{{ class_name or '' }}">
+                                        <div class="col-3">
+                                            <input class="form-control" type="text" name="new_roll" placeholder="Roll" {{ 'required' if class_name else '' }} {{ 'disabled' if portal_locked else '' }}>
+                                        </div>
+                                        <div class="col-6">
+                                            <input class="form-control" type="text" name="new_name" placeholder="Student name" {{ 'required' if class_name else '' }} {{ 'disabled' if portal_locked else '' }}>
+                                        </div>
+                                        <div class="col-3">
+                                            <button class="btn btn-gold w-100" type="submit" {{ 'disabled' if not class_name or portal_locked else '' }}>Add</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="col-lg-4">
+                                <div class="mini-panel">
+                                    <div class="mini-title">Import Students CSV</div>
+                                    <form method="POST" action="{{ url_for('import_students') }}" enctype="multipart/form-data" class="row g-2 align-items-end">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="setup_tab" value="students">
+                                        <input type="hidden" name="current_class_name" value="{{ class_name or '' }}">
+                                        <div class="col-5">
+                                            <select class="form-select" name="import_class_name">
+                                                <option value="">Multi-class</option>
+                                                {% for c in classes %}
+                                                    <option value="{{ c }}" {{ 'selected' if class_name == c else '' }}>{{ class_label(c) }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-4">
+                                            <input class="form-control" type="file" name="csv_file" accept=".csv,text/csv" required {{ 'disabled' if portal_locked else '' }}>
+                                        </div>
+                                        <div class="col-3">
+                                            <button class="btn btn-navy w-100" type="submit" {{ 'disabled' if portal_locked else '' }}>Import</button>
+                                        </div>
+                                    </form>
+                                    <div class="import-note">Headers: <code>roll_no,name</code> or <code>class_name,roll_no,name</code></div>
+                                    <details class="import-help">
+                                        <summary>How should the Excel/CSV file look?</summary>
+                                        <p><strong>Step 1:</strong> Use exact headers in row 1.</p>
+                                        <p><strong>Step 2:</strong> Fill rows, then save as <code>CSV UTF-8</code>.</p>
+                                        <pre class="import-sample">roll_no,name
+1,Aman Das
+2,Riya Sharma</pre>
+                                    </details>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if students %}
+                            <form method="POST" action="{{ url_for('manage_students') }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="setup_tab" value="students">
+                                <input type="hidden" name="class_name" value="{{ class_name }}">
+
+                                <div class="actions-row" style="margin-bottom:8px;">
+                                    <span class="muted-chip">{{ students|length }} Student{{ 's' if students|length != 1 }} | {{ class_label(class_name) }}</span>
+                                    {% if not portal_locked %}
+                                        <button class="btn btn-danger-outline batch-delete-trigger" type="button" data-label="Batch Delete Selected" onclick="openBatchDelete()">Batch Delete Selected</button>
+                                    {% endif %}
+                                </div>
+
+                                <div class="phs-table">
+                                    <table class="table mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th style="width:36px;"><input type="checkbox" id="select-all" title="Select all"></th>
+                                                <th style="width:130px;">Roll No</th>
+                                                <th>Student Name</th>
+                                                <th style="width:100px;">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for s in students %}
+                                                <tr>
+                                                    <td><input class="row-check" type="checkbox" name="delete_ids_inline" value="{{ s.id }}" {{ 'disabled' if portal_locked else '' }}></td>
+                                                    <td><input class="form-control" type="text" name="roll_{{ s.id }}" value="{{ s.roll_no }}" required {{ 'readonly' if portal_locked else '' }}></td>
+                                                    <td><input class="form-control" type="text" name="name_{{ s.id }}" value="{{ s.name }}" required {{ 'readonly' if portal_locked else '' }}></td>
+                                                    <td>
+                                                        {% if not portal_locked %}
+                                                            <button type="submit" class="btn-delete" formaction="{{ url_for('delete_student', student_id=s.id, setup_tab='students') }}" formmethod="post" onclick="return confirm('Delete {{ s.name }} and all their marks?');">Delete</button>
+                                                        {% else %}
+                                                            <span style="font-size:0.68rem;color:var(--muted);">Locked</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {% if not portal_locked %}
+                                    <div class="actions-row">
+                                        <button class="btn btn-navy" type="submit">Save All Student Changes</button>
+                                        <button class="btn btn-danger-main batch-delete-trigger" type="button" id="batch-delete-btn" data-label="Delete Selected" onclick="openBatchDelete()">Delete Selected</button>
+                                    </div>
+                                {% endif %}
+                            </form>
+
+                            <div id="batch-delete-overlay" class="modal-overlay">
+                                <div class="modal-box">
+                                    <h6 class="modal-title">Confirm Batch Delete</h6>
+                                    <p id="batch-delete-msg" class="modal-msg"></p>
+                                    <form method="POST" action="{{ url_for('batch_delete_students') }}" id="batch-delete-form">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="setup_tab" value="students">
+                                        <input type="hidden" name="class_name" value="{{ class_name }}">
+                                        <div id="batch-ids-container"></div>
+                                        <div class="mb-3">
+                                            <label style="font-size:0.75rem;font-weight:600;color:#333;">Enter password to confirm:</label>
+                                            <input type="password" name="batch_delete_password" class="form-control mt-1" placeholder="Password" required autocomplete="off">
+                                        </div>
+                                        <div class="actions-row">
+                                            <button type="submit" class="btn btn-danger-main">Delete</button>
+                                            <button type="button" class="btn btn-navy" onclick="closeBatchDelete()">Cancel</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        {% elif class_name %}
+                            <div class="mini-panel">
+                                <p class="focus-note" style="margin:0 0 6px 0;">No students found for <strong>{{ class_label(class_name) }}</strong>. Add the first one above.</p>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                </section>
+            </div>
+        </div>
+    </main>
+</div>
+<script id="class-subject-map" type="application/json">{{ class_subject_map | tojson }}</script>
+<script>
+    const classSubjectMap = JSON.parse(document.getElementById('class-subject-map').textContent);
+
+    function fillSubjectOptions(classSelectId, subjectSelectId) {
+        const classSelect = document.getElementById(classSelectId);
+        const subjectSelect = document.getElementById(subjectSelectId);
+        if (!classSelect || !subjectSelect) {
+            return;
+        }
+
+        const update = () => {
+            const selectedClass = classSelect.value;
+            const subjects = classSubjectMap[selectedClass] || [];
+            subjectSelect.innerHTML = '<option value="" disabled selected>Subject...</option>';
+            subjects.forEach((subj) => {
+                const opt = document.createElement('option');
+                opt.value = subj;
+                opt.textContent = subj;
+                subjectSelect.appendChild(opt);
+            });
+        };
+
+        classSelect.addEventListener('change', update);
+        if (classSelect.value) {
+            update();
+        }
+    }
+
+    fillSubjectOptions('deleteSubjectClass', 'deleteSubjectName');
+
+    const batchDeleteButtons = document.querySelectorAll('.batch-delete-trigger');
+
+    function getSelectedCount() {
+        return document.querySelectorAll('.row-check:checked').length;
+    }
+
+    function refreshBatchDeleteButtons() {
+        const count = getSelectedCount();
+        batchDeleteButtons.forEach(btn => {
+            const baseLabel = btn.dataset.label || btn.textContent.trim();
+            btn.textContent = count > 0 ? `${baseLabel} (${count})` : baseLabel;
+            btn.disabled = count === 0;
+        });
+    }
+
+    const selectAll = document.getElementById('select-all');
+    if (selectAll) {
+        selectAll.addEventListener('change', function () {
+            document.querySelectorAll('.row-check').forEach(cb => cb.checked = this.checked);
+            refreshBatchDeleteButtons();
+        });
+        document.querySelectorAll('.row-check').forEach(cb => {
+            cb.addEventListener('change', function () {
+                selectAll.checked = document.querySelectorAll('.row-check').length > 0 &&
+                    document.querySelectorAll('.row-check:not(:checked)').length === 0;
+                refreshBatchDeleteButtons();
+            });
+        });
+        refreshBatchDeleteButtons();
+    }
+
+    function openBatchDelete() {
+        const checked = document.querySelectorAll('.row-check:checked');
+        if (checked.length === 0) {
+            alert('Please select at least one student to delete.');
+            return;
+        }
+        const container = document.getElementById('batch-ids-container');
+        container.innerHTML = '';
+        checked.forEach(cb => {
+            const inp = document.createElement('input');
+            inp.type = 'hidden';
+            inp.name = 'delete_ids';
+            inp.value = cb.value;
+            container.appendChild(inp);
+        });
+        document.getElementById('batch-delete-msg').textContent =
+            'You are about to permanently delete ' + checked.length + ' student(s) and all their marks. This cannot be undone.';
+        const overlay = document.getElementById('batch-delete-overlay');
+        overlay.classList.add('active');
+        const pwd = overlay.querySelector('input[name="batch_delete_password"]');
+        if (pwd) {
+            pwd.value = '';
+            pwd.focus();
+        }
+    }
+
+    function closeBatchDelete() {
+        const overlay = document.getElementById('batch-delete-overlay');
+        if (overlay) {
+            overlay.classList.remove('active');
+        }
+    }
+</script>
+</body>
+</html>

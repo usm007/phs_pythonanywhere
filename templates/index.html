@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ school_shortcode }} Examination Portal</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --navy: #0a1931;
+            --navy-mid: #132342;
+            --gold: #c9972a;
+            --gold-light: #f2c463;
+            --green: #14633a;
+            --green-light: #1d8a50;
+            --bg: #f0ede8;
+            --surface: #faf8f5;
+            --border: #d6cfc4;
+            --text: #1a1612;
+            --muted: #6b6058;
+            --radius: 10px;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+
+        html, body {
+            height: 100%;
+        }
+
+        body {
+            background: var(--bg);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--text);
+            margin: 0;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        .app-shell {
+            min-height: 100dvh;
+            height: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-scroll {
+            flex: 1;
+            overflow: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 12px 0;
+            min-height: 0;
+        }
+
+        .home-content {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .home-grid {
+            flex: 1;
+            min-height: 0;
+        }
+
+        /* ─── HEADER ─── */
+        .site-header {
+            background: var(--navy);
+            background-image:
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 39px,
+                    rgba(255,255,255,0.025) 39px,
+                    rgba(255,255,255,0.025) 40px
+                ),
+                repeating-linear-gradient(
+                    90deg,
+                    transparent,
+                    transparent 39px,
+                    rgba(255,255,255,0.025) 39px,
+                    rgba(255,255,255,0.025) 40px
+                );
+            border-bottom: 4px solid var(--gold);
+            padding: 18px 0 14px;
+            position: relative;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .site-header::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse 70% 100% at 50% 0%, rgba(201,151,42,0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .header-school {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-weight: 400;
+            font-size: clamp(0.75rem, 1.5vw, 0.95rem);
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.55);
+            margin-bottom: 6px;
+        }
+        .header-session {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.72);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-top: 7px;
+        }
+        .header-inner {
+            width: min(1040px, calc(100% - 30px));
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 96px 1fr;
+            gap: 12px;
+            align-items: center;
+        }
+        .header-logo-slot {
+            width: 86px;
+            height: 86px;
+            border: 1px solid rgba(255,255,255,0.28);
+            border-radius: 12px;
+            background: rgba(255,255,255,0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            margin: 0 auto;
+        }
+        .header-logo-slot img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #fff;
+            padding: 4px;
+        }
+        .header-logo-placeholder {
+            font-size: 0.62rem;
+            color: rgba(255,255,255,0.6);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            text-align: center;
+            line-height: 1.3;
+        }
+        .header-text {
+            text-align: center;
+        }
+        .header-main {
+            font-family: 'Fraunces', Georgia, serif;
+            font-size: clamp(1.35rem, 2.8vw, 2.2rem);
+            font-weight: 700;
+            color: #fff;
+            line-height: 1.15;
+            letter-spacing: 0.01em;
+        }
+        .header-rule {
+            width: 60px;
+            height: 2px;
+            background: linear-gradient(90deg, var(--gold), transparent);
+            margin: 12px auto 0;
+        }
+
+        /* ─── CARDS ─── */
+        .phs-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05), 0 0 0 0px var(--gold);
+            transition: box-shadow 0.2s ease, transform 0.2s ease;
+        }
+        .phs-card:hover { box-shadow: 0 8px 26px rgba(0,0,0,0.1); transform: translateY(-1px); }
+
+        .main-scroll::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        .main-scroll::-webkit-scrollbar-thumb {
+            background: #c7bfb5;
+            border-radius: 10px;
+        }
+
+        .card-admin { border-top: 3px solid var(--navy); }
+        .card-results { border-top: 3px solid var(--green); }
+
+        /* ─── SECTION LABELS ─── */
+        .section-label {
+            font-size: 0.68rem;
+            font-weight: 600;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--muted);
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 10px;
+        }
+
+        .header-main {
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        /* ─── SUB-PANELS ─── */
+        .sub-panel {
+            background: #f4f1ec;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+        }
+        .sub-panel-title {
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: var(--navy);
+            margin-bottom: 8px;
+        }
+
+        /* ─── FORM CONTROLS ─── */
+        .form-select, .form-control {
+            border-color: var(--border);
+            background: #fff;
+            border-radius: 7px;
+            font-size: 0.875rem;
+            color: var(--text);
+        }
+        .form-select:focus, .form-control:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(201,151,42,0.15);
+        }
+
+        /* ─── BUTTONS ─── */
+        .btn-phs-primary {
+            background: var(--navy);
+            color: #fff;
+            border: none;
+            border-radius: 7px;
+            font-weight: 500;
+            font-size: 0.85rem;
+            padding: 8px 18px;
+            transition: background 0.18s;
+        }
+        .btn-phs-primary:hover { background: var(--navy-mid); color: #fff; }
+
+        .btn-phs-outline {
+            background: transparent;
+            color: var(--navy);
+            border: 1.5px solid var(--navy);
+            border-radius: 7px;
+            font-weight: 500;
+            font-size: 0.85rem;
+            padding: 7px 18px;
+            transition: all 0.18s;
+        }
+        .btn-phs-outline:hover { background: var(--navy); color: #fff; }
+
+        .btn-phs-gold {
+            background: var(--gold);
+            color: #fff;
+            border: none;
+            border-radius: 7px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: background 0.18s;
+        }
+        .btn-phs-gold:hover { background: #b08222; color: #fff; }
+
+        .btn-phs-green {
+            background: var(--green);
+            color: #fff;
+            border: none;
+            border-radius: 7px;
+            font-weight: 600;
+            transition: background 0.18s;
+        }
+        .btn-phs-green:hover { background: var(--green-light); color: #fff; }
+
+        .btn-back {
+            background: transparent;
+            color: var(--muted);
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            font-size: 0.82rem;
+            padding: 5px 14px;
+        }
+        .btn-back:hover { background: var(--border); color: var(--text); }
+
+        /* ─── STAT CHIPS ─── */
+        .stat-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+        .stat-chip {
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 3px 10px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            background: #fff;
+            color: var(--muted);
+        }
+        .stat-chip.pass { border-color: #a8d5ba; background: #edf7f1; color: #14633a; }
+        .stat-chip.fail { border-color: #f4a0a0; background: #fdf0f0; color: #a02020; }
+        .stat-chip.absent { border-color: #d6cfc4; background: #f4f1ec; color: #7a6a58; }
+
+        /* ─── FLASH MESSAGES ─── */
+        .flash-msg {
+            border-radius: 8px;
+            border: none;
+            font-size: 0.82rem;
+            padding: 8px 12px;
+        }
+
+        /* ─── RESULT HERO ─── */
+        .result-hero {
+            background: linear-gradient(135deg, var(--green) 0%, #0e4a2a 100%);
+            border-radius: 10px;
+            padding: 20px 18px;
+            text-align: center;
+            color: #fff;
+            position: relative;
+            overflow: hidden;
+        }
+        .result-hero::before {
+            content: 'PHS';
+            position: absolute;
+            font-size: 84px;
+            right: -20px;
+            bottom: -20px;
+            opacity: 0.09;
+            line-height: 1;
+            font-family: 'Fraunces', Georgia, serif;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+        }
+        .result-hero-btn {
+            display: block;
+            background: #fff;
+            color: var(--green);
+            border-radius: 8px;
+            font-family: 'Fraunces', Georgia, serif;
+            font-size: 0.98rem;
+            font-weight: 700;
+            padding: 12px 18px;
+            text-decoration: none;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .result-hero-btn:hover {
+            background: var(--gold-light);
+            color: #000;
+            transform: translateY(-2px);
+        }
+        .result-hero small {
+            font-size: 0.75rem;
+            opacity: 0.65;
+            letter-spacing: 0.06em;
+        }
+
+        /* ─── SESSION TAG ─── */
+        .session-tag {
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            display: inline-block;
+            padding: 3px 10px;
+            font-size: 0.68rem;
+            letter-spacing: 0.06em;
+            margin-top: 10px;
+        }
+
+        .home-card {
+            height: 100%;
+            padding: 16px !important;
+        }
+
+        .flash-wrap {
+            max-height: 72px;
+            overflow: auto;
+        }
+
+        .flash-wrap:empty {
+            display: none;
+        }
+
+        .mini-footer {
+            margin-top: auto;
+            padding: 6px 2px 0;
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .mini-footer-link {
+            font-size: 0.7rem;
+            letter-spacing: 0.04em;
+            color: #8a8078;
+            text-decoration: none;
+            padding: 2px 4px;
+            border-radius: 5px;
+            transition: color 0.15s ease, background 0.15s ease;
+        }
+        .mini-footer-link:hover {
+            color: #5a5048;
+            background: rgba(214, 207, 196, 0.35);
+        }
+
+        @media (max-height: 760px) {
+            .site-header { padding: 12px 0 10px; }
+            .header-rule { margin-top: 8px; }
+            .home-card { padding: 12px !important; }
+            .sub-panel { padding: 10px 12px; margin-bottom: 8px; }
+            .result-hero { padding: 14px 14px; }
+        }
+
+        @media (max-width: 900px) {
+            .header-inner {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+            .header-logo-slot {
+                width: 64px;
+                height: 64px;
+            }
+            body { overflow: auto; }
+            .app-shell { height: auto; min-height: 100dvh; }
+            .main-scroll {
+                overflow: auto;
+                -webkit-overflow-scrolling: touch;
+                padding: 10px 0 16px;
+            }
+            .home-content { height: auto; }
+            .home-grid { flex: unset; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-shell">
+    <header class="site-header">
+        <div class="header-inner">
+            <div class="header-logo-slot">
+                {% if school_logo_url %}
+                    <img src="{{ school_logo_url }}" alt="School Logo">
+                {% else %}
+                    <div class="header-logo-placeholder">School<br>Logo</div>
+                {% endif %}
+            </div>
+            <div class="header-text">
+                <div class="header-school">{{ school_name }}</div>
+                <div class="header-main">EXAMINATION RECORD MANAGEMENT SYSTEM</div>
+                <div class="header-session">Session {{ academic_session }}</div>
+                <div class="header-rule"></div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-scroll">
+    <div class="container h-100">
+        <div class="home-content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-wrap">
+                    {% for category, message in messages %}
+                        <div class="alert flash-msg alert-{{ category if category in ['success', 'danger', 'warning', 'info'] else 'secondary' }} alert-dismissible fade show">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="row g-3 justify-content-center home-grid">
+            <!-- ── SECTION A: ENTRY ── -->
+            <div class="col-lg-6">
+                <div class="phs-card card-admin home-card d-flex flex-column">
+                    <div class="section-label">Section A | Marks Entry and Records</div>
+
+                    <div class="sub-panel">
+                        <div class="sub-panel-title">📑 Enter Marks (One Subject)</div>
+                        <form method="GET" action="{{ url_for('subject_entry') }}">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <select class="form-select form-select-sm" name="class_name" id="classSelectMobile" required>
+                                        <option value="" disabled selected>Class…</option>
+                                        {% for cname in subjects_dict.keys() %}
+                                            <option value="{{ cname }}">{{ class_label(cname) }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <select class="form-select form-select-sm" name="subject" id="subjectSelectMobile" required>
+                                        <option value="" disabled selected>Subject…</option>
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <button type="submit" class="btn btn-phs-primary w-100">Open Student List</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="sub-panel">
+                        <div class="sub-panel-title">▦ Enter Marks (All Subjects)</div>
+                        <form method="GET" action="{{ url_for('grid_entry') }}" class="row g-2">
+                            <div class="col-8">
+                                <select class="form-select form-select-sm" name="class_name" required>
+                                    <option value="" disabled selected>Select Class…</option>
+                                    {% for cname in subjects_dict.keys() %}
+                                        <option value="{{ cname }}">{{ class_label(cname) }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-4">
+                                <button type="submit" class="btn btn-phs-outline w-100">Open Marks Table</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="sub-panel">
+                        <div class="sub-panel-title">📚 Class-wise Marks Register</div>
+                        <a href="{{ url_for('view_marks') }}" class="btn btn-phs-outline w-100">Open Register</a>
+                    </div>
+
+                    <div class="section-label mt-1">Setup and Logs</div>
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('manage_students') }}" class="btn btn-phs-gold fw-semibold">🏫 Academic Setup</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── SECTION B: RESULTS ── -->
+            <div class="col-lg-4">
+                <div class="phs-card card-results home-card d-flex flex-column">
+                    <div class="section-label">Section B | Results</div>
+                    <div class="result-hero flex-grow-1 d-flex flex-column justify-content-center mt-1">
+                        <div class="mb-3" style="font-size:0.75rem;letter-spacing:0.1em;opacity:0.75;">CLASS RESULTS</div>
+                        <a href="{{ url_for('results_center') }}" class="result-hero-btn">📊 Result Centre</a>
+                        <div class="session-tag">Session {{ academic_session }} · {{ school_shortcode }}{% if portal_locked %} · Locked{% endif %}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="mini-footer">
+            <a href="{{ url_for('admin_dashboard' if admin_unlocked else 'admin_lock') }}" class="mini-footer-link">Admin</a>
+            <a href="{{ url_for('view_logs') }}" target="_blank" rel="noopener" class="mini-footer-link">Logs</a>
+        </footer>
+
+        </div>
+    </div>
+    </main>
+    </div>
+
+    <script id="subjects-data" type="application/json">{{ subjects_dict | tojson }}</script>
+    <script>
+        const subs = JSON.parse(document.getElementById('subjects-data').textContent);
+        document.getElementById('classSelectMobile').addEventListener('change', function(){
+            const s = document.getElementById('subjectSelectMobile');
+            s.innerHTML = '<option value="" disabled selected>Subject…</option>';
+            (subs[this.value] || []).forEach(x => {
+                const o = document.createElement('option');
+                o.value = x; o.textContent = x;
+                s.appendChild(o);
+            });
+        });
+
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Lock - {{ school_shortcode }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --navy: #0a1931;
+            --gold: #c9972a;
+            --bg: #f0ede8;
+            --surface: #faf8f5;
+            --border: #d6cfc4;
+            --text: #1a1612;
+            --muted: #6b6058;
+        }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+        }
+        .lock-card {
+            width: min(520px, 100%);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 8px 22px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        .lock-head {
+            background: var(--navy);
+            color: #fff;
+            border-bottom: 3px solid var(--gold);
+            padding: 16px 18px;
+        }
+        .lock-title {
+            margin: 0;
+            font-family: 'Fraunces', serif;
+            font-size: 1.2rem;
+        }
+        .lock-sub {
+            margin-top: 4px;
+            font-size: 0.75rem;
+            opacity: 0.75;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+        .lock-body {
+            padding: 18px;
+        }
+        .help {
+            font-size: 0.84rem;
+            color: var(--muted);
+            margin-bottom: 12px;
+        }
+        .btn-main {
+            background: var(--navy);
+            color: #fff;
+            border: none;
+            border-radius: 7px;
+            padding: 8px 14px;
+            font-weight: 600;
+            font-size: 0.84rem;
+        }
+        .btn-main:hover { background: #132342; color: #fff; }
+        .btn-light-outline {
+            background: transparent;
+            color: var(--muted);
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            padding: 8px 14px;
+            font-size: 0.84rem;
+            text-decoration: none;
+        }
+        .btn-light-outline:hover { background: #ece7df; color: var(--text); }
+    </style>
+</head>
+<body>
+    <div class="lock-card">
+        <div class="lock-head">
+            <h1 class="lock-title">Admin Access</h1>
+            <div class="lock-sub">{{ school_name }} | {{ exam_name }}</div>
+        </div>
+        <div class="lock-body">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category if category in ['success','danger','warning','info'] else 'secondary' }}" style="border-radius:8px;font-size:0.84rem;">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <p class="help">Enter Master PIN to unlock the private admin dashboard.</p>
+
+            <form method="POST" action="{{ url_for('admin_unlock') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="mb-3">
+                    <label class="form-label" style="font-size:0.78rem;font-weight:600;">Master PIN</label>
+                    <input type="password" name="master_pin" class="form-control" placeholder="Enter PIN" required autofocus autocomplete="off">
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                    <button type="submit" class="btn-main">Unlock Dashboard</button>
+                    <a href="{{ url_for('index') }}" class="btn-light-outline">Back to Home</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

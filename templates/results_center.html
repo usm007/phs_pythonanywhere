@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Result Center — {{ school_shortcode }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --navy: #0a1931; --navy-mid: #132342; --gold: #c9972a;
+            --green: #14633a; --green-light: #1d8a50;
+            --bg: #f0ede8; --surface: #faf8f5; --border: #d6cfc4;
+            --text: #1a1612; --muted: #6b6058; --radius: 10px;
+        }
+        html, body { height: 100%; }
+        body {
+            margin: 0;
+            background: var(--bg);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--text);
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        .app-shell {
+            min-height: 100dvh;
+            height: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-scroll {
+            flex: 1;
+            overflow: auto;
+            padding: 16px 0 20px;
+        }
+
+        .site-header {
+            background: var(--navy);
+            background-image: repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(255,255,255,.025) 39px,rgba(255,255,255,.025) 40px),
+                              repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(255,255,255,.025) 39px,rgba(255,255,255,.025) 40px);
+            border-bottom: 4px solid var(--gold);
+            padding: 16px 24px;
+            flex-shrink: 0;
+        }
+        .header-title { font-family: 'Fraunces', serif; font-size: 1.15rem; font-weight: 700; color: #fff; }
+        .header-sub { font-size: 0.72rem; color: rgba(255,255,255,0.5); letter-spacing: 0.1em; text-transform: uppercase; }
+
+        .phs-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-top: 3px solid var(--green);
+            border-radius: var(--radius); box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transition: box-shadow 0.2s ease, transform 0.18s ease;
+        }
+        .phs-card:hover { box-shadow: 0 8px 28px rgba(0,0,0,0.1); transform: translateY(-2px); }
+
+        .class-badge {
+            font-family: 'Fraunces', serif;
+            font-size: 1.25rem; font-weight: 700; color: var(--navy);
+            margin-bottom: 6px;
+        }
+
+        .stat-row { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 14px; }
+        .stat-chip {
+            font-size: 0.68rem; font-weight: 600; padding: 3px 9px;
+            border-radius: 20px; border: 1px solid var(--border);
+            background: #fff; color: var(--muted);
+        }
+        .stat-chip.pass { border-color: #a8d5ba; background: #edf7f1; color: var(--green); }
+        .stat-chip.fail { border-color: #f4a0a0; background: #fdf0f0; color: #a02020; }
+        .stat-chip.absent { border-color: var(--border); background: #f4f1ec; color: #7a6a58; }
+
+        .action-btn {
+            font-size: 0.78rem; font-weight: 500; border-radius: 6px;
+            padding: 6px 12px; border: 1.5px solid; text-decoration: none;
+            transition: all 0.15s; display: inline-flex; align-items: center; gap: 5px;
+        }
+        .btn-csv { border-color: var(--green); color: var(--green); background: transparent; }
+        .btn-csv:hover { background: var(--green); color: #fff; }
+        .btn-ledger { background: var(--green); color: #fff; border-color: var(--green); }
+        .btn-ledger:hover { background: var(--green-light); color: #fff; border-color: var(--green-light); }
+        .btn-cards { border-color: var(--navy); color: var(--navy); background: transparent; }
+        .btn-cards:hover { background: var(--navy); color: #fff; }
+        .btn-single { border-color: #7b5e2e; color: #7b5e2e; background: transparent; }
+        .btn-single:hover { background: #7b5e2e; color: #fff; }
+
+        .page-heading {
+            font-family: 'Fraunces', serif;
+            font-size: 1.6rem; font-weight: 700; color: var(--navy);
+        }
+        .btn-back {
+            background: transparent; color: var(--muted); border: 1px solid var(--border);
+            border-radius: 7px; font-size: 0.8rem; padding: 6px 14px; text-decoration: none;
+            transition: background 0.15s;
+        }
+        .btn-back:hover { background: var(--border); color: var(--text); }
+
+        .pass-bar-wrap { height: 4px; background: var(--border); border-radius: 2px; margin-bottom: 10px; overflow: hidden; }
+        .pass-bar { height: 100%; width: 0; background: linear-gradient(90deg, var(--green), #5ec48a); border-radius: 2px; transition: width 0.6s; }
+
+        .main-scroll::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        .main-scroll::-webkit-scrollbar-thumb {
+            background: #c7bfb5;
+            border-radius: 10px;
+        }
+
+        @media (max-width: 900px) {
+            body { overflow: auto; }
+            .app-shell { height: auto; min-height: 100dvh; }
+            .main-scroll {
+                overflow: auto;
+                -webkit-overflow-scrolling: touch;
+                padding: 10px 0 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="app-shell">
+<header class="site-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <div class="header-title">📊 Result Center</div>
+        <div class="header-sub">{{ school_name }} · {{ exam_name }}</div>
+    </div>
+    <a href="{{ url_for('index') }}" class="btn-back">← Dashboard</a>
+</header>
+
+<main class="main-scroll">
+<div class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category if category in ['success','danger','warning','info'] else 'secondary' }} mb-3" style="border-radius:8px;font-size:.875rem;">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h1 class="page-heading mb-0">Class-wise Results</h1>
+        <span style="font-size:0.78rem;color:var(--muted);">Session {{ academic_session }}</span>
+    </div>
+
+    <div class="row g-4">
+        {% for card in class_cards %}
+            {% set rate = card.stats.pass_rate %}
+            <div class="col-md-6 col-xl-4">
+                <div class="phs-card p-4 h-100 d-flex flex-column">
+                    <div class="class-badge">{{ class_label(card.class_name) }}</div>
+                    <div class="pass-bar-wrap">
+                        <div class="pass-bar" data-rate="{{ rate }}"></div>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-chip">Total: {{ card.stats.total_students }}</span>
+                        <span class="stat-chip">Appeared: {{ card.stats.appeared_count }}</span>
+                        <span class="stat-chip pass">✓ Pass: {{ card.stats.pass_count }}</span>
+                        <span class="stat-chip fail">✗ Fail: {{ card.stats.fail_count }}</span>
+                        {% if card.stats.absent_count > 0 %}
+                            <span class="stat-chip absent">— {{ card.stats.absent_count }} absent</span>
+                        {% endif %}
+                    </div>
+                    <div class="mt-auto d-flex flex-wrap gap-2">
+                        <a class="action-btn btn-csv" href="{{ url_for('download_csv', class_name=card.class_name) }}">⬇ CSV</a>
+                        <a class="action-btn btn-ledger" href="{{ url_for('print_class_ledger', class_name=card.class_name) }}" target="_blank">🖨 Ledger</a>
+                        <a class="action-btn btn-cards" href="{{ url_for('report_cards_bulk', class_name=card.class_name) }}" target="_blank">🖨 Marksheets</a>
+                        <a class="action-btn btn-single" href="{{ url_for('report_cards_individual_list', class_name=card.class_name) }}">👤 Individual</a>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+</main>
+</div>
+<script>
+    document.querySelectorAll('.pass-bar').forEach(bar => {
+        const rate = Number(bar.dataset.rate || 0);
+        bar.style.width = Math.max(0, Math.min(100, rate)) + '%';
+    });
+</script>
+</body>
+</html>

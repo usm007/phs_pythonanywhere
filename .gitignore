@@ -1,0 +1,21 @@
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Virtual environment
+.venv/
+venv/
+
+# Local data/config
+.env
+.env.*
+school_marks.db
+
+# Build and editor artifacts
+.pytest_cache/
+.mypy_cache/
+.vscode/
+.DS_Store
+
+# Uploaded/generated static assets
+static/uploads/

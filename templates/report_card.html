@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ school_name }} - Progress Report</title>
+    <style>
+        * { box-sizing: border-box; }
+
+        @page {
+            size: A4;
+            margin: 15mm;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: #000;
+            margin: 0;
+            padding: 0;
+            background-color: #fff;
+        }
+
+        .no-print {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px auto;
+            max-width: 210mm;
+            padding: 0 8px;
+        }
+
+        .no-print a,
+        .no-print button {
+            border: 1px solid #000;
+            background: #fff;
+            color: #000;
+            padding: 6px 12px;
+            font-size: 12px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .no-print .title {
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .report-container {
+            max-width: 210mm;
+            margin: 20px auto;
+            background: #fff;
+            padding: 40px;
+            border: 1px solid #000;
+        }
+
+        @media print {
+            .no-print { display: none !important; }
+            .report-container {
+                border: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                max-width: 100% !important;
+            }
+
+            .page-break {
+                page-break-after: always;
+                break-after: page;
+            }
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+
+        .header h1 {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            font-size: 28px;
+            color: #000;
+            margin: 0 0 5px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .header h2 {
+            font-size: 14px;
+            font-weight: normal;
+            margin: 0 0 10px 0;
+            color: #000;
+        }
+
+        .header .session-info {
+            font-size: 13px;
+            font-weight: bold;
+            color: #000;
+        }
+
+        .student-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 6px;
+            border: 1px solid #000;
+        }
+
+        .info-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #000;
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+
+        .info-value {
+            font-size: 15px;
+            font-weight: bold;
+            color: #000;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+
+        th,
+        td {
+            border: 1px solid #000;
+            padding: 12px 15px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #000;
+            color: #fff;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td.subject-name {
+            text-align: left;
+            font-weight: 500;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        .summary-row {
+            font-weight: bold;
+            background-color: #e6e6e6;
+        }
+
+        .summary-row td {
+            font-size: 15px;
+        }
+
+        .metric-highlight {
+            display: inline-block;
+            min-width: 88px;
+            padding: 2px 8px;
+            border: 1px solid #000;
+            border-radius: 3px;
+            background: #fff;
+            font-weight: 700;
+        }
+
+        .result-highlight {
+            color: #000;
+            font-weight: bold;
+        }
+
+        @media (max-width: 800px) {
+            .student-info {
+                grid-template-columns: 1fr;
+            }
+
+            .report-container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="no-print">
+    <a href="{{ url_for('results_center') }}">Back</a>
+    <span class="title">
+        {% if single_mode %}
+            {{ class_label(class_name) }} - Individual Report Card
+        {% else %}
+            {{ class_label(class_name) }} - Bulk Report Cards
+        {% endif %}
+    </span>
+    <button onclick="window.print()">{% if single_mode %}Print{% else %}Print All{% endif %}</button>
+</div>
+
+{% for r in results %}
+<div class="report-container">
+
+    <div class="header">
+        <h1>{{ school_name }}</h1>
+        <h2>{{ school_address }}</h2>
+        <div class="session-info">{{ exam_name }} - Progress Report</div>
+    </div>
+
+    <div class="student-info">
+        <div class="info-group">
+            <span class="info-label">Student Name</span>
+            <span class="info-value">{{ r.name }}</span>
+        </div>
+        <div class="info-group">
+            <span class="info-label">Class</span>
+            <span class="info-value">{{ class_label(class_name) }}</span>
+        </div>
+        <div class="info-group">
+            <span class="info-label">Roll Number</span>
+            <span class="info-value">{{ r.roll_no }}</span>
+        </div>
+        <div class="info-group">
+            <span class="info-label">Academic Session</span>
+            <span class="info-value">{{ academic_session }}</span>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="text-align: left;">Subject</th>
+                <th>Marks Obtained</th>
+                <th>Maximum Marks</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sub in subjects %}
+            <tr>
+                <td class="subject-name">{{ sub }}</td>
+                <td>{{ r.marks.get(sub, 'AB') }}</td>
+                <td>{{ r.max_per_subject }}</td>
+            </tr>
+            {% endfor %}
+
+            <tr class="summary-row">
+                <td class="subject-name" style="text-align: right;">Grand Total</td>
+                <td>{{ r.total }}</td>
+                <td>{{ r.total_possible }}</td>
+            </tr>
+            <tr class="summary-row">
+                <td class="subject-name" style="text-align: right;">Percentage</td>
+                <td colspan="2"><span class="metric-highlight">{{ r.percentage }}%</span></td>
+            </tr>
+            <tr class="summary-row">
+                <td class="subject-name" style="text-align: right;">Rank</td>
+                <td colspan="2"><span class="metric-highlight">{{ r.rank }}</span></td>
+            </tr>
+            <tr class="summary-row">
+                <td class="subject-name" style="text-align: right;">Final Result</td>
+                <td colspan="2" class="result-highlight">{{ r.status }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+</div>
+{% if not loop.last %}<div class="page-break"></div>{% endif %}
+{% endfor %}
+
+</body>
+</html>

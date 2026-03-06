@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grid Entry — {{ school_shortcode }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --navy: #0a1931; --gold: #c9972a;
+            --bg: #f0ede8; --surface: #faf8f5; --border: #d6cfc4;
+            --text: #1a1612; --muted: #6b6058;
+            --dense-head: 6px 6px;
+            --dense-cell: 4px 6px;
+        }
+        html, body { height: 100%; }
+        body {
+            margin: 0;
+            background: var(--bg);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--text);
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        .app-shell {
+            min-height: 100dvh;
+            height: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-scroll {
+            flex: 1;
+            overflow: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 10px 0 12px;
+            min-height: 0;
+        }
+
+        .page-frame {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 0;
+        }
+
+        .entry-form {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .site-header {
+            background: var(--navy);
+            border-bottom: 4px solid var(--gold);
+            padding: 8px 16px;
+            flex-shrink: 0;
+        }
+        .header-title { font-family: 'Fraunces', serif; font-size: 0.92rem; font-weight: 700; color: #fff; }
+        .header-sub { font-size: 0.62rem; color: rgba(255,255,255,0.45); letter-spacing:.08em; text-transform: uppercase; }
+        .btn-back {
+            background: transparent; color: rgba(255,255,255,0.65);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 7px; font-size: 0.76rem; padding: 4px 10px; text-decoration: none;
+        }
+        .btn-back:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+        .context-strip {
+            background: var(--navy); color: #fff;
+            border-radius: 8px; padding: 7px 10px;
+            display: flex; align-items: center; gap: 12px;
+        }
+        .context-strip .class-pill {
+            background: var(--gold); color: #fff;
+            font-family: 'Fraunces', serif; font-weight: 700;
+            font-size: 0.86rem; border-radius: 6px; padding: 2px 8px;
+        }
+        .context-strip .max-badge {
+            margin-left: auto;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 20px; padding: 1px 8px;
+            font-size: 0.64rem; color: rgba(255,255,255,0.7);
+        }
+
+        .grid-wrap {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            flex: 1;
+            min-height: 0;
+        }
+        .grid-wrap .table-responsive {
+            height: 100%;
+            overflow: auto;
+        }
+        .grid-table { margin: 0; }
+        .grid-table thead th {
+            background: var(--navy); color: rgba(255,255,255,0.85);
+            font-size: 0.6rem; font-weight: 600; letter-spacing: 0.07em;
+            text-transform: uppercase; padding: var(--dense-head); border: none;
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+        .grid-table tbody tr { border-bottom: 1px solid var(--border); }
+        .grid-table tbody tr:last-child { border-bottom: none; }
+        .grid-table tbody tr:hover { background: #f7f4ef; }
+        .grid-table td { padding: var(--dense-cell); vertical-align: middle; font-size: 0.76rem; border: none; }
+        .roll-cell { color: var(--muted); font-size: 0.66rem; font-weight: 600; white-space: nowrap; }
+        .name-cell { font-weight: 500; min-width: 112px; }
+
+        .grid-input {
+            width: 50px; border: 1.5px solid var(--border); border-radius: 6px;
+            padding: 2px 3px; font-size: 0.72rem; text-align: center;
+            transition: border-color 0.15s, box-shadow 0.15s; background: #fff;
+        }
+        .grid-input:focus {
+            border-color: var(--gold); outline: none;
+            box-shadow: 0 0 0 3px rgba(201,151,42,0.18);
+            background: #fffdf7;
+        }
+        .grid-input[disabled] {
+            background: #ece7df;
+            color: #6e655e;
+        }
+
+        .btn-save {
+            background: var(--navy); color: #fff; border: none;
+            border-radius: 8px; font-weight: 600; padding: 6px 14px;
+            font-size: 0.76rem; transition: background 0.15s;
+        }
+        .btn-save:hover { background: #132342; }
+        .btn-cancel {
+            background: transparent; color: var(--muted);
+            border: 1.5px solid var(--border); border-radius: 8px;
+            padding: 5px 11px; font-size: 0.74rem; text-decoration: none;
+        }
+        .btn-cancel:hover { background: var(--border); color: var(--text); }
+
+        .flash-msg { border-radius: 8px; border: none; font-size: 0.875rem; }
+
+        .main-scroll::-webkit-scrollbar,
+        .grid-wrap .table-responsive::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        .main-scroll::-webkit-scrollbar-thumb,
+        .grid-wrap .table-responsive::-webkit-scrollbar-thumb {
+            background: #c7bfb5;
+            border-radius: 10px;
+        }
+
+        /* Ultra-dense profile for short screens */
+        @media (max-height: 800px) {
+            .main-scroll { padding: 6px 0 8px; }
+            .page-frame { gap: 6px; }
+            .context-strip { padding: 5px 8px; gap: 8px; }
+            .grid-input { width: 44px; }
+            .grid-table td { padding: 3px 5px; }
+            .name-cell { min-width: 96px; }
+        }
+
+        @media (max-width: 900px) {
+            body { overflow: auto; }
+            .app-shell { height: auto; min-height: 100dvh; }
+            .main-scroll {
+                overflow: auto;
+                -webkit-overflow-scrolling: touch;
+                padding-bottom: 16px;
+            }
+            .page-frame,
+            .entry-form {
+                height: auto;
+                min-height: 0;
+            }
+            .grid-wrap {
+                min-height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="app-shell">
+<header class="site-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <div class="header-title">▦ Master Grid Entry</div>
+        <div class="header-sub">{{ school_name }} · {{ exam_name }}</div>
+    </div>
+    <a href="{{ url_for('index') }}" class="btn-back">← Dashboard</a>
+</header>
+
+<main class="main-scroll">
+<div class="container-fluid px-4 h-100">
+    <div class="page-frame">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert flash-msg alert-{{ category if category in ['success','danger','warning','info'] else 'secondary' }} mb-3">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="context-strip">
+        <span class="class-pill">{{ class_label(class_name) }}</span>
+        <span style="font-size:0.85rem;color:rgba(255,255,255,0.7);">All subjects</span>
+        <span class="max-badge">Max per subject: {{ max_per_subject }}</span>
+    </div>
+
+    {% if portal_locked %}
+        <div class="alert alert-warning mb-2" style="border-radius:8px;font-size:0.8rem;">Portal is locked. Grid editing is disabled.</div>
+    {% endif %}
+
+    <form method="POST" id="gridForm" class="entry-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="class_name" value="{{ class_name }}">
+        <div class="grid-wrap mb-2">
+            <div class="table-responsive">
+                <table class="table grid-table">
+                    <thead>
+                        <tr>
+                            <th>Roll</th>
+                            <th>Student Name</th>
+                            {% for sub in subjects %}<th title="{{ sub }}">{{ sub[:8] }}{% if sub|length > 8 %}…{% endif %}</th>{% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in students %}
+                            <tr>
+                                <td class="roll-cell">{{ s.roll_no }}</td>
+                                <td class="name-cell">{{ s.name }}</td>
+                                {% for sub in subjects %}
+                                    <td>
+                                        <input type="number" class="grid-input"
+                                            min="0" max="{{ max_per_subject }}"
+                                            name="mark_{{ s.id }}_{{ sub }}"
+                                            value="{{ marks_dict.get(s.id, {}).get(sub, '') }}"
+                                            title="{{ sub }}"
+                                            {{ 'disabled' if portal_locked else '' }}>
+                                    </td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 align-items-center">
+            {% if not portal_locked %}
+                <button class="btn-save" type="submit">✓ Save Master Grid</button>
+            {% endif %}
+            <a href="{{ url_for('index') }}" class="btn-cancel">Cancel</a>
+            <span class="ms-auto" style="font-size:0.75rem;color:var(--muted);">Enter to advance · Last cell submits</span>
+        </div>
+    </form>
+    </div>
+</div>
+</main>
+</div>
+
+<script>
+    const gridInputs = Array.from(document.querySelectorAll('.grid-input'));
+    gridInputs.forEach((input, index) => {
+        input.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const next = gridInputs[index + 1];
+                if (next) { next.focus(); next.select(); }
+                else {
+                    const form = document.getElementById('gridForm');
+                    if (form.requestSubmit) {
+                        form.requestSubmit();
+                    } else {
+                        form.dispatchEvent(new Event('submit', { cancelable: true }));
+                    }
+                }
+            }
+        });
+    });
+
+</script>
+</body>
+</html>
