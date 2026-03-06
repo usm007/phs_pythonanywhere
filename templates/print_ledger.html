@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consolidated Result Sheet - {{ class_label(class_name) }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+
+        :root {
+            --border: #000;
+            --shade: #f2f2f2;
+            --text: #000;
+        }
+
+        @page {
+            size: A4 landscape;
+            margin: 10mm;
+        }
+
+        @media print {
+            .no-print { display: none !important; }
+            body {
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #fff !important;
+            }
+
+            /* Use full printable area and avoid outer frame affecting page flow. */
+            .sheet {
+                max-width: none !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: 0 !important;
+                background: #fff !important;
+            }
+
+            table {
+                width: 100%;
+            }
+
+            thead {
+                display: table-header-group;
+            }
+
+            tr {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+        }
+
+        body {
+            margin: 0;
+            padding: 16px;
+            background: #f7f7f7;
+            color: var(--text);
+            font-family: 'Plus Jakarta Sans', "Segoe UI", Arial, sans-serif;
+            font-size: 11px;
+        }
+
+        .sheet {
+            background: #fff;
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .no-print {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 0 auto 10px;
+            max-width: 1120px;
+        }
+
+        .no-print a,
+        .no-print button {
+            border: 1px solid #000;
+            background: #fff;
+            color: #000;
+            padding: 6px 12px;
+            font-size: 12px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 1.5px solid var(--border);
+            padding-bottom: 8px;
+            margin-bottom: 8px;
+        }
+
+        .header h1 {
+            font-size: 18px;
+            margin: 2px 0;
+            letter-spacing: 0.3px;
+            font-family: 'Fraunces', Georgia, serif;
+        }
+
+        .header .sub {
+            font-size: 11px;
+            margin: 1px 0;
+        }
+
+        .meta {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+            border: 1px solid var(--border);
+            padding: 6px 8px;
+            margin-bottom: 8px;
+            font-size: 10px;
+        }
+
+        .stats {
+            border: 1px solid var(--border);
+            padding: 6px 8px;
+            margin-bottom: 8px;
+            font-size: 10px;
+            line-height: 1.4;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            font-size: 9.5px;
+        }
+
+        th,
+        td {
+            border: 1px solid var(--border);
+            padding: 4px 3px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        thead tr:first-child th {
+            background: var(--shade);
+            font-weight: 700;
+        }
+
+        thead tr:nth-child(2) th {
+            font-weight: 600;
+        }
+
+        .name-col {
+            text-align: left;
+            width: 180px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .total-col,
+        .result-col,
+        .rank-col {
+            font-weight: 700;
+        }
+
+        @media (max-width: 900px) {
+            .meta {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <a href="{{ url_for('results_center') }}">← Back to Results</a>
+        <button onclick="window.print()">Print</button>
+    </div>
+
+    <div class="sheet">
+        <div class="header">
+            <div class="sub">Office of the Headmaster</div>
+            <h1>PHULANI HIGH SCHOOL, MAJULI</h1>
+            <div class="sub">Consolidated Result Sheet - Annual Examination 2026</div>
+        </div>
+
+        <div class="meta">
+            <div><strong>Class:</strong> {{ class_label(class_name) }}</div>
+            <div><strong>Session:</strong> 2025-26</div>
+            <div><strong>Full Marks:</strong> {{ results[0]['total_possible'] if results else 0 }}</div>
+        </div>
+
+        <div class="stats">
+            <strong>Total Students:</strong> {{ stats.total_students }} |
+            <strong>Appeared:</strong> {{ stats.appeared_count }} |
+            <strong>Pass:</strong> {{ stats.pass_count }} |
+            <strong>Fail:</strong> {{ stats.fail_count }} |
+            <strong>Absent:</strong> {{ stats.absent_count }} |
+            <strong>Pass %:</strong> {{ stats.pass_rate }}%
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th rowspan="2" style="width:40px;">Roll</th>
+                    <th rowspan="2" style="width:190px;">Name of Candidate</th>
+                    <th colspan="{{ subjects|length }}">Marks Obtained</th>
+                    <th rowspan="2" style="width:52px;">Total</th>
+                    <th rowspan="2" style="width:48px;">%</th>
+                    <th rowspan="2" style="width:60px;">Result</th>
+                    <th rowspan="2" style="width:48px;">Rank</th>
+                </tr>
+                <tr>
+                    {% for sub in subjects %}
+                        <th>{{ sub }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in results %}
+                    <tr>
+                        <td>{{ r['roll_no'] }}</td>
+                        <td class="name-col">{{ r['name'] }}</td>
+                        {% for sub in subjects %}
+                            <td>{{ r['marks'].get(sub, 'AB') }}</td>
+                        {% endfor %}
+                        <td class="total-col">{{ r['total'] }}</td>
+                        <td>{{ r['percentage'] }}%</td>
+                        <td class="result-col">{{ r['status'] }}</td>
+                        <td class="rank-col">{{ r['rank'] }}</td>
+                    </tr>
+                {% endfor %}
+                {% if not results %}
+                    <tr>
+                        <td colspan="{{ subjects|length + 6 }}" style="padding:12px;">No records found.</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+
+    </div>
+</body>
+</html>
