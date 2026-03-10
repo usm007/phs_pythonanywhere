@@ -1382,10 +1382,10 @@ def manage_students():
         updated_count = 0
 
         new_roll = request.form.get("new_roll", "").strip()
-        new_name = request.form.get("new_name", "").strip()
+        new_name = request.form.get("new_name", "").strip().upper()
         new_dob = normalize_dob(request.form.get("new_dob", "").strip())
-        new_father_name = request.form.get("new_father_name", "").strip()
-        new_mother_name = request.form.get("new_mother_name", "").strip()
+        new_father_name = request.form.get("new_father_name", "").strip().upper()
+        new_mother_name = request.form.get("new_mother_name", "").strip().upper()
         if new_roll or new_name:
             if not class_name:
                 conn.close()
@@ -1417,10 +1417,10 @@ def manage_students():
             if key.startswith("name_"):
                 student_id = key.split("_")[1]
                 roll_no = request.form.get(f"roll_{student_id}", "").strip()
-                name = value.strip()
+                name = value.strip().upper()
                 dob = normalize_dob(request.form.get(f"dob_{student_id}", "").strip())
-                father_name = request.form.get(f"father_{student_id}", "").strip()
-                mother_name = request.form.get(f"mother_{student_id}", "").strip()
+                father_name = request.form.get(f"father_{student_id}", "").strip().upper()
+                mother_name = request.form.get(f"mother_{student_id}", "").strip().upper()
                 if not name or not roll_no:
                     continue
 
