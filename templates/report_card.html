@@ -76,15 +76,15 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding: 10mm 13mm 9mm;
+            padding: 6mm 8mm 6mm;
         }
 
-        /* ── Top content block fills remaining space, distributes gaps internally ── */
+        /* ── Top content block fills remaining space, fixed gap between sections ── */
         .print-top {
             flex: 1;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            gap: 6mm;
         }
 
         /* ── HEADER ── */
@@ -306,13 +306,13 @@
             .page-wrap { padding: 0; display: block; background: none; }
             body { background: #fff; }
             .print-report {
-                width: 210mm;
-                min-height: 297mm;
-                margin: 0;
+                width: calc(210mm - 16mm);
+                min-height: calc(297mm - 16mm);
+                margin: 8mm;
                 border: 3px solid #000;
                 box-shadow: inset 0 0 0 2px #000;
             }
-            .print-inner { padding: 9mm 12mm 8mm; }
+            .print-inner { padding: 5mm 7mm 5mm; }
         }
     </style>
 </head>
