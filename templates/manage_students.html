@@ -660,7 +660,7 @@
                                         </thead>
                                         <tbody>
                                             {% for s in students %}
-                                                <tr>
+                                                <tr{% if not s.roll_no or not s.name or not s.dob or not s.father_name or not s.mother_name %} style="background-color: #fff9c4;"{% endif %}>
                                                     <td><input class="row-check" type="checkbox" name="delete_ids_inline" value="{{ s.id }}" {{ 'disabled' if portal_locked else '' }}></td>
                                                     <td><input class="form-control" type="text" name="roll_{{ s.id }}" value="{{ s.roll_no }}" required {{ 'readonly' if portal_locked else '' }}></td>
                                                     <td><input class="form-control" type="text" name="name_{{ s.id }}" value="{{ s.name }}" required {{ 'readonly' if portal_locked else '' }}></td>
