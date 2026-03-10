@@ -281,7 +281,7 @@
         /* ── Print overrides ── */
         @media print {
             .no-print { display: none !important; }
-            .page-wrap { padding: 0; background: none; }
+            .page-wrap { padding: 0; display: block; background: none; }
 
             body { background: #fff; }
 
@@ -291,7 +291,6 @@
                 border: none;
                 padding: 14mm 16mm;
                 margin: 0;
-                page-break-after: always;
             }
         }
     </style>
@@ -313,10 +312,6 @@
 <div class="page-wrap">
 <div class="print-report">
 
-    {% if school_logo_url %}
-        <img src="{{ school_logo_url }}" class="print-watermark" alt="">
-    {% endif %}
-
     <div class="print-header">
         {% if school_logo_url %}
             <img src="{{ school_logo_url }}" class="logo" alt="School Logo">
@@ -324,7 +319,7 @@
         <h1>{{ school_name }}</h1>
         <p class="school-meta">Estd. 1972 &nbsp;|&nbsp; UDISE Code: 18310409706</p>
         <p class="school-address">Karki Chuk, Lahon Gaon, Majuli, Assam. PIN: 785105</p>
-        <div class="session-badge">{{ exam_name }} &middot; Session : {{ academic_session }}</div>
+        <div class="session-badge">{% set _p = exam_name.rsplit(' ', 1) %}{% if _p|length == 2 and _p[1]|int(0) > 1900 %}{{ _p[0] }}{% else %}{{ exam_name }}{% endif %} &middot; Session : {{ academic_session }}</div>
     </div>
 
     <div class="print-student-info">
@@ -371,8 +366,9 @@
     <div class="print-signatures">
         <div class="print-sig-block">
             <img src="{{ url_for('signature_image') }}" alt="HM Signature">
-            <div class="print-sig-name">(Atul Ch. Nath)</div>
-            <div class="print-sig-line">Headmaster, Phulani High School</div>
+            <div class="print-sig-line">(Atul Ch. Nath)</div>
+            <div class="print-sig-name">Headmaster, Phulani High</div>
+            <div class="print-sig-name">School</div>
         </div>
     </div>
 
