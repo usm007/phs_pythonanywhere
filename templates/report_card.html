@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,275 +6,109 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ school_name }} - Progress Report</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Manrope:wght@400;500;600;700;800&family=Libre+Baskerville:wght@400;700&display=swap');
+        :root {
+            --navy-900: #071c3a;
+            --navy-800: #0a2349;
+            --gold-500: #cfa23a;
+            --green-700: #16653a;
+            --paper: #f2f0ed;
+            --card: #f8f7f5;
+            --ink: #1d2a36;
+            --danger: #b33131;
+            --success: #0f6f3f;
+            --shadow: 0 8px 22px rgba(15, 30, 58, 0.14);
+        }
         * { box-sizing: border-box; }
-
-        @page {
-            size: A4;
-            margin: 15mm;
-        }
-
-        body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            color: #000;
-            margin: 0;
-            padding: 0;
-            background-color: #fff;
-        }
-
-        .no-print {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin: 10px auto;
-            max-width: 210mm;
-            padding: 0 8px;
-        }
-
-        .no-print a,
-        .no-print button {
-            border: 1px solid #000;
-            background: #fff;
-            color: #000;
-            padding: 6px 12px;
-            font-size: 12px;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        .no-print .title {
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .report-container {
-            max-width: 210mm;
-            margin: 20px auto;
-            background: #fff;
-            padding: 40px;
-            border: 1px solid #000;
-        }
-
-        @media print {
-            .no-print { display: none !important; }
-            .report-container {
-                border: none !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                max-width: 100% !important;
-            }
-
-            .page-break {
-                page-break-after: always;
-                break-after: page;
-            }
-        }
-
-        .header {
-            text-align: center;
-            border-bottom: 2px solid #000;
-            padding-bottom: 15px;
-            margin-bottom: 25px;
-        }
-
-        .header h1 {
-            font-family: 'Georgia', 'Times New Roman', serif;
-            font-size: 28px;
-            color: #000;
-            margin: 0 0 5px 0;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .header h2 {
-            font-size: 14px;
-            font-weight: normal;
-            margin: 0 0 10px 0;
-            color: #000;
-        }
-
-        .header .session-info {
-            font-size: 13px;
-            font-weight: bold;
-            color: #000;
-        }
-
-        .student-info {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 25px;
-            padding: 15px;
-            background-color: #fff;
-            border-radius: 6px;
-            border: 1px solid #000;
-        }
-
-        .info-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .info-label {
-            font-size: 11px;
-            text-transform: uppercase;
-            color: #000;
-            font-weight: 600;
-            margin-bottom: 3px;
-        }
-
-        .info-value {
-            font-size: 15px;
-            font-weight: bold;
-            color: #000;
-        }
-
-        table {
+        body { font-family: 'Manrope', 'Segoe UI', sans-serif; color: var(--ink); background: #fff; margin: 0; }
+        .print-report {
+            display: block;
+            position: relative;
             width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 30px;
+            min-height: 270mm;
+            padding: 12mm;
+            background: white;
+            border: 6px double #071c3a;
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
         }
-
-        th,
-        td {
-            border: 1px solid #000;
-            padding: 12px 15px;
-            text-align: center;
+        .print-watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 450px;
+            opacity: 0.08;
+            z-index: -1;
         }
-
-        th {
-            background-color: #000;
-            color: #fff;
-            font-size: 13px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        td.subject-name {
-            text-align: left;
-            font-weight: 500;
-        }
-
-        tbody tr:nth-child(even) {
-            background-color: #f2f2f2;
-        }
-
-        .summary-row {
-            font-weight: bold;
-            background-color: #e6e6e6;
-        }
-
-        .summary-row td {
-            font-size: 15px;
-        }
-
-        .metric-highlight {
-            display: inline-block;
-            min-width: 88px;
-            padding: 2px 8px;
-            border: 1px solid #000;
-            border-radius: 3px;
-            background: #fff;
-            font-weight: 700;
-        }
-
-        .result-highlight {
-            color: #000;
-            font-weight: bold;
-        }
-
-        @media (max-width: 800px) {
-            .student-info {
-                grid-template-columns: 1fr;
-            }
-
-            .report-container {
-                padding: 20px;
-            }
-        }
+        .print-header { text-align: center; border-bottom: 2px solid #071c3a; padding-bottom: 15px; margin-bottom: 25px; }
+        .print-header img { width: 80px; margin-bottom: 8px; }
+        .print-header h1 { font-family: 'Cinzel', serif; font-size: 28px; color: #071c3a; margin: 0 0 5px; }
+        .print-header p { font-size: 14px; font-weight: 700; margin: 0 0 10px; letter-spacing: 1px; }
+        .print-header .session { background: #071c3a; color: white; display: inline-block; padding: 4px 15px; font-size: 13px; font-weight: bold; text-transform: uppercase; }
+        .print-student-info { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; font-size: 15px; }
+        .print-info-row { border-bottom: 1px dashed #ccc; padding-bottom: 4px; }
+        .print-info-row strong { color: #333; display: inline-block; width: 120px; }
+        .print-report table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+        .print-report th { background-color: #f0f0f0 !important; color: #000; border: 1px solid #000; padding: 10px; font-weight: bold; font-size: 13px; }
+        .print-report td { border: 1px solid #000; padding: 10px; text-align: center; font-size: 14px; }
+        .print-report td.subject-name { text-align: left; font-weight: bold; }
+        .print-summary { display: flex; justify-content: space-between; border: 2px solid #000; padding: 15px 25px; margin-bottom: 50px; background-color: #fafafa !important; }
+        .print-summary div { text-align: center; }
+        .print-summary span.lbl { display: block; font-size: 11px; text-transform: uppercase; font-weight: bold; color: #555; }
+        .print-summary span.val { display: block; font-size: 20px; font-weight: 800; color: #000; margin-top: 5px; }
+        .print-signatures { display: flex; justify-content: flex-end; align-items: flex-end; padding: 0 20px; }
+        .print-sig-block { text-align: center; width: 180px; }
+        .print-sig-block img { width: 140px; height: auto; margin-bottom: -5px; mix-blend-mode: multiply; }
+        .print-sig-line { border-top: 1px solid #000; padding-top: 5px; font-weight: bold; font-size: 14px; }
+        .print-sig-name { font-size: 13px; font-weight: 700; color: #071c3a; margin-top: 2px; }
+        @media (max-width: 800px) { .print-student-info { grid-template-columns: 1fr; } }
+        @media print { body { background: #fff; margin: 0; padding: 0; } }
     </style>
 </head>
 <body>
-
-<div class="no-print">
-    <a href="{{ url_for('results_center') }}">Back</a>
-    <span class="title">
-        {% if single_mode %}
-            {{ class_label(class_name) }} - Individual Report Card
-        {% else %}
-            {{ class_label(class_name) }} - Bulk Report Cards
-        {% endif %}
-    </span>
-    <button onclick="window.print()">{% if single_mode %}Print{% else %}Print All{% endif %}</button>
-</div>
-
 {% for r in results %}
-<div class="report-container">
-
-    <div class="header">
-        <h1>{{ school_name }}</h1>
-        <h2>{{ school_address }}</h2>
-        <div class="session-info">{{ exam_name }} - Progress Report</div>
+<div class="print-report">
+    <img src="logo.png" class="print-watermark" alt="">
+    <div class="print-header">
+        <img src="logo.png" alt="Logo">
+        <h1>PHULANI HIGH SCHOOL</h1>
+        <p>MAJULI, ASSAM - ESTD: 1972</p>
+        <div class="session">{{ exam_name }} : {{ academic_session }}</div>
     </div>
-
-    <div class="student-info">
-        <div class="info-group">
-            <span class="info-label">Student Name</span>
-            <span class="info-value">{{ r.name }}</span>
-        </div>
-        <div class="info-group">
-            <span class="info-label">Class</span>
-            <span class="info-value">{{ class_label(class_name) }}</span>
-        </div>
-        <div class="info-group">
-            <span class="info-label">Roll Number</span>
-            <span class="info-value">{{ r.roll_no }}</span>
-        </div>
-        <div class="info-group">
-            <span class="info-label">Academic Session</span>
-            <span class="info-value">{{ academic_session }}</span>
-        </div>
+    <div class="print-student-info">
+        <div class="print-info-row"><strong>Student Name:</strong> {{ r.name }}</div>
+        <div class="print-info-row"><strong>Roll Number:</strong> {{ r.roll_no }}</div>
+        <div class="print-info-row"><strong>Class:</strong> {{ class_label(class_name) }}</div>
+        <div class="print-info-row"><strong>Final Status:</strong> {{ r.status }}</div>
     </div>
-
     <table>
-        <thead>
-            <tr>
-                <th style="text-align: left;">Subject</th>
-                <th>Marks Obtained</th>
-                <th>Maximum Marks</th>
-            </tr>
-        </thead>
+        <thead><tr><th class="subject-name">Scholastic Areas</th><th>Max Marks</th><th>Marks Obtained</th></tr></thead>
         <tbody>
             {% for sub in subjects %}
             <tr>
                 <td class="subject-name">{{ sub }}</td>
-                <td>{{ r.marks.get(sub, 'AB') }}</td>
                 <td>{{ r.max_per_subject }}</td>
+                <td>{{ r.marks.get(sub, 'AB') }}</td>
             </tr>
             {% endfor %}
-
-            <tr class="summary-row">
-                <td class="subject-name" style="text-align: right;">Grand Total</td>
-                <td>{{ r.total }}</td>
-                <td>{{ r.total_possible }}</td>
-            </tr>
-            <tr class="summary-row">
-                <td class="subject-name" style="text-align: right;">Percentage</td>
-                <td colspan="2"><span class="metric-highlight">{{ r.percentage }}%</span></td>
-            </tr>
-            <tr class="summary-row">
-                <td class="subject-name" style="text-align: right;">Rank</td>
-                <td colspan="2"><span class="metric-highlight">{{ r.rank }}</span></td>
-            </tr>
-            <tr class="summary-row">
-                <td class="subject-name" style="text-align: right;">Final Result</td>
-                <td colspan="2" class="result-highlight">{{ r.status }}</td>
-            </tr>
         </tbody>
     </table>
-
+    <div class="print-summary">
+        <div><span class="lbl">Grand Total</span><span class="val">{{ r.total }} / {{ r.total_possible }}</span></div>
+        <div><span class="lbl">Percentage</span><span class="val">{{ r.percentage }}%</span></div>
+        <div><span class="lbl">Class Rank</span><span class="val">{{ r.rank }}</span></div>
+    </div>
+    <div class="print-signatures">
+        <div class="print-sig-block">
+            <img src="sign.jpg" alt="HM Signature">
+            <div class="print-sig-name" style="margin-top:8px;">(Atul Ch. Nath)</div>
+            <div class="print-sig-line">Headmaster, Phulani High School</div>
+        </div>
+    </div>
 </div>
 {% if not loop.last %}<div class="page-break"></div>{% endif %}
 {% endfor %}
-
 </body>
 </html>
