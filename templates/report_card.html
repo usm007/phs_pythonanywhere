@@ -41,6 +41,10 @@
             cursor: pointer;
             border-radius: 4px;
         }
+        .no-print a:hover, .no-print button:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
         .no-print .nav-title { font-size: 13px; font-weight: 600; }
 
         /* ── A4 wrapper ── */
@@ -50,7 +54,9 @@
             padding: 24px 0;
         }
 
-        /* ── Page card ── */
+        /* ── Page card ──
+           border = outer line, box-shadow inset = inner line.
+           box-shadow prints reliably unlike outline. */
         .print-report {
             position: relative;
             width: 210mm;
@@ -64,6 +70,7 @@
             flex-direction: column;
         }
 
+        /* ── Inner layout: top content + bottom section ── */
         .print-inner {
             flex: 1;
             display: flex;
@@ -123,9 +130,9 @@
             text-transform: uppercase;
             letter-spacing: 1.3px;
             line-height: 1.9;
+            color: #111;
             border-left: 1.5px solid #111;
             border-right: 1.5px solid #111;
-            color: #111;
         }
 
         /* ── STUDENT INFO ── */
@@ -217,7 +224,7 @@
             font-family: 'Cinzel', serif;
         }
 
-        /* ── PROMOTION LINE ── */
+        /* ── PROMOTION LINE (future use) ── */
         .print-promotion {
             border: 1.5px solid #111;
             padding: 9px 14px;
@@ -267,6 +274,7 @@
             font-size: 11px;
             font-weight: 600;
             color: #444;
+            margin-top: 2px;
             line-height: 1.5;
         }
 
@@ -281,7 +289,7 @@
             padding-top: 6px;
         }
 
-        /* ── Page break ── */
+        /* ── Page break between cards ── */
         .page-break { page-break-after: always; break-after: page; }
 
         /* ── Print overrides ── */
@@ -318,7 +326,7 @@
 <div class="print-report">
 <div class="print-inner">
 
-    <!-- TOP CONTENT -->
+    <!-- TOP: header + student info + table + summary -->
     <div>
         <div class="print-header">
             {% if school_logo_url %}
@@ -328,7 +336,11 @@
             <p class="school-meta">Estd. 1972 &nbsp;|&nbsp; UDISE Code: 18310409706</p>
             <p class="school-address">Karki Chuk, Lahon Gaon, Majuli, Assam. PIN: 785105</p>
             <hr class="rule">
-            <div class="session-badge">{% set _p = exam_name.rsplit(' ', 1) %}{% if _p|length == 2 and _p[1]|int(0) > 1900 %}{{ _p[0] }}{% else %}{{ exam_name }}{% endif %}<br>Session : {{ academic_session }}</div>
+            <div class="session-badge">
+                {%- set _p = exam_name.rsplit(' ', 1) -%}
+                {%- if _p|length == 2 and _p[1]|int(0) > 1900 -%}{{ _p[0] }}{%- else -%}{{ exam_name }}{%- endif -%}
+                <br>Session : {{ academic_session }}
+            </div>
             <hr class="rule" style="margin-bottom:12px;">
         </div>
 
@@ -366,12 +378,12 @@
 
         {% if r.promoted_to %}
         <div class="print-promotion">
-            Promoted to &nbsp;<span class="promoted-to">{{ r.promoted_to }}</span>&nbsp; for session {{ r.next_session }}.
+            This student is hereby promoted to &nbsp;<span class="promoted-to">{{ r.promoted_to }}</span>&nbsp; for the academic session {{ r.next_session }}.
         </div>
         {% endif %}
     </div>
 
-    <!-- BOTTOM: signature + footer -->
+    <!-- BOTTOM: signature + footer note -->
     <div>
         <div class="print-signatures">
             <div class="print-sig-block">
