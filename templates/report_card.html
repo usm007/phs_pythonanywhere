@@ -8,253 +8,247 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        * { box-sizing: border-box; }
-
-        @page {
-            size: A4;
-            margin: 0;
-        }
+        @page { size: A4; margin: 0; }
 
         body {
             font-family: 'Manrope', 'Segoe UI', sans-serif;
-            color: #1d2a36;
-            background: #e8e8e8;
-            margin: 0;
-            padding: 0;
+            color: #111;
+            background: #d0d0d0;
         }
 
-        /* ── Screen-only nav bar ── */
+        /* ── Nav bar ── */
         .no-print {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: #071c3a;
+            background: #111;
             color: #fff;
             padding: 10px 20px;
             position: sticky;
             top: 0;
             z-index: 100;
         }
-
-        .no-print a,
-        .no-print button {
+        .no-print a, .no-print button {
             background: transparent;
-            color: rgba(255,255,255,0.85);
+            color: rgba(255,255,255,0.8);
             border: 1px solid rgba(255,255,255,0.3);
             padding: 6px 14px;
             font-size: 13px;
             font-family: inherit;
             text-decoration: none;
             cursor: pointer;
-            border-radius: 5px;
+            border-radius: 4px;
         }
+        .no-print .nav-title { font-size: 13px; font-weight: 600; }
 
-        .no-print a:hover,
-        .no-print button:hover {
-            background: rgba(255,255,255,0.12);
-            color: #fff;
-        }
-
-        .no-print .nav-title {
-            font-size: 13px;
-            font-weight: 600;
-        }
-
-        /* ── A4 page wrapper ── */
+        /* ── A4 wrapper ── */
         .page-wrap {
             display: flex;
             justify-content: center;
-            padding: 20px 0;
+            padding: 24px 0;
         }
 
+        /* ── Page card ── */
         .print-report {
             position: relative;
             width: 210mm;
             min-height: 297mm;
-            padding: 14mm 16mm;
-            background: #ffffff;
-            border: 6px double #071c3a;
+            border: 3px solid #111;
+            box-shadow: inset 0 0 0 2px #111;
+            background: #fff;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
             display: flex;
             flex-direction: column;
+        }
+
+        .print-inner {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
             justify-content: space-between;
+            padding: 10mm 13mm 9mm;
         }
 
-        /* ── Watermark ── */
-        .print-watermark {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 380px;
-            opacity: 0.07;
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        /* ── Header ── */
+        /* ── HEADER ── */
         .print-header {
             text-align: center;
-            border-bottom: 2.5px solid #071c3a;
-            padding-bottom: 12px;
-            margin-bottom: 20px;
-            position: relative;
-            z-index: 1;
+            margin-bottom: 11px;
         }
 
         .print-header img.logo {
-            width: 72px;
-            height: 72px;
+            width: 96px;
+            height: 96px;
             object-fit: contain;
-            margin-bottom: 6px;
+            display: block;
+            margin: 0 auto 7px;
         }
 
         .print-header h1 {
             font-family: 'Cinzel', serif;
             font-size: 24px;
-            color: #071c3a;
-            margin: 0 0 4px;
-            letter-spacing: 1px;
+            color: #111;
+            margin-bottom: 3px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
         }
 
         .print-header .school-meta {
             font-size: 12.5px;
             font-weight: 700;
-            margin: 2px 0 0;
-            color: #333;
-            letter-spacing: 0.3px;
+            color: #222;
+            letter-spacing: 0.4px;
+            margin-bottom: 1px;
         }
+
         .print-header .school-address {
             font-size: 11.5px;
             font-weight: 500;
-            margin: 2px 0 10px;
             color: #555;
+            margin-bottom: 9px;
+        }
+
+        .print-header hr.rule {
+            border: none;
+            border-top: 1.5px solid #111;
         }
 
         .print-header .session-badge {
-            background: #071c3a;
-            color: #fff;
-            display: inline-block;
-            padding: 4px 18px;
+            display: block;
+            padding: 6px 0;
             font-size: 12px;
             font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            border-radius: 3px;
+            letter-spacing: 1.3px;
+            line-height: 1.9;
+            border-left: 1.5px solid #111;
+            border-right: 1.5px solid #111;
+            color: #111;
         }
 
-        /* ── Student info grid ── */
+        /* ── STUDENT INFO ── */
         .print-student-info {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px 20px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            position: relative;
-            z-index: 1;
+            gap: 7px 20px;
+            margin-bottom: 13px;
+            font-size: 13.5px;
         }
 
         .print-info-row {
-            border-bottom: 1px dashed #ccc;
-            padding-bottom: 5px;
+            border-bottom: 1px solid #ccc;
+            padding: 3px 0 5px;
         }
 
         .print-info-row strong {
-            color: #333;
             display: inline-block;
-            width: 120px;
+            width: 124px;
             font-weight: 700;
-        }
-
-        /* ── Marks table ── */
-        .print-report table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .print-report th {
-            background-color: #071c3a !important;
-            color: #fff !important;
-            border: 1px solid #000;
-            padding: 9px 12px;
-            font-weight: 700;
-            font-size: 12.5px;
+            font-size: 10.5px;
             text-transform: uppercase;
             letter-spacing: 0.4px;
+            color: #555;
         }
 
-        .print-report td {
-            border: 1px solid #000;
-            padding: 9px 12px;
+        /* ── MARKS TABLE ── */
+        table.marks-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 13px;
+        }
+
+        .marks-table th {
+            background-color: #111 !important;
+            color: #fff !important;
+            border: 1px solid #111;
+            padding: 9px 11px;
+            font-weight: 700;
+            font-size: 11.5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .marks-table td {
+            border: 1px solid #aaa;
+            padding: 10px 11px;
             text-align: center;
             font-size: 13.5px;
         }
 
-        .print-report td.subject-name {
+        .marks-table td.subject-name {
             text-align: left;
             font-weight: 600;
         }
 
-        .print-report tbody tr:nth-child(even) td {
-            background-color: #f7f7f7;
+        .marks-table tbody tr:nth-child(even) td {
+            background-color: #ececec !important;
         }
 
-        /* ── Summary strip ── */
+        /* ── SUMMARY ── */
         .print-summary {
             display: flex;
             justify-content: space-evenly;
-            border: 2px solid #071c3a;
-            padding: 14px 20px;
-            margin-bottom: 30px;
-            background-color: #f5f7fa !important;
-            border-radius: 4px;
-            position: relative;
-            z-index: 1;
+            border: 1.5px solid #111;
+            padding: 11px 16px;
+            margin-bottom: 13px;
+            background-color: #f2f2f2 !important;
         }
 
-        .print-summary div { text-align: center; }
+        .print-summary div { text-align: center; padding: 0 16px; }
+        .print-summary div + div { border-left: 1px solid #bbb; }
 
         .print-summary span.lbl {
             display: block;
-            font-size: 10.5px;
+            font-size: 9.5px;
             text-transform: uppercase;
             font-weight: 800;
             color: #555;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.8px;
         }
 
         .print-summary span.val {
             display: block;
-            font-size: 22px;
+            font-size: 21px;
             font-weight: 800;
-            color: #071c3a;
-            margin-top: 4px;
+            color: #111;
+            margin-top: 3px;
+            font-family: 'Cinzel', serif;
         }
 
-        /* ── Signature ── */
+        /* ── PROMOTION LINE ── */
+        .print-promotion {
+            border: 1.5px solid #111;
+            padding: 9px 14px;
+            font-size: 13px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 14px;
+            letter-spacing: 0.3px;
+            background: #f9f9f9 !important;
+        }
+
+        .print-promotion .promoted-to {
+            font-family: 'Cinzel', serif;
+            font-size: 14px;
+        }
+
+        /* ── SIGNATURES ── */
         .print-signatures {
             display: flex;
             justify-content: flex-end;
             align-items: flex-end;
-            padding: 0 10px;
-            position: relative;
-            z-index: 1;
+            padding: 0 4px;
+            margin-bottom: 10px;
         }
 
-        .print-sig-block {
-            text-align: center;
-            width: 180px;
-        }
+        .print-sig-block { text-align: center; width: 160px; }
 
         .print-sig-block img {
-            width: 130px;
+            width: 110px;
             height: auto;
-            margin-bottom: -6px;
+            margin-bottom: -4px;
             mix-blend-mode: multiply;
             display: block;
             margin-left: auto;
@@ -262,39 +256,47 @@
         }
 
         .print-sig-line {
-            border-top: 1.5px solid #000;
-            padding-top: 5px;
+            border-top: 1.5px solid #111;
+            padding-top: 4px;
             font-weight: 700;
-            font-size: 13px;
+            font-size: 12px;
+            color: #111;
         }
 
         .print-sig-name {
-            font-size: 12px;
-            font-weight: 700;
-            color: #071c3a;
-            margin-top: 2px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #444;
+            line-height: 1.5;
         }
 
-        /* ── Page break between cards ── */
-        .page-break {
-            page-break-after: always;
-            break-after: page;
+        /* ── FOOTER NOTE ── */
+        .print-footer-note {
+            text-align: center;
+            font-size: 9px;
+            color: #aaa;
+            letter-spacing: 0.3px;
+            font-style: italic;
+            border-top: 1px solid #ddd;
+            padding-top: 6px;
         }
+
+        /* ── Page break ── */
+        .page-break { page-break-after: always; break-after: page; }
 
         /* ── Print overrides ── */
         @media print {
             .no-print { display: none !important; }
             .page-wrap { padding: 0; display: block; background: none; }
-
             body { background: #fff; }
-
             .print-report {
-                width: calc(210mm - 16mm);
-                min-height: calc(297mm - 16mm);
-                margin: 8mm;
-                border: 6px double #071c3a;
-                padding: 6mm 8mm;
+                width: 210mm;
+                min-height: 297mm;
+                margin: 0;
+                border: 3px solid #000;
+                box-shadow: inset 0 0 0 2px #000;
             }
+            .print-inner { padding: 9mm 12mm 8mm; }
         }
     </style>
 </head>
@@ -314,67 +316,75 @@
 {% for r in results %}
 <div class="page-wrap">
 <div class="print-report">
+<div class="print-inner">
 
-    <div class="print-header">
-        {% if school_logo_url %}
-            <img src="{{ school_logo_url }}" class="logo" alt="School Logo">
+    <!-- TOP CONTENT -->
+    <div>
+        <div class="print-header">
+            {% if school_logo_url %}
+                <img src="{{ school_logo_url }}" class="logo" alt="School Logo">
+            {% endif %}
+            <h1>{{ school_name }}</h1>
+            <p class="school-meta">Estd. 1972 &nbsp;|&nbsp; UDISE Code: 18310409706</p>
+            <p class="school-address">Karki Chuk, Lahon Gaon, Majuli, Assam. PIN: 785105</p>
+            <hr class="rule">
+            <div class="session-badge">{% set _p = exam_name.rsplit(' ', 1) %}{% if _p|length == 2 and _p[1]|int(0) > 1900 %}{{ _p[0] }}{% else %}{{ exam_name }}{% endif %}<br>Session : {{ academic_session }}</div>
+            <hr class="rule" style="margin-bottom:12px;">
+        </div>
+
+        <div class="print-student-info">
+            <div class="print-info-row"><strong>Student Name:</strong> {{ r.name }}</div>
+            <div class="print-info-row"><strong>Roll Number:</strong> {{ r.roll_no }}</div>
+            <div class="print-info-row"><strong>Class:</strong> {{ class_label(class_name) }}</div>
+            <div class="print-info-row"><strong>Final Status:</strong> {{ r.status }}</div>
+        </div>
+
+        <table class="marks-table">
+            <thead>
+                <tr>
+                    <th style="text-align:left; width:55%;">Scholastic Areas</th>
+                    <th style="width:22%;">Max. Marks</th>
+                    <th style="width:23%;">Marks Obtained</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sub in subjects %}
+                <tr>
+                    <td class="subject-name">{{ sub }}</td>
+                    <td>{{ r.max_per_subject }}</td>
+                    <td>{{ r.marks.get(sub, 'AB') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="print-summary">
+            <div><span class="lbl">Grand Total</span><span class="val">{{ r.total }} / {{ r.total_possible }}</span></div>
+            <div><span class="lbl">Percentage</span><span class="val">{{ r.percentage }}%</span></div>
+            <div><span class="lbl">Class Rank</span><span class="val">{{ r.rank }}</span></div>
+        </div>
+
+        {% if r.promoted_to %}
+        <div class="print-promotion">
+            Promoted to &nbsp;<span class="promoted-to">{{ r.promoted_to }}</span>&nbsp; for session {{ r.next_session }}.
+        </div>
         {% endif %}
-        <h1>{{ school_name }}</h1>
-        <p class="school-meta">Estd. 1972 &nbsp;|&nbsp; UDISE Code: 18310409706</p>
-        <p class="school-address">Karki Chuk, Lahon Gaon, Majuli, Assam. PIN: 785105</p>
-        <div class="session-badge">{% set _p = exam_name.rsplit(' ', 1) %}{% if _p|length == 2 and _p[1]|int(0) > 1900 %}{{ _p[0] }}{% else %}{{ exam_name }}{% endif %} &middot; Session : {{ academic_session }}</div>
     </div>
 
-    <div class="print-student-info">
-        <div class="print-info-row"><strong>Student Name:</strong> {{ r.name }}</div>
-        <div class="print-info-row"><strong>Roll Number:</strong> {{ r.roll_no }}</div>
-        <div class="print-info-row"><strong>Class:</strong> {{ class_label(class_name) }}</div>
-        <div class="print-info-row"><strong>Final Status:</strong> {{ r.status }}</div>
+    <!-- BOTTOM: signature + footer -->
+    <div>
+        <div class="print-signatures">
+            <div class="print-sig-block">
+                <img src="{{ url_for('signature_image') }}" alt="HM Signature">
+                <div class="print-sig-line">Atul Ch. Nath</div>
+                <div class="print-sig-name">Headmaster,</div>
+                <div class="print-sig-name">Phulani High School</div>
+            </div>
+        </div>
+        <p class="print-footer-note">This is a computer-generated report card. No separate attestation required.</p>
     </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th style="text-align:left;">Scholastic Areas</th>
-                <th>Maximum Marks</th>
-                <th>Marks Obtained</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for sub in subjects %}
-            <tr>
-                <td class="subject-name">{{ sub }}</td>
-                <td>{{ r.max_per_subject }}</td>
-                <td>{{ r.marks.get(sub, 'AB') }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <div class="print-summary">
-        <div>
-            <span class="lbl">Grand Total</span>
-            <span class="val">{{ r.total }} / {{ r.total_possible }}</span>
-        </div>
-        <div>
-            <span class="lbl">Percentage</span>
-            <span class="val">{{ r.percentage }}%</span>
-        </div>
-        <div>
-            <span class="lbl">Class Rank</span>
-            <span class="val">{{ r.rank }}</span>
-        </div>
-    </div>
-
-    <div class="print-signatures">
-        <div class="print-sig-block">
-            <img src="{{ url_for('signature_image') }}" alt="HM Signature">
-            <div class="print-sig-line">Atul Ch. Nath</div>
-            <div class="print-sig-name">Headmaster,</div>
-            <div class="print-sig-name">Phulani High School</div>
-        </div>
-    </div>
-
+</div>
 </div>
 </div>
 {% if not loop.last %}<div class="page-break"></div>{% endif %}
