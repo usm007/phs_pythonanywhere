@@ -77,6 +77,8 @@
             border: 6px double #071c3a;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
+            display: flex;
+            flex-direction: column;
         }
 
         /* ── Watermark ── */
@@ -241,6 +243,7 @@
             padding: 0 10px;
             position: relative;
             z-index: 1;
+            margin-top: auto;
         }
 
         .print-sig-block {
@@ -288,7 +291,7 @@
             .print-report {
                 width: 210mm;
                 min-height: 297mm;
-                border: none;
+                border: 6px double #071c3a;
                 padding: 14mm 16mm;
                 margin: 0;
             }
