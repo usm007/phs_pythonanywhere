@@ -240,21 +240,43 @@
                 <p class="muted">When locked, teachers can view grids and reports, but edit/save controls are disabled.</p>
 
                 <div class="card-title" style="margin-top:14px;">Export and Backup</div>
-                <div class="d-flex gap-2 flex-wrap">
+                <div class="d-flex gap-2 flex-wrap mb-3">
                     <a class="btn-outline-main" href="{{ url_for('admin_export_master_xlsx') }}">Download Master Excel</a>
                     <a class="btn-outline-main" href="{{ url_for('admin_backup_database') }}">Download Raw DB Backup</a>
                 </div>
+                <form method="POST" action="{{ url_for('admin_import_master_excel') }}" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <p class="muted mb-2">Upload a previously exported Master Excel to restore or update data. Existing records are updated; new ones are added.</p>
+                    <div class="input-group input-group-sm">
+                        <input class="form-control" type="file" name="master_excel" accept=".xlsx" required>
+                        <button class="btn-main" type="submit" onclick="return confirm('Import this Excel? Existing records will be updated, new ones added.')">Import Excel</button>
+                    </div>
+                </form>
 
                 <div class="card-title" style="margin-top:14px;">Reset Tools</div>
                 <div class="danger-box">
-                    <p class="danger-note"><strong>Soft Reset:</strong> wipes all marks and mark logs, keeps students.</p>
-                    <form method="POST" action="{{ url_for('admin_soft_reset_marks') }}" class="mb-2" onsubmit="return confirm('Soft reset will remove all marks. Continue?');">
+                    <p class="danger-note"><strong>Selective Reset:</strong> choose what to delete. Deleting Students also removes all their marks.</p>
+                    <form method="POST" action="{{ url_for('admin_selective_reset') }}" onsubmit="return confirmSelectiveReset(this);">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="mb-2 d-flex flex-wrap gap-3">
+                            <div class="form-check mb-0">
+                                <input class="form-check-input" type="checkbox" name="delete_marks" id="del_marks" value="1">
+                                <label class="form-check-label" for="del_marks" style="font-size:0.82rem;font-weight:600;">Marks data</label>
+                            </div>
+                            <div class="form-check mb-0">
+                                <input class="form-check-input" type="checkbox" name="delete_students" id="del_students" value="1">
+                                <label class="form-check-label" for="del_students" style="font-size:0.82rem;font-weight:600;">Student data <span class="muted">(+ marks)</span></label>
+                            </div>
+                            <div class="form-check mb-0">
+                                <input class="form-check-input" type="checkbox" name="delete_logs" id="del_logs" value="1">
+                                <label class="form-check-label" for="del_logs" style="font-size:0.82rem;font-weight:600;">Activity logs</label>
+                            </div>
+                        </div>
                         <div class="input-group input-group-sm mb-2">
                             <span class="input-group-text">Type</span>
-                            <input class="form-control" name="confirm_phrase" placeholder="RESET MARKS" required>
+                            <input class="form-control" name="confirm_phrase" placeholder="SELECTIVE RESET" required>
                         </div>
-                        <button type="submit" class="btn-danger-main">Run Soft Reset</button>
+                        <button type="submit" class="btn-danger-main">Run Selective Reset</button>
                     </form>
                 </div>
 
@@ -272,5 +294,15 @@
             </section>
         </div>
     </main>
+    <script>
+    function confirmSelectiveReset(form) {
+        var parts = [];
+        if (form.delete_students && form.delete_students.checked) parts.push('all students (and their marks)');
+        else if (form.delete_marks && form.delete_marks.checked) parts.push('all marks data');
+        if (form.delete_logs && form.delete_logs.checked) parts.push('all activity logs');
+        if (!parts.length) { alert('Select at least one data type to delete.'); return false; }
+        return confirm('This will permanently delete: ' + parts.join(', ') + '.\n\nThis cannot be undone. Continue?');
+    }
+    </script>
 </body>
 </html>

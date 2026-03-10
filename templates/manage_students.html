@@ -572,10 +572,19 @@
                                         <div class="col-3">
                                             <input class="form-control" type="text" name="new_roll" placeholder="Roll" {{ 'required' if class_name else '' }} {{ 'disabled' if portal_locked else '' }}>
                                         </div>
-                                        <div class="col-6">
+                                        <div class="col-9">
                                             <input class="form-control" type="text" name="new_name" placeholder="Student name" {{ 'required' if class_name else '' }} {{ 'disabled' if portal_locked else '' }}>
                                         </div>
-                                        <div class="col-3">
+                                        <div class="col-12">
+                                            <input class="form-control" type="text" name="new_dob" placeholder="DOB (DD/MM/YYYY)" pattern="\d{2}/\d{2}/\d{4}" title="Date of Birth in DD/MM/YYYY format, e.g. 15/08/2010" {{ 'disabled' if portal_locked else '' }}>
+                                        </div>
+                                        <div class="col-12">
+                                            <input class="form-control" type="text" name="new_father_name" placeholder="Father's name" {{ 'disabled' if portal_locked else '' }}>
+                                        </div>
+                                        <div class="col-12">
+                                            <input class="form-control" type="text" name="new_mother_name" placeholder="Mother's name" {{ 'disabled' if portal_locked else '' }}>
+                                        </div>
+                                        <div class="col-12">
                                             <button class="btn btn-gold w-100" type="submit" {{ 'disabled' if not class_name or portal_locked else '' }}>Add</button>
                                         </div>
                                     </form>
@@ -603,14 +612,21 @@
                                             <button class="btn btn-navy w-100" type="submit" {{ 'disabled' if portal_locked else '' }}>Import</button>
                                         </div>
                                     </form>
-                                    <div class="import-note">Headers: <code>roll_no,name</code> or <code>class_name,roll_no,name</code></div>
+                                    <div class="import-note">Required: <code>roll_no</code>, <code>name</code>. Optional: <code>dob</code> (DD/MM/YYYY), <code>father_name</code>, <code>mother_name</code></div>
+                                    <div class="import-note" style="margin-top:3px;">For multi-class CSV, add <code>class_name</code> as the first column.</div>
+                                    <div class="actions-row" style="margin-top:6px;gap:6px;">
+                                        {% if class_name %}
+                                            <a href="{{ url_for('download_student_import_sample_single', class_name=class_name) }}" class="btn btn-navy" style="font-size:0.72rem;padding:4px 10px;">&#11015; Example CSV (Single Class)</a>
+                                        {% endif %}
+                                        <a href="{{ url_for('download_student_import_sample_multi') }}" class="btn btn-navy" style="font-size:0.72rem;padding:4px 10px;">&#11015; Example CSV (Multi-Class)</a>
+                                    </div>
                                     <details class="import-help">
-                                        <summary>How should the Excel/CSV file look?</summary>
-                                        <p><strong>Step 1:</strong> Use exact headers in row 1.</p>
-                                        <p><strong>Step 2:</strong> Fill rows, then save as <code>CSV UTF-8</code>.</p>
-                                        <pre class="import-sample">roll_no,name
-1,Aman Das
-2,Riya Sharma</pre>
+                                        <summary>How should the CSV file look?</summary>
+                                        <p><strong>Row 1:</strong> Headers exactly as shown. <strong>Row 2+:</strong> Data rows.</p>
+                                        <p>DOB must be <strong>DD/MM/YYYY</strong> (e.g. <code>15/08/2010</code>). CSV will be rejected if required columns are missing.</p>
+                                        <pre class="import-sample">roll_no,name,dob,father_name,mother_name
+1,Aman Das,15/08/2010,Raju Das,Priya Das
+2,Riya Sharma,23/04/2011,Suresh Sharma,Geeta Sharma</pre>
                                     </details>
                                 </div>
                             </div>
@@ -634,8 +650,11 @@
                                         <thead>
                                             <tr>
                                                 <th style="width:36px;"><input type="checkbox" id="select-all" title="Select all"></th>
-                                                <th style="width:130px;">Roll No</th>
+                                                <th style="width:100px;">Roll No</th>
                                                 <th>Student Name</th>
+                                                <th style="width:120px;">DOB</th>
+                                                <th>Father's Name</th>
+                                                <th>Mother's Name</th>
                                                 <th style="width:100px;">Action</th>
                                             </tr>
                                         </thead>
@@ -645,6 +664,9 @@
                                                     <td><input class="row-check" type="checkbox" name="delete_ids_inline" value="{{ s.id }}" {{ 'disabled' if portal_locked else '' }}></td>
                                                     <td><input class="form-control" type="text" name="roll_{{ s.id }}" value="{{ s.roll_no }}" required {{ 'readonly' if portal_locked else '' }}></td>
                                                     <td><input class="form-control" type="text" name="name_{{ s.id }}" value="{{ s.name }}" required {{ 'readonly' if portal_locked else '' }}></td>
+                                                    <td><input class="form-control" type="text" name="dob_{{ s.id }}" value="{{ s.dob or '' }}" placeholder="DD/MM/YYYY" pattern="\d{2}/\d{2}/\d{4}" title="DD/MM/YYYY e.g. 15/08/2010" {{ 'readonly' if portal_locked else '' }}></td>
+                                                    <td><input class="form-control" type="text" name="father_{{ s.id }}" value="{{ s.father_name or '' }}" placeholder="Father's name" {{ 'readonly' if portal_locked else '' }}></td>
+                                                    <td><input class="form-control" type="text" name="mother_{{ s.id }}" value="{{ s.mother_name or '' }}" placeholder="Mother's name" {{ 'readonly' if portal_locked else '' }}></td>
                                                     <td>
                                                         {% if not portal_locked %}
                                                             <button type="submit" class="btn-delete" formaction="{{ url_for('delete_student', student_id=s.id, setup_tab='students') }}" formmethod="post" onclick="return confirm('Delete {{ s.name }} and all their marks?');">Delete</button>

@@ -10,10 +10,43 @@ from functools import wraps
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 
+
+def normalize_dob(raw_dob):
+    """Normalize a DOB string to DD/MM/YYYY. Accepts YYYY-MM-DD, DD/MM/YYYY, DD/MM/YY, D/M/YY etc."""
+    s = (raw_dob or "").strip()
+    if not s:
+        return ""
+    # YYYY-MM-DD  →  DD/MM/YYYY
+    m = re.match(r"^(\d{4})-(\d{2})-(\d{2})$", s)
+    if m:
+        return f"{m.group(3)}/{m.group(2)}/{m.group(1)}"
+    # DD/MM/YYYY (already correct, normalize leading zeros)
+    m = re.match(r"^(\d{1,2})/(\d{1,2})/(\d{4})$", s)
+    if m:
+        return f"{m.group(1).zfill(2)}/{m.group(2).zfill(2)}/{m.group(3)}"
+    # DD/MM/YY  →  DD/MM/YYYY (expand 2-digit year: ≤30 → 20xx, else → 19xx)
+    m = re.match(r"^(\d{1,2})/(\d{1,2})/(\d{2})$", s)
+    if m:
+        dd = m.group(1).zfill(2)
+        mm = m.group(2).zfill(2)
+        yy = int(m.group(3))
+        yyyy = f"20{m.group(3)}" if yy <= 30 else f"19{m.group(3)}"
+        return f"{dd}/{mm}/{yyyy}"
+    # DD-MM-YYYY or DD-MM-YY
+    m = re.match(r"^(\d{1,2})-(\d{1,2})-(\d{2,4})$", s)
+    if m:
+        dd = m.group(1).zfill(2)
+        mm = m.group(2).zfill(2)
+        yr = m.group(3)
+        yyyy = yr if len(yr) == 4 else (f"20{yr}" if int(yr) <= 30 else f"19{yr}")
+        return f"{dd}/{mm}/{yyyy}"
+    return s  # unrecognized format: store as-is
+
 try:
-    from openpyxl import Workbook
+    from openpyxl import Workbook, load_workbook as _load_workbook
 except ImportError:
     Workbook = None
+    _load_workbook = None
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("PHS_SECRET_KEY", "change-me-in-env")
@@ -532,6 +565,33 @@ def block_if_locked():
     return False
 
 
+def _migrate_dob_to_4digit_year(conn):
+    """One-time migration: expand any DD/MM/YY (2-digit year) DOB values to DD/MM/YYYY."""
+    import re as _re
+    try:
+        rows = fetch_all(conn, "SELECT id, dob FROM students WHERE dob IS NOT NULL AND dob != %s", ("",))
+    except Exception:
+        return
+    updates = []
+    for row in rows:
+        s = (row["dob"] or "").strip()
+        m = _re.match(r"^(\d{2})/(\d{2})/(\d{2})$", s)
+        if m:
+            yy = int(m.group(3))
+            yyyy = ("20" if yy <= 30 else "19") + m.group(3)
+            updates.append((f"{m.group(1)}/{m.group(2)}/{yyyy}", row["id"]))
+    if updates:
+        for new_dob, sid in updates:
+            try:
+                execute_stmt(conn, "UPDATE students SET dob = %s WHERE id = %s", (new_dob, sid))
+            except Exception:
+                pass
+        try:
+            conn.commit()
+        except Exception:
+            pass
+
+
 def init_db():
     conn = get_db_connection()
     try:
@@ -543,7 +603,10 @@ def init_db():
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     roll_no TEXT NOT NULL,
                     name TEXT NOT NULL,
-                    class_name TEXT NOT NULL
+                    class_name TEXT NOT NULL,
+                    dob TEXT NOT NULL DEFAULT '',
+                    father_name TEXT NOT NULL DEFAULT '',
+                    mother_name TEXT NOT NULL DEFAULT ''
                 )
                 """,
             )
@@ -604,7 +667,10 @@ def init_db():
                     id BIGINT PRIMARY KEY AUTO_INCREMENT,
                     roll_no VARCHAR(32) NOT NULL,
                     name VARCHAR(255) NOT NULL,
-                    class_name VARCHAR(32) NOT NULL
+                    class_name VARCHAR(32) NOT NULL,
+                    dob VARCHAR(32) NOT NULL DEFAULT '',
+                    father_name VARCHAR(255) NOT NULL DEFAULT '',
+                    mother_name VARCHAR(255) NOT NULL DEFAULT ''
                 )
                 """,
             )
@@ -659,8 +725,58 @@ def init_db():
                 """,
             )
 
+        # Migrate: add new student columns for existing databases
+        if _is_sqlite_connection(conn):
+            _new_student_cols = [
+                ("dob", "TEXT NOT NULL DEFAULT ''"),
+                ("father_name", "TEXT NOT NULL DEFAULT ''"),
+                ("mother_name", "TEXT NOT NULL DEFAULT ''"),
+            ]
+        else:
+            _new_student_cols = [
+                ("dob", "VARCHAR(32) NOT NULL DEFAULT ''"),
+                ("father_name", "VARCHAR(255) NOT NULL DEFAULT ''"),
+                ("mother_name", "VARCHAR(255) NOT NULL DEFAULT ''"),
+            ]
+        for _col_name, _col_def in _new_student_cols:
+            try:
+                execute_stmt(conn, f"ALTER TABLE students ADD COLUMN {_col_name} {_col_def}")
+            except Exception:
+                pass  # Column already exists
+
+        # Migrate: enforce uniqueness on (class_name, roll_no) to prevent duplicate CSV imports.
+        # Deduplicate any existing rows first (keep the lowest id per group so marks are preserved).
+        if _is_sqlite_connection(conn):
+            try:
+                execute_stmt(
+                    conn,
+                    "CREATE UNIQUE INDEX IF NOT EXISTS uq_students_class_roll ON students (class_name, roll_no)",
+                )
+            except Exception:
+                # Existing duplicates are blocking index creation – remove them first.
+                try:
+                    execute_stmt(
+                        conn,
+                        "DELETE FROM students WHERE id NOT IN (SELECT MIN(id) FROM students GROUP BY class_name, roll_no)",
+                    )
+                    execute_stmt(
+                        conn,
+                        "CREATE UNIQUE INDEX IF NOT EXISTS uq_students_class_roll ON students (class_name, roll_no)",
+                    )
+                except Exception:
+                    pass
+        else:
+            try:
+                execute_stmt(
+                    conn,
+                    "ALTER TABLE students ADD UNIQUE KEY uq_students_class_roll (class_name, roll_no)",
+                )
+            except Exception:
+                pass  # Key already exists
+
         ensure_setting_defaults(conn)
         ensure_class_subject_seed(conn)
+        _migrate_dob_to_4digit_year(conn)
         if not get_admin_pin_hash(conn):
             set_admin_pin_hash(conn, generate_password_hash(DEFAULT_ADMIN_PIN))
 
@@ -705,8 +821,7 @@ def get_class_results(class_name):
     finally:
         conn.close()
 
-    is_class_9 = "Class 9" in class_name
-    max_per_sub = 100 if is_class_9 else 50
+    max_per_sub = 100
     grand_total_possible = len(subjects) * max_per_sub
 
     m_dict = {}
@@ -807,7 +922,7 @@ def subject_entry():
         class_name = request.form["class_name"]
         subject = request.form["subject"]
 
-        max_per_sub = 100 if "Class 9" in class_name else 50
+        max_per_sub = 100
         inserted_count = 0
         updated_count = 0
 
@@ -899,7 +1014,7 @@ def subject_entry():
     finally:
         conn.close()
 
-    max_per_subject = 100 if "Class 9" in class_name else 50
+    max_per_subject = 100
     return render_template(
         "subject_entry.html",
         class_name=class_name,
@@ -923,7 +1038,7 @@ def grid_entry():
         return redirect(url_for("index"))
 
     subjects = subjects_dict[class_name]
-    max_per_subject = 100 if "Class 9" in class_name else 50
+    max_per_subject = 100
 
     conn = get_db_connection()
     if request.method == "POST":
@@ -1100,6 +1215,45 @@ def download_csv(class_name):
     )
 
 
+@app.route("/download_result_portal_csv/<string:class_name>")
+def download_result_portal_csv(class_name):
+    if class_name not in get_subjects_dict():
+        flash("Invalid class.", "danger")
+        return redirect(url_for("results_center"))
+
+    results, subjects = get_class_results(class_name)
+
+    conn = get_db_connection()
+    try:
+        dob_rows = fetch_all(
+            conn,
+            "SELECT id, dob FROM students WHERE class_name = %s",
+            (class_name,),
+        )
+    finally:
+        conn.close()
+
+    dob_map = {row["id"]: (row["dob"] or "") for row in dob_rows}
+
+    stream = io.StringIO()
+    writer = csv.writer(stream)
+    writer.writerow(["Roll", "Name", "DOB"] + subjects + ["Total", "%", "Result"])
+    for row in results:
+        dob = dob_map.get(row["id"], "")
+        writer.writerow(
+            [row["roll_no"], row["name"], dob]
+            + [row["marks"].get(subject, "") for subject in subjects]
+            + [row["total"], row["percentage"], row["status"]]
+        )
+
+    safe_name = class_name.replace(" ", "_")
+    return Response(
+        stream.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=result_portal_{safe_name}.csv"},
+    )
+
+
 @app.route("/download_student_import_sample/single/<string:class_name>")
 def download_student_import_sample_single(class_name):
     if class_name not in get_subjects_dict():
@@ -1108,10 +1262,10 @@ def download_student_import_sample_single(class_name):
 
     stream = io.StringIO()
     writer = csv.writer(stream)
-    writer.writerow(["roll_no", "name"])
-    writer.writerow(["1", "Aman Das"])
-    writer.writerow(["2", "Riya Sharma"])
-    writer.writerow(["3", "Neel Bora"])
+    writer.writerow(["roll_no", "name", "dob", "father_name", "mother_name"])
+    writer.writerow(["1", "Aman Das", "15/08/10", "Raju Das", "Priya Das"])
+    writer.writerow(["2", "Riya Sharma", "23/04/11", "Suresh Sharma", "Geeta Sharma"])
+    writer.writerow(["3", "Neel Bora", "07/11/10", "Kamal Bora", "Sita Bora"])
 
     return Response(
         stream.getvalue(),
@@ -1127,14 +1281,14 @@ def download_student_import_sample_multi():
     classes = list(get_subjects_dict().keys())
     stream = io.StringIO()
     writer = csv.writer(stream)
-    writer.writerow(["class_name", "roll_no", "name"])
+    writer.writerow(["class_name", "roll_no", "name", "dob", "father_name", "mother_name"])
 
     if classes:
-        writer.writerow([classes[0], "1", "Aman Das"])
+        writer.writerow([classes[0], "1", "Aman Das", "15/08/10", "Raju Das", "Priya Das"])
     if len(classes) > 1:
-        writer.writerow([classes[1], "12", "Riya Sharma"])
+        writer.writerow([classes[1], "12", "Riya Sharma", "23/04/11", "Suresh Sharma", "Geeta Sharma"])
     if len(classes) > 2:
-        writer.writerow([classes[2], "4", "Neel Bora"])
+        writer.writerow([classes[2], "4", "Neel Bora", "07/11/10", "Kamal Bora", "Sita Bora"])
 
     return Response(
         stream.getvalue(),
@@ -1229,6 +1383,9 @@ def manage_students():
 
         new_roll = request.form.get("new_roll", "").strip()
         new_name = request.form.get("new_name", "").strip()
+        new_dob = normalize_dob(request.form.get("new_dob", "").strip())
+        new_father_name = request.form.get("new_father_name", "").strip()
+        new_mother_name = request.form.get("new_mother_name", "").strip()
         if new_roll or new_name:
             if not class_name:
                 conn.close()
@@ -1251,8 +1408,8 @@ def manage_students():
 
             execute_stmt(
                 conn,
-                "INSERT INTO students (roll_no, name, class_name) VALUES (%s, %s, %s)",
-                (new_roll, new_name, class_name),
+                "INSERT INTO students (roll_no, name, class_name, dob, father_name, mother_name) VALUES (%s, %s, %s, %s, %s, %s)",
+                (new_roll, new_name, class_name, new_dob, new_father_name, new_mother_name),
             )
             added_count += 1
 
@@ -1261,6 +1418,9 @@ def manage_students():
                 student_id = key.split("_")[1]
                 roll_no = request.form.get(f"roll_{student_id}", "").strip()
                 name = value.strip()
+                dob = normalize_dob(request.form.get(f"dob_{student_id}", "").strip())
+                father_name = request.form.get(f"father_{student_id}", "").strip()
+                mother_name = request.form.get(f"mother_{student_id}", "").strip()
                 if not name or not roll_no:
                     continue
 
@@ -1276,18 +1436,21 @@ def manage_students():
 
                 current_row = fetch_one(
                     conn,
-                    "SELECT roll_no, name FROM students WHERE id = %s",
+                    "SELECT roll_no, name, dob, father_name, mother_name FROM students WHERE id = %s",
                     (student_id,),
                 )
                 if not current_row:
                     continue
-                if current_row["roll_no"] == roll_no and current_row["name"] == name:
+                if (current_row["roll_no"] == roll_no and current_row["name"] == name
+                        and (current_row["dob"] or "") == dob
+                        and (current_row["father_name"] or "") == father_name
+                        and (current_row["mother_name"] or "") == mother_name):
                     continue
 
                 execute_stmt(
                     conn,
-                    "UPDATE students SET name = %s, roll_no = %s WHERE id = %s",
-                    (name, roll_no, student_id),
+                    "UPDATE students SET name = %s, roll_no = %s, dob = %s, father_name = %s, mother_name = %s WHERE id = %s",
+                    (name, roll_no, dob, father_name, mother_name, student_id),
                 )
                 updated_count += 1
 
@@ -1534,16 +1697,19 @@ def _parse_student_csv(file_stream, single_class_name=None):
     """Parse student CSV and return rows plus parse stats.
 
     Supports two formats:
-      A) Single-class (single_class_name provided): columns roll_no,name
-      B) Multi-class  (single_class_name is None):  columns class_name,roll_no,name
+      A) Single-class (single_class_name provided): columns roll_no,name[,dob,father_name,mother_name]
+      B) Multi-class  (single_class_name is None):  columns class_name,roll_no,name[,dob,father_name,mother_name]
 
     Accepted header aliases (case-insensitive):
-      roll_no: roll_no, roll, rollno, roll number
-      name:    name, student_name, student name
-      class:   class_name, class, class name
+      roll_no:      roll_no, roll, rollno, roll_number
+      name:         name, student_name
+      class:        class_name, class
+      dob:          dob, date_of_birth, dateofbirth, birth_date
+      father_name:  father_name, father, fathername
+      mother_name:  mother_name, mother, mothername
 
     Returns (rows, stats):
-      rows: list[(class_name, roll_no, name)]
+      rows: list[(class_name, roll_no, name, dob, father_name, mother_name)]
       stats: {
         total_rows, skipped_empty, duplicate_rows_in_file
       }
@@ -1559,6 +1725,39 @@ def _parse_student_csv(file_stream, single_class_name=None):
             if _normalize_header(raw) in aliases:
                 return raw
         return None
+
+    def _normalize_dob(raw_dob):
+        """Normalize a DOB string to DD/MM/YYYY. Accepts YYYY-MM-DD, DD/MM/YYYY, DD/MM/YY, D/M/YY etc."""
+        s = (raw_dob or "").strip()
+        if not s:
+            return ""
+        # YYYY-MM-DD  →  DD/MM/YYYY
+        m = re.match(r"^(\d{4})-(\d{2})-(\d{2})$", s)
+        if m:
+            return f"{m.group(3)}/{m.group(2)}/{m.group(1)}"
+        # DD/MM/YYYY (already correct, normalize leading zeros)
+        m = re.match(r"^(\d{1,2})/(\d{1,2})/(\d{4})$", s)
+        if m:
+            dd = m.group(1).zfill(2)
+            mm = m.group(2).zfill(2)
+            return f"{dd}/{mm}/{m.group(3)}"
+        # DD/MM/YY  →  DD/MM/YYYY (expand 2-digit year: ≤30 → 20xx, else → 19xx)
+        m = re.match(r"^(\d{1,2})/(\d{1,2})/(\d{2})$", s)
+        if m:
+            dd = m.group(1).zfill(2)
+            mm = m.group(2).zfill(2)
+            yy = int(m.group(3))
+            yyyy = f"20{m.group(3)}" if yy <= 30 else f"19{m.group(3)}"
+            return f"{dd}/{mm}/{yyyy}"
+        # DD-MM-YYYY or DD-MM-YY
+        m = re.match(r"^(\d{1,2})-(\d{1,2})-(\d{2,4})$", s)
+        if m:
+            dd = m.group(1).zfill(2)
+            mm = m.group(2).zfill(2)
+            yr = m.group(3)
+            yyyy = yr if len(yr) == 4 else (f"20{yr}" if int(yr) <= 30 else f"19{yr}")
+            return f"{dd}/{mm}/{yyyy}"
+        return s  # unrecognized format: store as-is
 
     # PythonAnywhere/Werkzeug may provide upload streams that don't implement
     # the full file API expected by TextIOWrapper (e.g. readable()).
@@ -1577,6 +1776,9 @@ def _parse_student_csv(file_stream, single_class_name=None):
     roll_key = _find_header(fieldnames, {"roll_no", "roll", "rollno", "roll_number"})
     name_key = _find_header(fieldnames, {"name", "student_name"})
     class_key = _find_header(fieldnames, {"class_name", "class"})
+    dob_key = _find_header(fieldnames, {"dob", "date_of_birth", "dateofbirth", "birth_date"})
+    father_key = _find_header(fieldnames, {"father_name", "father", "fathername"})
+    mother_key = _find_header(fieldnames, {"mother_name", "mother", "mothername"})
 
     required = ["roll_no", "name"] if single_class_name is not None else ["class_name", "roll_no", "name"]
     missing = []
@@ -1608,6 +1810,10 @@ def _parse_student_csv(file_stream, single_class_name=None):
             roll_no = row.get(roll_key, "")
             name = row.get(name_key, "")
 
+        dob = _normalize_dob(row.get(dob_key, "") if dob_key else "")
+        father_name = row.get(father_key, "") if father_key else ""
+        mother_name = row.get(mother_key, "") if mother_key else ""
+
         if not roll_no or not name or not class_name:
             skipped_empty += 1
             continue
@@ -1615,9 +1821,9 @@ def _parse_student_csv(file_stream, single_class_name=None):
         key = (class_name, roll_no)
         if key in deduped:
             duplicate_rows_in_file += 1
-        deduped[key] = name
+        deduped[key] = (name, dob, father_name, mother_name)
 
-    rows = [(cls, roll, name) for (cls, roll), name in deduped.items()]
+    rows = [(cls, roll, name, dob, father, mother) for (cls, roll), (name, dob, father, mother) in deduped.items()]
     stats = {
         "total_rows": total_rows,
         "skipped_empty": skipped_empty,
@@ -1667,12 +1873,12 @@ def import_students():
     # Validate and normalize class names against accepted aliases.
     filtered_rows = []
     skipped_invalid_class = 0
-    for cls, roll, name in rows:
+    for cls, roll, name, dob, father_name, mother_name in rows:
         canonical_cls = canonicalize_class_name(cls)
         if not canonical_cls:
             skipped_invalid_class += 1
         else:
-            filtered_rows.append((canonical_cls, roll, name))
+            filtered_rows.append((canonical_cls, roll, name, dob, father_name, mother_name))
     rows = filtered_rows
 
     if not rows:
@@ -1688,28 +1894,32 @@ def import_students():
     unchanged = 0
     conn = get_db_connection()
     try:
-        for cls, roll, name in rows:
+        for cls, roll, name, dob, father_name, mother_name in rows:
             existing = fetch_one(
                 conn,
-                "SELECT id, name FROM students WHERE class_name = %s AND roll_no = %s",
+                "SELECT id, name, dob, father_name, mother_name FROM students WHERE class_name = %s AND roll_no = %s",
                 (cls, roll),
             )
             if existing:
-                if existing["name"] != name:
+                if (existing["name"] != name
+                        or (existing["dob"] or "") != dob
+                        or (existing["father_name"] or "") != father_name
+                        or (existing["mother_name"] or "") != mother_name):
                     execute_stmt(
                         conn,
-                        "UPDATE students SET name = %s WHERE id = %s",
-                        (name, existing["id"]),
+                        "UPDATE students SET name = %s, dob = %s, father_name = %s, mother_name = %s WHERE id = %s",
+                        (name, dob, father_name, mother_name, existing["id"]),
                     )
                     updated += 1
                 else:
                     unchanged += 1
             else:
-                execute_stmt(
-                    conn,
-                    "INSERT INTO students (roll_no, name, class_name) VALUES (%s, %s, %s)",
-                    (roll, name, cls),
+                _insert_sql = (
+                    "INSERT OR IGNORE INTO students (roll_no, name, class_name, dob, father_name, mother_name) VALUES (%s, %s, %s, %s, %s, %s)"
+                    if _is_sqlite_connection(conn)
+                    else "INSERT IGNORE INTO students (roll_no, name, class_name, dob, father_name, mother_name) VALUES (%s, %s, %s, %s, %s, %s)"
                 )
+                execute_stmt(conn, _insert_sql, (roll, name, cls, dob, father_name, mother_name))
                 inserted += 1
         total_changed = inserted + updated
         scope = class_name or "multiple classes"
@@ -2014,7 +2224,7 @@ def admin_export_master_xlsx():
         settings = get_portal_settings(conn)
         students = fetch_all(
             conn,
-            "SELECT id, class_name, roll_no, name FROM students ORDER BY class_name, CAST(roll_no AS UNSIGNED), roll_no",
+            "SELECT id, class_name, roll_no, name, dob, father_name, mother_name FROM students ORDER BY class_name, CAST(roll_no AS UNSIGNED), roll_no",
         )
         marks = fetch_all(
             conn,
@@ -2041,9 +2251,9 @@ def admin_export_master_xlsx():
     overview.append(["Generated At", datetime.now().strftime("%Y-%m-%d %H:%M:%S")])
 
     sheet_students = workbook.create_sheet("Students")
-    sheet_students.append(["Student ID", "Class", "Roll No", "Name"])
+    sheet_students.append(["Student ID", "Class", "Roll No", "Name", "DOB", "Father Name", "Mother Name"])
     for row in students:
-        sheet_students.append([row["id"], row["class_name"], row["roll_no"], row["name"]])
+        sheet_students.append([row["id"], row["class_name"], row["roll_no"], row["name"], row["dob"], row["father_name"], row["mother_name"]])
 
     sheet_marks = workbook.create_sheet("Marks")
     sheet_marks.append(["Student ID", "Class", "Roll No", "Student Name", "Subject", "Marks"])
@@ -2142,6 +2352,194 @@ def admin_backup_database():
     )
 
 
+@app.route("/admin/import/master_excel", methods=["POST"])
+@admin_required
+def admin_import_master_excel():
+    if _load_workbook is None:
+        flash("Excel dependency missing. Install openpyxl and retry.", "danger")
+        return redirect(url_for("admin_dashboard"))
+
+    excel_file = request.files.get("master_excel")
+    if not excel_file or not excel_file.filename:
+        flash("Select an Excel (.xlsx) file first.", "warning")
+        return redirect(url_for("admin_dashboard"))
+
+    if not (excel_file.filename or "").lower().endswith(".xlsx"):
+        flash("Only .xlsx files are supported.", "warning")
+        return redirect(url_for("admin_dashboard"))
+
+    try:
+        wb = _load_workbook(filename=io.BytesIO(excel_file.read()), read_only=True, data_only=True)
+    except Exception as exc:
+        flash(f"Failed to read Excel file: {exc}", "danger")
+        return redirect(url_for("admin_dashboard"))
+
+    def _build_col_map(ws):
+        first_row = next(ws.iter_rows(min_row=1, max_row=1, values_only=True), None)
+        if not first_row:
+            return {}
+        header = [str(c or "").strip().lower() for c in first_row]
+        alias_groups = {
+            "class_name": ["class", "class_name"],
+            "roll_no": ["roll no", "roll_no", "roll", "roll number"],
+            "name": ["name", "student name"],
+            "dob": ["dob", "date of birth", "dateofbirth"],
+            "father_name": ["father", "father_name", "father name"],
+            "mother_name": ["mother", "mother_name", "mother name"],
+            "subject": ["subject"],
+            "marks_obtained": ["marks", "marks_obtained", "marks obtained"],
+        }
+        col_map = {}
+        for key, aliases in alias_groups.items():
+            for alias in aliases:
+                if alias in header:
+                    col_map[key] = header.index(alias)
+                    break
+        return col_map
+
+    def _cell(row, col_map, key):
+        idx = col_map.get(key)
+        if idx is None or idx >= len(row):
+            return ""
+        val = row[idx]
+        return str(val).strip() if val is not None else ""
+
+    students_inserted = students_updated = students_unchanged = students_skipped = 0
+    marks_inserted = marks_updated = marks_skipped = 0
+
+    conn = get_db_connection()
+    try:
+        if "Students" in wb.sheetnames:
+            ws = wb["Students"]
+            col_map = _build_col_map(ws)
+            if not {"class_name", "roll_no", "name"}.issubset(col_map.keys()):
+                flash("Students sheet is missing required columns (Class, Roll No, Name). Students not imported.", "warning")
+            else:
+                for row in ws.iter_rows(min_row=2, values_only=True):
+                    if not any(row):
+                        continue
+                    class_name = _cell(row, col_map, "class_name")
+                    roll_no = _cell(row, col_map, "roll_no")
+                    name = _cell(row, col_map, "name")
+                    dob = _cell(row, col_map, "dob")
+                    father_name = _cell(row, col_map, "father_name")
+                    mother_name = _cell(row, col_map, "mother_name")
+                    if not class_name or not roll_no or not name:
+                        students_skipped += 1
+                        continue
+                    canonical_cls = canonicalize_class_name(class_name)
+                    if not canonical_cls:
+                        students_skipped += 1
+                        continue
+                    existing = fetch_one(
+                        conn,
+                        "SELECT id, name, dob, father_name, mother_name FROM students WHERE class_name = %s AND roll_no = %s",
+                        (canonical_cls, roll_no),
+                    )
+                    if existing:
+                        if (existing["name"] != name
+                                or (existing["dob"] or "") != dob
+                                or (existing["father_name"] or "") != father_name
+                                or (existing["mother_name"] or "") != mother_name):
+                            execute_stmt(
+                                conn,
+                                "UPDATE students SET name = %s, dob = %s, father_name = %s, mother_name = %s WHERE id = %s",
+                                (name, dob, father_name, mother_name, existing["id"]),
+                            )
+                            students_updated += 1
+                        else:
+                            students_unchanged += 1
+                    else:
+                        _insert_sql = (
+                            "INSERT OR IGNORE INTO students (roll_no, name, class_name, dob, father_name, mother_name) VALUES (%s, %s, %s, %s, %s, %s)"
+                            if _is_sqlite_connection(conn)
+                            else "INSERT IGNORE INTO students (roll_no, name, class_name, dob, father_name, mother_name) VALUES (%s, %s, %s, %s, %s, %s)"
+                        )
+                        execute_stmt(conn, _insert_sql, (roll_no, name, canonical_cls, dob, father_name, mother_name))
+                        students_inserted += 1
+
+        if "Marks" in wb.sheetnames:
+            ws = wb["Marks"]
+            col_map = _build_col_map(ws)
+            if not {"class_name", "roll_no", "subject", "marks_obtained"}.issubset(col_map.keys()):
+                flash("Marks sheet is missing required columns (Class, Roll No, Subject, Marks). Marks not imported.", "warning")
+            else:
+                for row in ws.iter_rows(min_row=2, values_only=True):
+                    if not any(row):
+                        continue
+                    class_name = _cell(row, col_map, "class_name")
+                    roll_no = _cell(row, col_map, "roll_no")
+                    subject = _cell(row, col_map, "subject")
+                    marks_raw = _cell(row, col_map, "marks_obtained")
+                    if not class_name or not roll_no or not subject or not marks_raw:
+                        marks_skipped += 1
+                        continue
+                    canonical_cls = canonicalize_class_name(class_name)
+                    if not canonical_cls:
+                        marks_skipped += 1
+                        continue
+                    try:
+                        marks_val = int(float(marks_raw))
+                    except (ValueError, TypeError):
+                        marks_skipped += 1
+                        continue
+                    student = fetch_one(
+                        conn,
+                        "SELECT id FROM students WHERE class_name = %s AND roll_no = %s",
+                        (canonical_cls, roll_no),
+                    )
+                    if not student:
+                        marks_skipped += 1
+                        continue
+                    existing_mark = fetch_one(
+                        conn,
+                        "SELECT id, marks_obtained FROM marks WHERE student_id = %s AND subject = %s",
+                        (student["id"], subject),
+                    )
+                    if existing_mark:
+                        if existing_mark["marks_obtained"] != marks_val:
+                            execute_stmt(
+                                conn,
+                                "UPDATE marks SET marks_obtained = %s WHERE id = %s",
+                                (marks_val, existing_mark["id"]),
+                            )
+                            marks_updated += 1
+                    else:
+                        execute_stmt(
+                            conn,
+                            "INSERT INTO marks (student_id, subject, marks_obtained) VALUES (%s, %s, %s)",
+                            (student["id"], subject, marks_val),
+                        )
+                        marks_inserted += 1
+
+        log_change(
+            conn,
+            action="admin_import_master_excel",
+            entity_type="admin",
+            details=(
+                f"Master Excel import: students {students_inserted} inserted, {students_updated} updated, "
+                f"{students_unchanged} unchanged, {students_skipped} skipped; "
+                f"marks {marks_inserted} inserted, {marks_updated} updated, {marks_skipped} skipped."
+            ),
+            affected_count=students_inserted + students_updated + marks_inserted + marks_updated,
+        )
+        conn.commit()
+    except Exception as exc:
+        conn.rollback()
+        flash(f"Excel import failed: {exc}", "danger")
+        return redirect(url_for("admin_dashboard"))
+    finally:
+        conn.close()
+
+    flash(
+        f"Excel import complete — students: {students_inserted} added, {students_updated} updated, "
+        f"{students_unchanged} unchanged, {students_skipped} skipped; "
+        f"marks: {marks_inserted} added, {marks_updated} updated, {marks_skipped} skipped.",
+        "success",
+    )
+    return redirect(url_for("admin_dashboard"))
+
+
 @app.route("/admin/reset/marks", methods=["POST"])
 @admin_required
 def admin_soft_reset_marks():
@@ -2214,6 +2612,68 @@ def admin_factory_reset():
         conn.close()
 
     flash("Factory reset complete: students and marks wiped.", "success")
+    return redirect(url_for("admin_dashboard"))
+
+
+@app.route("/admin/reset/selective", methods=["POST"])
+@admin_required
+def admin_selective_reset():
+    confirmation = (request.form.get("confirm_phrase") or "").strip()
+    if confirmation != "SELECTIVE RESET":
+        flash("Type SELECTIVE RESET exactly to confirm.", "warning")
+        return redirect(url_for("admin_dashboard"))
+
+    delete_marks = request.form.get("delete_marks") == "1"
+    delete_students = request.form.get("delete_students") == "1"
+    delete_logs = request.form.get("delete_logs") == "1"
+
+    if not any([delete_marks, delete_students, delete_logs]):
+        flash("Select at least one data type to delete.", "warning")
+        return redirect(url_for("admin_dashboard"))
+
+    conn = get_db_connection()
+    try:
+        parts = []
+        affected = 0
+
+        if delete_students:
+            count_row = fetch_one(conn, "SELECT COUNT(*) AS c FROM students")
+            count = count_row["c"] if count_row else 0
+            execute_stmt(conn, "DELETE FROM students")  # CASCADE deletes marks
+            parts.append(f"{count} students (and their marks)")
+            affected += count
+        elif delete_marks:
+            count_row = fetch_one(conn, "SELECT COUNT(*) AS c FROM marks")
+            count = count_row["c"] if count_row else 0
+            execute_stmt(conn, "DELETE FROM marks")
+            parts.append(f"{count} marks entries")
+            affected += count
+
+        if delete_logs:
+            count_row = fetch_one(conn, "SELECT COUNT(*) AS c FROM change_logs")
+            count = count_row["c"] if count_row else 0
+            execute_stmt(conn, "DELETE FROM change_logs")
+            parts.append(f"{count} activity log entries")
+            affected += count
+
+        if not delete_logs:
+            log_change(
+                conn,
+                action="admin_selective_reset",
+                entity_type="admin",
+                details=f"Selective reset: deleted {', '.join(parts)}.",
+                affected_count=affected,
+            )
+
+        conn.commit()
+    except Exception as exc:
+        conn.rollback()
+        flash(f"Selective reset failed: {exc}", "danger")
+        return redirect(url_for("admin_dashboard"))
+    finally:
+        conn.close()
+
+    flash(f"Selective reset complete: deleted {', '.join(parts)}.", "success")
     return redirect(url_for("admin_dashboard"))
 
 

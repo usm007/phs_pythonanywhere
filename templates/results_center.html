@@ -78,6 +78,8 @@
         }
         .btn-csv { border-color: var(--green); color: var(--green); background: transparent; }
         .btn-csv:hover { background: var(--green); color: #fff; }
+        .btn-portal-csv { border-color: #1a6b8a; color: #1a6b8a; background: transparent; }
+        .btn-portal-csv:hover { background: #1a6b8a; color: #fff; }
         .btn-ledger { background: var(--green); color: #fff; border-color: var(--green); }
         .btn-ledger:hover { background: var(--green-light); color: #fff; border-color: var(--green-light); }
         .btn-cards { border-color: var(--navy); color: var(--navy); background: transparent; }
@@ -164,6 +166,7 @@
                     </div>
                     <div class="mt-auto d-flex flex-wrap gap-2">
                         <a class="action-btn btn-csv" href="{{ url_for('download_csv', class_name=card.class_name) }}">⬇ CSV</a>
+                        <a class="action-btn btn-portal-csv" href="{{ url_for('download_result_portal_csv', class_name=card.class_name) }}">⬇ Portal CSV</a>
                         <a class="action-btn btn-ledger" href="{{ url_for('print_class_ledger', class_name=card.class_name) }}" target="_blank">🖨 Ledger</a>
                         <a class="action-btn btn-cards" href="{{ url_for('report_cards_bulk', class_name=card.class_name) }}" target="_blank">🖨 Marksheets</a>
                         <a class="action-btn btn-single" href="{{ url_for('report_cards_individual_list', class_name=card.class_name) }}">👤 Individual</a>

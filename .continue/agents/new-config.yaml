@@ -1,0 +1,24 @@
+name: DeepSeek Python Web Setup
+version: 1.0.0
+schema: v1
+
+# Define which models handle your chat and inline edits
+models:
+  - name: DeepSeek Chat (V3)
+    provider: deepseek
+    model: deepseek-chat
+    apiKey: sk-1d3e7c71bee343bfba50848a7d006547
+  - name: DeepSeek Reasoner (R1)
+    provider: deepseek
+    model: deepseek-reasoner
+    apiKey: sk-1d3e7c71bee343bfba50848a7d006547
+
+# Define the ultra-fast model that runs in the background for tab-autocomplete
+tabAutocompleteModel:
+  name: DeepSeek Coder
+  provider: deepseek
+  model: deepseek-coder
+  apiKey: sk-1d3e7c71bee343bfba50848a7d006547
+
+# Global instructions to ensure the AI writes code exactly how you want it
+systemMessage: "You are an expert Python and web developer. Always provide concise, efficient, and secure code without unnecessary explanations."
