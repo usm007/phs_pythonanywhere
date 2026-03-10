@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Result Center — {{ school_shortcode }}</title>
+    <title>Result Centre — {{ school_shortcode }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -125,7 +127,7 @@
 <div class="app-shell">
 <header class="site-header d-flex justify-content-between align-items-center mb-4">
     <div>
-        <div class="header-title">📊 Result Center</div>
+        <div class="header-title">📊 Result Centre</div>
         <div class="header-sub">{{ school_name }} · {{ exam_name }}</div>
     </div>
     <a href="{{ url_for('index') }}" class="btn-back">← Dashboard</a>
@@ -181,7 +183,11 @@
 <script>
     document.querySelectorAll('.pass-bar').forEach(bar => {
         const rate = Number(bar.dataset.rate || 0);
-        bar.style.width = Math.max(0, Math.min(100, rate)) + '%';
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                bar.style.width = Math.max(0, Math.min(100, rate)) + '%';
+            });
+        });
     });
 </script>
 </body>
