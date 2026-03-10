@@ -48,20 +48,20 @@
             flex: 1;
             overflow: auto;
             -webkit-overflow-scrolling: touch;
-            padding: 12px 0;
+            padding: 16px 0;
             min-height: 0;
+            display: flex;
+            align-items: center;
         }
 
         .home-content {
-            height: 100%;
+            width: 100%;
             display: flex;
             flex-direction: column;
             gap: 10px;
         }
 
         .home-grid {
-            flex: 1;
-            min-height: 0;
         }
 
         /* ─── HEADER ─── */
@@ -374,8 +374,32 @@
         }
 
         .home-card {
-            height: 100%;
             padding: 16px !important;
+        }
+
+        .device-badge {
+            display: inline-block;
+            font-size: 0.62rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 2px 8px;
+            border-radius: 20px;
+            vertical-align: middle;
+            margin-left: 6px;
+        }
+        .device-badge.mobile {
+            background: #e8f0fe;
+            color: #1a56db;
+            border: 1px solid #bfcffc;
+        }
+        .device-badge.desktop {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fcd34d;
+        }
+        .sub-panel.desktop-highlight {
+            border-left: 3px solid var(--gold);
         }
 
         .flash-wrap {
@@ -429,12 +453,9 @@
             body { overflow: auto; }
             .app-shell { height: auto; min-height: 100dvh; }
             .main-scroll {
-                overflow: auto;
-                -webkit-overflow-scrolling: touch;
+                display: block;
                 padding: 10px 0 16px;
             }
-            .home-content { height: auto; }
-            .home-grid { flex: unset; }
         }
     </style>
 </head>
@@ -481,7 +502,7 @@
                     <div class="section-label">Section A | Marks Entry and Records</div>
 
                     <div class="sub-panel">
-                        <div class="sub-panel-title">📑 Enter Marks (One Subject)</div>
+                        <div class="sub-panel-title">📑 Enter Marks (One Subject) <span class="device-badge mobile">📱 Phones</span></div>
                         <form method="GET" action="{{ url_for('subject_entry') }}">
                             <div class="row g-2">
                                 <div class="col-6">
@@ -504,8 +525,8 @@
                         </form>
                     </div>
 
-                    <div class="sub-panel">
-                        <div class="sub-panel-title">▦ Enter Marks (All Subjects)</div>
+                    <div class="sub-panel desktop-highlight">
+                        <div class="sub-panel-title">▦ Enter Marks (All Subjects) <span class="device-badge desktop">🖥 PC</span></div>
                         <form method="GET" action="{{ url_for('grid_entry') }}" class="row g-2">
                             <div class="col-8">
                                 <select class="form-select form-select-sm" name="class_name" required>

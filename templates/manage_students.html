@@ -397,8 +397,8 @@
                 grid-template-columns: 1fr;
             }
         }
-        .highlight-yellow td {
-            background-color: #ffff00 !important;
+        .highlight-missing td {
+            background-color: #ffd0d0 !important;
         }
     </style>
 </head>
@@ -663,7 +663,7 @@
                                         </thead>
                                         <tbody>
                                             {% for s in students %}
-                                                <tr{% if (not s.roll_no or s.roll_no|trim == '' or not s.name or s.name|trim == '' or not s.dob or s.dob|trim == '' or s.dob|trim == 'DD/MM/YYYY' or not s.father_name or s.father_name|trim == '' or s.father_name|trim == "Father's name" or not s.mother_name or s.mother_name|trim == '' or s.mother_name|trim == "Mother's name") %} class="highlight-yellow"{% endif %}>
+                                                <tr{% if (not s.roll_no or s.roll_no|trim == '' or not s.name or s.name|trim == '' or not s.dob or s.dob|trim == '' or s.dob|trim == 'DD/MM/YYYY' or not s.father_name or s.father_name|trim == '' or s.father_name|trim == "Father's name" or not s.mother_name or s.mother_name|trim == '' or s.mother_name|trim == "Mother's name") %} class="highlight-missing"{% endif %}>
                                                     <td><input class="row-check" type="checkbox" name="delete_ids_inline" value="{{ s.id }}" {{ 'disabled' if portal_locked else '' }}></td>
                                                     <td><input class="form-control" type="text" name="roll_{{ s.id }}" value="{{ s.roll_no }}" required {{ 'readonly' if portal_locked else '' }}></td>
                                                     <td><input class="form-control" type="text" name="name_{{ s.id }}" value="{{ s.name }}" required {{ 'readonly' if portal_locked else '' }}></td>
