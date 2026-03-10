@@ -79,10 +79,18 @@
             padding: 10mm 13mm 9mm;
         }
 
+        /* ── Top content block fills remaining space, distributes gaps internally ── */
+        .print-top {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
         /* ── HEADER ── */
         .print-header {
             text-align: center;
-            margin-bottom: 11px;
+            margin-bottom: 0;
         }
 
         .print-header img.logo {
@@ -140,7 +148,7 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 7px 20px;
-            margin-bottom: 13px;
+            margin-bottom: 0;
             font-size: 13.5px;
         }
 
@@ -163,7 +171,7 @@
         table.marks-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 13px;
+            margin-bottom: 0;
         }
 
         .marks-table th {
@@ -199,7 +207,7 @@
             justify-content: space-evenly;
             border: 1.5px solid #111;
             padding: 11px 16px;
-            margin-bottom: 13px;
+            margin-bottom: 0;
             background-color: #f2f2f2 !important;
         }
 
@@ -231,7 +239,7 @@
             font-size: 13px;
             font-weight: 700;
             text-align: center;
-            margin-bottom: 14px;
+            margin-bottom: 0;
             letter-spacing: 0.3px;
             background: #f9f9f9 !important;
         }
@@ -327,7 +335,7 @@
 <div class="print-inner">
 
     <!-- TOP: header + student info + table + summary -->
-    <div>
+    <div class="print-top">
         <div class="print-header">
             {% if school_logo_url %}
                 <img src="{{ school_logo_url }}" class="logo" alt="School Logo">
