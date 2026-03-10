@@ -209,13 +209,25 @@
             border: 1px solid var(--border);
             border-radius: 8px;
             padding: 12px 14px;
-            margin-bottom: 10px;
+            margin-bottom: 14px;
         }
         .sub-panel-title {
             font-weight: 600;
             font-size: 0.8rem;
             color: var(--navy);
             margin-bottom: 8px;
+        }
+        .sub-panel.mobile-highlight {
+            border-left: 3px solid #1a56db;
+            background: #f4f6ff;
+        }
+        .sub-panel.desktop-highlight {
+            border-left: 3px solid var(--gold);
+            background: #fffbf2;
+        }
+        .sub-panel.register-highlight {
+            border-left: 3px solid var(--green);
+            background: #f3faf6;
         }
 
         /* ─── FORM CONTROLS ─── */
@@ -498,11 +510,10 @@
         <div class="row g-3 home-grid">
             <!-- ── SECTION A: ENTRY ── -->
             <div class="col-lg-8">
-                <div class="phs-card card-admin home-card d-flex flex-column">
+                <div class="phs-card card-admin home-card h-100 d-flex flex-column">
                     <div class="section-label">Section A | Marks Entry and Records</div>
 
-                    <div class="sub-panel">
-                        <div class="sub-panel-title">📑 Enter Marks (One Subject) <span class="device-badge mobile">📱 Phones</span></div>
+                    <div class="sub-panel mobile-highlight"> <span class="device-badge mobile">📱 Phones</span></div>
                         <form method="GET" action="{{ url_for('subject_entry') }}">
                             <div class="row g-2">
                                 <div class="col-6">
@@ -542,11 +553,12 @@
                         </form>
                     </div>
 
-                    <div class="sub-panel">
+                    <div class="sub-panel register-highlight">
                         <div class="sub-panel-title">📚 Class-wise Marks Register</div>
                         <a href="{{ url_for('view_marks') }}" class="btn btn-phs-outline w-100">Open Register</a>
                     </div>
 
+                    <hr style="border-color: var(--border); margin: 4px 0 10px;">
                     <div class="section-label mt-1">Setup and Logs</div>
                     <div class="d-grid gap-2">
                         <a href="{{ url_for('manage_students') }}" class="btn btn-phs-gold fw-semibold">🏫 Academic Setup</a>
@@ -556,7 +568,7 @@
 
             <!-- ── SECTION B: RESULTS ── -->
             <div class="col-lg-4">
-                <div class="phs-card card-results home-card d-flex flex-column">
+                <div class="phs-card card-results home-card h-100 d-flex flex-column">
                     <div class="section-label">Section B | Results</div>
                     <div class="result-hero flex-grow-1 d-flex flex-column justify-content-center mt-1">
                         <div class="mb-3" style="font-size:0.75rem;letter-spacing:0.1em;opacity:0.75;">CLASS RESULTS</div>
