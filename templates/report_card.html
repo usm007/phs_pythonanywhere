@@ -114,12 +114,18 @@
             letter-spacing: 1px;
         }
 
-        .print-header p {
-            font-size: 13px;
-            font-weight: 600;
-            margin: 0 0 10px;
-            color: #444;
-            letter-spacing: 0.5px;
+        .print-header .school-meta {
+            font-size: 12.5px;
+            font-weight: 700;
+            margin: 2px 0 0;
+            color: #333;
+            letter-spacing: 0.3px;
+        }
+        .print-header .school-address {
+            font-size: 11.5px;
+            font-weight: 500;
+            margin: 2px 0 10px;
+            color: #555;
         }
 
         .print-header .session-badge {
@@ -314,7 +320,8 @@
             <img src="{{ school_logo_url }}" class="logo" alt="School Logo">
         {% endif %}
         <h1>{{ school_name }}</h1>
-        <p>{{ school_address }}</p>
+        <p class="school-meta">Estd. 1972 &nbsp;|&nbsp; UDISE Code: 18310409706</p>
+        <p class="school-address">Karki Chuk, Lahon Gaon, Majuli, Assam. PIN: 785105</p>
         <div class="session-badge">{{ exam_name }} &middot; {{ academic_session }}</div>
     </div>
 
