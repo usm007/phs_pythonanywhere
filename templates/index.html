@@ -506,7 +506,7 @@
 
                     <div class="sub-panel mobile-highlight">
                         <div class="sub-panel-title">📝 Enter Marks (One Subject) <span class="device-badge mobile">📱 Phones</span></div>
-                        <form method="GET" action="{{ url_for('subject_entry') }}">
+                        <form method="GET" action="{{ url_for('subject_entry') }}" id="mobileEntryForm">
                             <div class="row g-2">
                                 <div class="col-6">
                                     <select class="form-select form-select-sm" name="class_name" id="classSelectMobile" required>
@@ -530,7 +530,7 @@
 
                     <div class="sub-panel desktop-highlight">
                         <div class="sub-panel-title">▦ Enter Marks (All Subjects) <span class="device-badge desktop">🖥 PC</span></div>
-                        <form method="GET" action="{{ url_for('grid_entry') }}" class="row g-2">
+                        <form method="GET" action="{{ url_for('grid_entry') }}" id="desktopEntryForm" class="row g-2">
                             <div class="col-8">
                                 <select class="form-select form-select-sm" name="class_name" required>
                                     <option value="" disabled selected>Select Class…</option>

@@ -213,6 +213,7 @@
     <div class="context-strip">
         <span class="class-pill">{{ class_label(class_name) }}</span>
         <span style="font-size:0.85rem;color:rgba(255,255,255,0.7);">All subjects</span>
+        {% if exam_name %}<span class="max-badge" style="background:rgba(201,151,42,0.15);color:#ffe08a;">📝 {{ exam_name }}</span>{% endif %}
         <span class="max-badge">Max per subject: {{ max_per_subject }}</span>
     </div>
 
@@ -223,6 +224,7 @@
     <form method="POST" id="gridForm" class="entry-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="class_name" value="{{ class_name }}">
+        <input type="hidden" name="exam_name" value="{{ exam_name }}">
         <div class="grid-wrap mb-2">
             <div class="table-responsive">
                 <table class="table grid-table">
@@ -288,6 +290,45 @@
         });
     });
 
+</script>
+
+<!-- Exam Selection Modal -->
+<div id="examSelectModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:2000;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:12px;padding:24px 28px;max-width:380px;width:90%;box-shadow:0 4px 32px rgba(0,0,0,0.18);">
+        <h6 style="font-family:'Fraunces',serif;font-weight:700;margin-bottom:8px;color:#0a1931;">Select Exam</h6>
+        <p style="font-size:0.82rem;color:#555;margin-bottom:14px;">Multiple exams are configured for this class. Please select an exam to enter marks for.</p>
+        <select id="examModalSelect" class="form-select form-select-sm mb-3">
+            <option value="" disabled selected>Choose exam...</option>
+        </select>
+        <div style="display:flex;gap:8px;">
+            <button class="btn btn-phs-primary" onclick="confirmExamSelection()">Continue</button>
+            <button class="btn btn-back" onclick="window.history.back()">Cancel</button>
+        </div>
+    </div>
+</div>
+<script>
+(function () {
+    const pageExams = {{ exams | tojson }};
+    const currentExam = {{ exam_name | tojson }};
+    if (pageExams.length > 1 && !currentExam) {
+        const modal = document.getElementById('examSelectModal');
+        const sel = document.getElementById('examModalSelect');
+        pageExams.forEach(function(e) {
+            const opt = document.createElement('option');
+            opt.value = e; opt.textContent = e;
+            sel.appendChild(opt);
+        });
+        modal.style.display = 'flex';
+    }
+    window.confirmExamSelection = function () {
+        const sel = document.getElementById('examModalSelect');
+        const examName = sel.value;
+        if (!examName) { alert('Please select an exam.'); return; }
+        const url = new URL(window.location.href);
+        url.searchParams.set('exam_name', examName);
+        window.location.href = url.toString();
+    };
+}());
 </script>
 </body>
 </html>

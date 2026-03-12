@@ -129,7 +129,7 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            table-layout: fixed;
+            table-layout: auto;
             font-size: 9.5px;
         }
 
@@ -146,13 +146,29 @@
             font-weight: 700;
         }
 
+        /* Subject headers: rotated vertically to save horizontal space */
         thead tr:nth-child(2) th {
             font-weight: 600;
+            white-space: nowrap;
+            height: 90px;
+            padding: 4px 2px;
+            vertical-align: bottom;
+        }
+
+        thead tr:nth-child(2) th .rotate-text {
+            display: inline-block;
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            white-space: nowrap;
+            max-height: 82px;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .name-col {
             text-align: left;
-            width: 180px;
+            width: 150px;
+            max-width: 150px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -160,10 +176,15 @@
             text-transform: uppercase;
         }
 
+        .roll-col { width: 34px; }
+
+        .subject-data-col { width: 34px; min-width: 28px; }
+
         .total-col,
         .result-col,
         .rank-col {
             font-weight: 700;
+            white-space: nowrap;
         }
 
         @media (max-width: 900px) {
@@ -204,27 +225,27 @@
         <table>
             <thead>
                 <tr>
-                    <th rowspan="2" style="width:40px;">Roll</th>
-                    <th rowspan="2" style="width:190px;">Name of Candidate</th>
+                    <th rowspan="2" class="roll-col">Roll</th>
+                    <th rowspan="2" style="width:150px;text-align:left;">Name of Candidate</th>
                     <th colspan="{{ subjects|length }}">Marks Obtained</th>
-                    <th rowspan="2" style="width:52px;">Total</th>
-                    <th rowspan="2" style="width:48px;">%</th>
-                    <th rowspan="2" style="width:60px;">Result</th>
-                    <th rowspan="2" style="width:48px;">Rank</th>
+                    <th rowspan="2" style="width:44px;">Total</th>
+                    <th rowspan="2" style="width:40px;">%</th>
+                    <th rowspan="2" style="width:54px;">Result</th>
+                    <th rowspan="2" style="width:40px;">Rank</th>
                 </tr>
                 <tr>
                     {% for sub in subjects %}
-                        <th>{{ sub }}</th>
+                        <th class="subject-data-col"><span class="rotate-text">{{ sub }}</span></th>
                     {% endfor %}
                 </tr>
             </thead>
             <tbody>
                 {% for r in results %}
                     <tr>
-                        <td>{{ r['roll_no'] }}</td>
+                        <td class="roll-col">{{ r['roll_no'] }}</td>
                         <td class="name-col">{{ r['name'] }}</td>
                         {% for sub in subjects %}
-                            <td>{{ r['marks'].get(sub, 'AB') }}</td>
+                            <td class="subject-data-col">{{ r['marks'].get(sub, 'AB') }}</td>
                         {% endfor %}
                         <td class="total-col">{{ r['total'] }}</td>
                         <td>{{ r['percentage'] }}%</td>

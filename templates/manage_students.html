@@ -435,6 +435,7 @@
                         <a class="category-item {{ 'active' if setup_tab == 'classes' else '' }}" href="{{ url_for('manage_students', class_name=class_name, setup_tab='classes') }}">🏫 Class</a>
                         <a class="category-item {{ 'active' if setup_tab == 'subjects' else '' }}" href="{{ url_for('manage_students', class_name=class_name, setup_tab='subjects') }}">📚 Subjects</a>
                         <a class="category-item {{ 'active' if setup_tab == 'students' else '' }}" href="{{ url_for('manage_students', class_name=class_name, setup_tab='students') }}">👥 Students</a>
+                        <a class="category-item {{ 'active' if setup_tab == 'exams' else '' }}" href="{{ url_for('manage_students', class_name=class_name, setup_tab='exams') }}">📝 Exams</a>
                     </div>
                 </section>
 
@@ -443,10 +444,10 @@
                     <div class="focus-head">
                         <div>
                             <h2 class="focus-name">
-                                {% if setup_tab == 'classes' %}Class Setup{% elif setup_tab == 'subjects' %}Subject Setup{% else %}Student Setup{% endif %}
+                                {% if setup_tab == 'classes' %}Class Setup{% elif setup_tab == 'subjects' %}Subject Setup{% elif setup_tab == 'exams' %}Exam Setup{% else %}Student Setup{% endif %}
                             </h2>
                             <p class="focus-note">
-                                {% if setup_tab == 'classes' %}Create class groups such as Class 10(A) and manage them here.{% elif setup_tab == 'subjects' %}Add or remove subjects class-wise.{% else %}Select class, then add/import/update/delete students.{% endif %}
+                                {% if setup_tab == 'classes' %}Create class groups such as Class 10(A) and manage them here.{% elif setup_tab == 'subjects' %}Add or remove subjects class-wise.{% elif setup_tab == 'exams' %}Add or remove exam names per class. Marks entry will ask to select an exam when multiple are defined.{% else %}Select class, then add/import/update/delete students.{% endif %}
                             </p>
                         </div>
                         <span class="muted-chip">Active: {{ setup_tab|capitalize }}</span>
@@ -545,6 +546,80 @@
                                 </div>
                             </div>
                             <div class="col-lg-4"></div>
+                        </div>
+                    {% elif setup_tab == 'exams' %}
+                        <div class="row g-2">
+                            <div class="col-lg-4">
+                                <div class="mini-panel">
+                                    <div class="mini-title">Add Exam</div>
+                                    <form method="POST" action="{{ url_for('manage_structure') }}" class="row g-2">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="setup_tab" value="exams">
+                                        <input type="hidden" name="structure_action" value="add_exam">
+                                        <div class="col-12">
+                                            <select class="form-select" name="class_name" id="addExamClass" {{ 'disabled' if portal_locked else '' }} required>
+                                                <option value="" disabled selected>Class...</option>
+                                                {% for c in classes %}
+                                                    <option value="{{ c }}" {{ 'selected' if class_name == c else '' }}>{{ class_label(c) }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-12">
+                                            <input class="form-control" name="new_exam_name" placeholder="e.g. First Unit Test" {{ 'disabled' if portal_locked else '' }} required>
+                                        </div>
+                                        <div class="col-12" id="addExamMaxMarksContainer" style="display:none;">
+                                            <div style="font-size:0.78rem;font-weight:600;color:var(--muted);margin-bottom:4px;">Max Marks per Subject (default 100)</div>
+                                            <div id="addExamMaxMarksList"></div>
+                                        </div>
+                                        <div class="col-12">
+                                            <button class="btn btn-navy w-100" type="submit" {{ 'disabled' if portal_locked else '' }}>+ Add Exam</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="col-lg-4">
+                                <div class="mini-panel">
+                                    <div class="mini-title">Delete Exam</div>
+                                    <form method="POST" action="{{ url_for('manage_structure') }}" class="row g-2" onsubmit="return confirm('Delete this exam? Marks entered for this exam will remain but will be unlinked from the exam name.');">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="setup_tab" value="exams">
+                                        <input type="hidden" name="structure_action" value="delete_exam">
+                                        <div class="col-12">
+                                            <select class="form-select" name="class_name" id="deleteExamClass" {{ 'disabled' if portal_locked else '' }} required>
+                                                <option value="" disabled selected>Class...</option>
+                                                {% for c in classes %}
+                                                    <option value="{{ c }}" {{ 'selected' if class_name == c else '' }}>{{ class_label(c) }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-12">
+                                            <select class="form-select" name="delete_exam_name" id="deleteExamName" {{ 'disabled' if portal_locked else '' }} required>
+                                                <option value="" disabled selected>Exam...</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-12">
+                                            <button class="btn btn-danger-main w-100" type="submit" {{ 'disabled' if portal_locked else '' }}>Delete Exam</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="col-lg-4">
+                                <div class="mini-panel">
+                                    <div class="mini-title">Current Exams by Class</div>
+                                    {% if class_exams_map %}
+                                        {% for cname, exams in class_exams_map.items() %}
+                                            <div style="margin-bottom:8px;">
+                                                <div style="font-size:0.72rem;font-weight:700;color:var(--navy);margin-bottom:3px;">{{ class_label(cname) }}</div>
+                                                {% for exam in exams %}
+                                                    <span class="muted-chip" style="display:inline-block;margin:2px;">{{ exam }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <p class="focus-note" style="margin:0;">No exams defined yet. Add exams using the form on the left.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
                     {% else %}
                         <div class="row g-2 mb-2">
@@ -725,6 +800,7 @@
     </main>
 </div>
 <script id="class-subject-map" type="application/json">{{ class_subject_map | tojson }}</script>
+<script id="class-exams-map" type="application/json">{{ class_exams_map | tojson }}</script>
 <script>
     const classSubjectMap = JSON.parse(document.getElementById('class-subject-map').textContent);
 
@@ -754,6 +830,67 @@
     }
 
     fillSubjectOptions('deleteSubjectClass', 'deleteSubjectName');
+
+    const classExamsData = JSON.parse(document.getElementById('class-exams-map').textContent);
+
+    function fillExamOptions(classSelectId, examSelectId) {
+        const classSelect = document.getElementById(classSelectId);
+        const examSelect = document.getElementById(examSelectId);
+        if (!classSelect || !examSelect) return;
+        const update = () => {
+            const selectedClass = classSelect.value;
+            const exams = classExamsData[selectedClass] || [];
+            examSelect.innerHTML = '<option value="" disabled selected>Exam...</option>';
+            exams.forEach(exam => {
+                const opt = document.createElement('option');
+                opt.value = exam;
+                opt.textContent = exam;
+                examSelect.appendChild(opt);
+            });
+        };
+        classSelect.addEventListener('change', update);
+        if (classSelect.value) update();
+    }
+
+    fillExamOptions('deleteExamClass', 'deleteExamName');
+
+    const addExamClassSelect = document.getElementById('addExamClass');
+    if (addExamClassSelect) {
+        const updateMaxMarksInputs = () => {
+            const cls = addExamClassSelect.value;
+            const subjects = classSubjectMap[cls] || [];
+            const list = document.getElementById('addExamMaxMarksList');
+            const wrapper = document.getElementById('addExamMaxMarksContainer');
+            list.innerHTML = '';
+            if (subjects.length > 0) {
+                subjects.forEach(subj => {
+                    const key = subj.replace(/ /g, '_');
+                    const row = document.createElement('div');
+                    row.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:4px;';
+                    const lbl = document.createElement('label');
+                    lbl.style.cssText = 'flex:1;font-size:0.82rem;';
+                    lbl.textContent = subj;
+                    const inp = document.createElement('input');
+                    inp.type = 'number';
+                    inp.name = 'max_marks_' + key;
+                    inp.value = '100';
+                    inp.min = '1';
+                    inp.max = '1000';
+                    inp.className = 'form-control form-control-sm';
+                    inp.style.width = '72px';
+                    if (addExamClassSelect.disabled) inp.disabled = true;
+                    row.appendChild(lbl);
+                    row.appendChild(inp);
+                    list.appendChild(row);
+                });
+                wrapper.style.display = '';
+            } else {
+                wrapper.style.display = 'none';
+            }
+        };
+        addExamClassSelect.addEventListener('change', updateMaxMarksInputs);
+        if (addExamClassSelect.value) updateMaxMarksInputs();
+    }
 
     const batchDeleteButtons = document.querySelectorAll('.batch-delete-trigger');
 

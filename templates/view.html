@@ -225,10 +225,24 @@
             <div class="page-card">
                 <div class="mini-help">Choose a class tab. You will then see that class student marks list below.</div>
 
+                {% if class_exams_map %}
+                <div style="margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <span style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;">Filter by Exam:</span>
+                    <a href="{{ url_for('view_marks', class_name=selected_class) }}"
+                       class="class-tab {{ 'active' if not selected_exam else '' }}" style="border-radius:6px;font-size:0.72rem;padding:4px 10px;">All Exams</a>
+                    {% set all_exams = [] %}
+                    {% for cname, exams in class_exams_map.items() %}{% for e in exams %}{% if e not in all_exams %}{% set _ = all_exams.append(e) %}{% endif %}{% endfor %}{% endfor %}
+                    {% for exam in all_exams %}
+                        <a href="{{ url_for('view_marks', class_name=selected_class, exam_name=exam) }}"
+                           class="class-tab {{ 'active' if selected_exam == exam else '' }}" style="border-radius:6px;font-size:0.72rem;padding:4px 10px;">{{ exam }}</a>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
                 <div class="class-tabs">
                     {% for cname in classes %}
                         {% set d = grouped_data[cname] %}
-                        <a class="class-tab {{ 'active' if cname == selected_class else '' }}" href="{{ url_for('view_marks', class_name=cname) }}">
+                        <a class="class-tab {{ 'active' if cname == selected_class else '' }}" href="{{ url_for('view_marks', class_name=cname, exam_name=selected_exam) if selected_exam else url_for('view_marks', class_name=cname) }}">
                             {{ class_label(cname) }} ({{ d.stats.total_students }})
                         </a>
                     {% endfor %}

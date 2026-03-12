@@ -659,6 +659,31 @@ def init_db():
                 )
                 """,
             )
+            execute_stmt(
+                conn,
+                """
+                CREATE TABLE IF NOT EXISTS class_exams (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    class_name TEXT NOT NULL,
+                    exam_name TEXT NOT NULL,
+                    sort_order INTEGER NOT NULL DEFAULT 0,
+                    UNIQUE(class_name, exam_name)
+                )
+                """,
+            )
+            execute_stmt(
+                conn,
+                """
+                CREATE TABLE IF NOT EXISTS exam_subject_maxmarks (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    class_name TEXT NOT NULL,
+                    exam_name TEXT NOT NULL,
+                    subject TEXT NOT NULL,
+                    max_marks INTEGER NOT NULL DEFAULT 100,
+                    UNIQUE(class_name, exam_name, subject)
+                )
+                """,
+            )
         else:
             execute_stmt(
                 conn,
@@ -724,6 +749,31 @@ def init_db():
                 )
                 """,
             )
+            execute_stmt(
+                conn,
+                """
+                CREATE TABLE IF NOT EXISTS class_exams (
+                    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                    class_name VARCHAR(64) NOT NULL,
+                    exam_name VARCHAR(128) NOT NULL,
+                    sort_order INT NOT NULL DEFAULT 0,
+                    UNIQUE KEY uq_class_exam (class_name, exam_name)
+                )
+                """,
+            )
+            execute_stmt(
+                conn,
+                """
+                CREATE TABLE IF NOT EXISTS exam_subject_maxmarks (
+                    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                    class_name VARCHAR(64) NOT NULL,
+                    exam_name VARCHAR(128) NOT NULL,
+                    subject VARCHAR(128) NOT NULL,
+                    max_marks INT NOT NULL DEFAULT 100,
+                    UNIQUE KEY uq_exam_sub_max (class_name, exam_name, subject)
+                )
+                """,
+            )
 
         # Migrate: add new student columns for existing databases
         if _is_sqlite_connection(conn):
@@ -774,6 +824,54 @@ def init_db():
             except Exception:
                 pass  # Key already exists
 
+        # Migrate: add exam_name column to marks and update unique constraint
+        if _is_sqlite_connection(conn):
+            _marks_cols = fetch_all(conn, "PRAGMA table_info(marks)")
+            _marks_col_names = [c["name"] for c in _marks_cols]
+            if "exam_name" not in _marks_col_names:
+                # Recreate to change unique constraint
+                execute_stmt(conn, "PRAGMA foreign_keys = OFF")
+                execute_stmt(
+                    conn,
+                    """
+                    CREATE TABLE marks_new (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        student_id INTEGER NOT NULL,
+                        subject TEXT NOT NULL,
+                        marks_obtained INTEGER NOT NULL,
+                        exam_name TEXT NOT NULL DEFAULT '',
+                        UNIQUE(student_id, subject, exam_name),
+                        FOREIGN KEY(student_id) REFERENCES students(id) ON DELETE CASCADE
+                    )
+                    """,
+                )
+                execute_stmt(
+                    conn,
+                    "INSERT INTO marks_new (id, student_id, subject, marks_obtained, exam_name) SELECT id, student_id, subject, marks_obtained, '' FROM marks",
+                )
+                execute_stmt(conn, "DROP TABLE marks")
+                execute_stmt(conn, "ALTER TABLE marks_new RENAME TO marks")
+                execute_stmt(conn, "PRAGMA foreign_keys = ON")
+        else:
+            try:
+                execute_stmt(
+                    conn,
+                    "ALTER TABLE marks ADD COLUMN exam_name VARCHAR(128) NOT NULL DEFAULT ''",
+                )
+            except Exception:
+                pass  # Already exists
+            try:
+                execute_stmt(conn, "ALTER TABLE marks DROP INDEX uq_student_subject")
+            except Exception:
+                pass
+            try:
+                execute_stmt(
+                    conn,
+                    "ALTER TABLE marks ADD UNIQUE KEY uq_student_subject_exam (student_id, subject, exam_name)",
+                )
+            except Exception:
+                pass
+
         ensure_setting_defaults(conn)
         ensure_class_subject_seed(conn)
         _migrate_dob_to_4digit_year(conn)
@@ -797,10 +895,11 @@ def init_db():
         conn.close()
 
 
-def get_class_results(class_name):
+def get_class_results(class_name, exam_name=None):
     subjects_dict = get_subjects_dict()
     subjects = subjects_dict.get(class_name, [])
 
+    _num_exams = 1
     conn = get_db_connection()
     try:
         students = fetch_all(
@@ -808,20 +907,34 @@ def get_class_results(class_name):
             "SELECT id, roll_no, name FROM students WHERE class_name = %s ORDER BY CAST(roll_no AS UNSIGNED), roll_no",
             (class_name,),
         )
-        marks = fetch_all(
-            conn,
-            """
-            SELECT m.student_id, m.subject, m.marks_obtained
-            FROM marks m
-            JOIN students s ON m.student_id = s.id
-            WHERE s.class_name = %s
-            """,
-            (class_name,),
-        )
+        if exam_name is not None:
+            marks = fetch_all(
+                conn,
+                """
+                SELECT m.student_id, m.subject, m.marks_obtained
+                FROM marks m
+                JOIN students s ON m.student_id = s.id
+                WHERE s.class_name = %s AND m.exam_name = %s
+                """,
+                (class_name, exam_name),
+            )
+        else:
+            marks = fetch_all(
+                conn,
+                """
+                SELECT m.student_id, m.subject, SUM(m.marks_obtained) AS marks_obtained
+                FROM marks m
+                JOIN students s ON m.student_id = s.id
+                WHERE s.class_name = %s
+                GROUP BY m.student_id, m.subject
+                """,
+                (class_name,),
+            )
+            _num_exams = len(get_class_exams(class_name, conn=conn)) or 1
     finally:
         conn.close()
 
-    max_per_sub = 100
+    max_per_sub = 100 * _num_exams
     grand_total_possible = len(subjects) * max_per_sub
 
     m_dict = {}
@@ -886,9 +999,88 @@ def calculate_class_stats(results):
     }
 
 
+def get_class_exams(class_name, conn=None):
+    """Returns list of exam names for a class, ordered by sort_order."""
+    _close = conn is None
+    if _close:
+        conn = get_db_connection()
+    try:
+        rows = fetch_all(
+            conn,
+            "SELECT exam_name FROM class_exams WHERE class_name = %s ORDER BY sort_order, id",
+            (class_name,),
+        )
+        return [r["exam_name"] for r in rows]
+    finally:
+        if _close:
+            conn.close()
+
+
+def get_all_class_exams():
+    """Returns dict of class_name -> [exam_name, ...] ordered by sort_order."""
+    conn = get_db_connection()
+    try:
+        rows = fetch_all(
+            conn,
+            "SELECT class_name, exam_name FROM class_exams ORDER BY class_name, sort_order, id",
+        )
+    finally:
+        conn.close()
+    result = {}
+    for row in rows:
+        result.setdefault(row["class_name"], []).append(row["exam_name"])
+    return result
+
+
+def get_per_exam_marks(class_name):
+    """Returns {student_id: {exam_name: {subject: marks_obtained}}} for all exams in a class."""
+    conn = get_db_connection()
+    try:
+        rows = fetch_all(
+            conn,
+            """
+            SELECT m.student_id, m.exam_name, m.subject, m.marks_obtained
+            FROM marks m
+            JOIN students s ON m.student_id = s.id
+            WHERE s.class_name = %s
+            """,
+            (class_name,),
+        )
+    finally:
+        conn.close()
+    result = {}
+    for row in rows:
+        sid = row["student_id"]
+        ename = row["exam_name"]
+        subj = row["subject"]
+        result.setdefault(sid, {}).setdefault(ename, {})[subj] = row["marks_obtained"]
+    return result
+
+
+def get_exam_maxmarks(class_name):
+    """Returns {exam_name: {subject: max_marks}} for all exams in a class."""
+    conn = get_db_connection()
+    try:
+        rows = fetch_all(
+            conn,
+            "SELECT exam_name, subject, max_marks FROM exam_subject_maxmarks WHERE class_name = %s",
+            (class_name,),
+        )
+    finally:
+        conn.close()
+    result = {}
+    for row in rows:
+        result.setdefault(row["exam_name"], {})[row["subject"]] = row["max_marks"]
+    return result
+
+
 @app.route("/")
 def index():
-    return render_template("index.html", subjects_dict=get_subjects_dict())
+    return render_template(
+        "index.html",
+        subjects_dict=get_subjects_dict(),
+        class_exams_map=get_all_class_exams(),
+    )
 
 
 @app.route("/logs")
@@ -902,14 +1094,17 @@ def results_center():
     subjects_dict = get_subjects_dict()
     class_cards = []
     for class_name in subjects_dict.keys():
-        results, _ = get_class_results(class_name)
+        results, _ = get_class_results(class_name, exam_name=None)
         class_cards.append(
             {
                 "class_name": class_name,
                 "stats": calculate_class_stats(results),
             }
         )
-    return render_template("results_center.html", class_cards=class_cards)
+    return render_template(
+        "results_center.html",
+        class_cards=class_cards,
+    )
 
 
 @app.route("/subject_entry", methods=["GET", "POST"])
@@ -921,6 +1116,7 @@ def subject_entry():
 
         class_name = request.form["class_name"]
         subject = request.form["subject"]
+        exam_name = request.form.get("exam_name", "")
 
         max_per_sub = 100
         inserted_count = 0
@@ -936,7 +1132,7 @@ def subject_entry():
                     except ValueError:
                         flash("Marks must be whole numbers only.", "danger")
                         return redirect(
-                            url_for("subject_entry", class_name=class_name, subject=subject)
+                            url_for("subject_entry", class_name=class_name, subject=subject, exam_name=exam_name)
                         )
 
                     if mark < 0 or mark > max_per_sub:
@@ -945,28 +1141,26 @@ def subject_entry():
                             "danger",
                         )
                         return redirect(
-                            url_for(
-                                "subject_entry", class_name=class_name, subject=subject
-                            )
+                            url_for("subject_entry", class_name=class_name, subject=subject, exam_name=exam_name)
                         )
 
                     existing = fetch_one(
                         conn,
-                        "SELECT id FROM marks WHERE student_id = %s AND subject = %s",
-                        (student_id, subject),
+                        "SELECT id FROM marks WHERE student_id = %s AND subject = %s AND exam_name = %s",
+                        (student_id, subject, exam_name),
                     )
                     if existing:
                         execute_stmt(
                             conn,
-                            "UPDATE marks SET marks_obtained = %s WHERE student_id = %s AND subject = %s",
-                            (mark, student_id, subject),
+                            "UPDATE marks SET marks_obtained = %s WHERE student_id = %s AND subject = %s AND exam_name = %s",
+                            (mark, student_id, subject, exam_name),
                         )
                         updated_count += 1
                     else:
                         execute_stmt(
                             conn,
-                            "INSERT INTO marks (student_id, subject, marks_obtained) VALUES (%s, %s, %s)",
-                            (student_id, subject, mark),
+                            "INSERT INTO marks (student_id, subject, marks_obtained, exam_name) VALUES (%s, %s, %s, %s)",
+                            (student_id, subject, mark, exam_name),
                         )
                         inserted_count += 1
             total_changed = inserted_count + updated_count
@@ -977,13 +1171,13 @@ def subject_entry():
                     entity_type="marks",
                     class_name=class_name,
                     subject=subject,
-                    details=f"Saved marks for {class_name} ({subject}): {inserted_count} inserted, {updated_count} updated.",
+                    details=f"Saved marks for {class_name} ({subject}){' [' + exam_name + ']' if exam_name else ''}: {inserted_count} inserted, {updated_count} updated.",
                     affected_count=total_changed,
                 )
             conn.commit()
         finally:
             conn.close()
-        flash(f"✅ Marks saved for {class_name} ({subject})", "success")
+        flash(f"Marks saved for {class_name} ({subject}){' [' + exam_name + ']' if exam_name else ''}", "success")
         return redirect(url_for("index"))
 
     class_name = request.args.get("class_name")
@@ -998,6 +1192,13 @@ def subject_entry():
         flash("Invalid subject selected.", "danger")
         return redirect(url_for("index"))
 
+    exam_name = request.args.get("exam_name", "")
+    exams = get_class_exams(class_name)
+
+    # Auto-select the only available exam
+    if not exam_name and len(exams) == 1:
+        return redirect(url_for("subject_entry", class_name=class_name, subject=subject, exam_name=exams[0]))
+
     conn = get_db_connection()
     try:
         students = fetch_all(
@@ -1005,11 +1206,11 @@ def subject_entry():
             """
             SELECT s.id, s.roll_no, s.name, m.marks_obtained
             FROM students s
-            LEFT JOIN marks m ON s.id = m.student_id AND m.subject = %s
+            LEFT JOIN marks m ON s.id = m.student_id AND m.subject = %s AND m.exam_name = %s
             WHERE s.class_name = %s
             ORDER BY CAST(s.roll_no AS UNSIGNED), s.roll_no
             """,
-            (subject, class_name),
+            (subject, exam_name, class_name),
         )
     finally:
         conn.close()
@@ -1021,6 +1222,8 @@ def subject_entry():
         subject=subject,
         students=students,
         max_per_subject=max_per_subject,
+        exam_name=exam_name,
+        exams=exams,
     )
 
 
@@ -1040,6 +1243,13 @@ def grid_entry():
     subjects = subjects_dict[class_name]
     max_per_subject = 100
 
+    exam_name = request.form.get("exam_name", "") if request.method == "POST" else request.args.get("exam_name", "")
+    exams = get_class_exams(class_name) if class_name in subjects_dict else []
+
+    # Auto-select the only available exam on GET
+    if request.method == "GET" and not exam_name and len(exams) == 1:
+        return redirect(url_for("grid_entry", class_name=class_name, exam_name=exams[0]))
+
     conn = get_db_connection()
     if request.method == "POST":
         if block_if_locked():
@@ -1057,36 +1267,36 @@ def grid_entry():
                         mark = int(value)
                     except ValueError:
                         flash("Marks must be whole numbers only.", "danger")
-                        return redirect(url_for("grid_entry", class_name=class_name))
+                        return redirect(url_for("grid_entry", class_name=class_name, exam_name=exam_name))
 
                     if subject not in subjects:
                         flash("Invalid subject in grid payload.", "danger")
-                        return redirect(url_for("grid_entry", class_name=class_name))
+                        return redirect(url_for("grid_entry", class_name=class_name, exam_name=exam_name))
 
                     if mark < 0 or mark > max_per_subject:
                         flash(
                             f"Invalid marks in grid. Enter between 0 and {max_per_subject}.",
                             "danger",
                         )
-                        return redirect(url_for("grid_entry", class_name=class_name))
+                        return redirect(url_for("grid_entry", class_name=class_name, exam_name=exam_name))
 
                     existing = fetch_one(
                         conn,
-                        "SELECT id FROM marks WHERE student_id = %s AND subject = %s",
-                        (student_id, subject),
+                        "SELECT id FROM marks WHERE student_id = %s AND subject = %s AND exam_name = %s",
+                        (student_id, subject, exam_name),
                     )
                     if existing:
                         execute_stmt(
                             conn,
-                            "UPDATE marks SET marks_obtained = %s WHERE student_id = %s AND subject = %s",
-                            (mark, student_id, subject),
+                            "UPDATE marks SET marks_obtained = %s WHERE student_id = %s AND subject = %s AND exam_name = %s",
+                            (mark, student_id, subject, exam_name),
                         )
                         updated_count += 1
                     else:
                         execute_stmt(
                             conn,
-                            "INSERT INTO marks (student_id, subject, marks_obtained) VALUES (%s, %s, %s)",
-                            (student_id, subject, mark),
+                            "INSERT INTO marks (student_id, subject, marks_obtained, exam_name) VALUES (%s, %s, %s, %s)",
+                            (student_id, subject, mark, exam_name),
                         )
                         inserted_count += 1
             total_changed = inserted_count + updated_count
@@ -1096,13 +1306,13 @@ def grid_entry():
                     action="save_grid_marks",
                     entity_type="marks",
                     class_name=class_name,
-                    details=f"Saved grid marks for {class_name}: {inserted_count} inserted, {updated_count} updated.",
+                    details=f"Saved grid marks for {class_name}{' [' + exam_name + ']' if exam_name else ''}: {inserted_count} inserted, {updated_count} updated.",
                     affected_count=total_changed,
                 )
             conn.commit()
         finally:
             conn.close()
-        flash(f"✅ Master Grid saved for {class_name}!", "success")
+        flash(f"Master Grid saved for {class_name}{' [' + exam_name + ']' if exam_name else ''}!", "success")
         return redirect(url_for("index"))
 
     students = fetch_all(
@@ -1118,9 +1328,9 @@ def grid_entry():
         SELECT m.student_id, m.subject, m.marks_obtained
         FROM marks m
         JOIN students s ON s.id = m.student_id
-        WHERE s.class_name = %s
+        WHERE s.class_name = %s AND m.exam_name = %s
         """,
-        (class_name,),
+        (class_name, exam_name),
     )
     for row in rows:
         if row["student_id"] not in marks_dict:
@@ -1135,6 +1345,8 @@ def grid_entry():
         students=students,
         marks_dict=marks_dict,
         max_per_subject=max_per_subject,
+        exam_name=exam_name,
+        exams=exams,
     )
 
 
@@ -1142,9 +1354,10 @@ def grid_entry():
 def view_marks():
     grouped = {}
     classes = list(get_subjects_dict().keys())
+    exam_name = request.args.get("exam_name")
 
     for class_name in classes:
-        results, subjects = get_class_results(class_name)
+        results, subjects = get_class_results(class_name, exam_name=exam_name)
         stats = calculate_class_stats(results)
         marks_entered = sum(len(row["marks"]) for row in results)
         marks_expected = len(results) * len(subjects)
@@ -1188,6 +1401,8 @@ def view_marks():
         classes=classes,
         selected_class=selected_class,
         selected_data=selected_data,
+        class_exams_map=get_all_class_exams(),
+        selected_exam=exam_name or "",
     )
 
 
@@ -1303,7 +1518,8 @@ def print_class_ledger(class_name):
         flash("Invalid class.", "danger")
         return redirect(url_for("results_center"))
 
-    results, subjects = get_class_results(class_name)
+    exam_name = request.args.get("exam_name")
+    results, subjects = get_class_results(class_name, exam_name=exam_name if exam_name else None)
     stats = calculate_class_stats(results)
     return render_template(
         "print_ledger.html",
@@ -1320,9 +1536,18 @@ def report_cards_bulk(class_name):
         flash("Invalid class.", "danger")
         return redirect(url_for("results_center"))
 
-    results, subjects = get_class_results(class_name)
+    results, subjects = get_class_results(class_name, exam_name=None)
+    class_exams = get_class_exams(class_name)
+    per_exam_marks = get_per_exam_marks(class_name)
+    exam_maxmarks = get_exam_maxmarks(class_name)
     return render_template(
-        "report_card.html", class_name=class_name, results=results, subjects=subjects
+        "report_card.html",
+        class_name=class_name,
+        results=results,
+        subjects=subjects,
+        class_exams=class_exams,
+        per_exam_marks=per_exam_marks,
+        exam_maxmarks=exam_maxmarks,
     )
 
 
@@ -1332,10 +1557,8 @@ def report_cards_individual_list(class_name):
         flash("Invalid class.", "danger")
         return redirect(url_for("results_center"))
 
-    results, _ = get_class_results(class_name)
-    return render_template(
-        "individual_report_cards.html", class_name=class_name, results=results
-    )
+    results, _ = get_class_results(class_name, exam_name=None)
+    return render_template("individual_report_cards.html", class_name=class_name, results=results)
 
 
 @app.route("/report_cards/<string:class_name>/individual/<int:student_id>")
@@ -1344,7 +1567,10 @@ def report_card_individual(class_name, student_id):
         flash("Invalid class.", "danger")
         return redirect(url_for("results_center"))
 
-    results, subjects = get_class_results(class_name)
+    results, subjects = get_class_results(class_name, exam_name=None)
+    class_exams = get_class_exams(class_name)
+    per_exam_marks = get_per_exam_marks(class_name)
+    exam_maxmarks = get_exam_maxmarks(class_name)
     selected_student = next((row for row in results if row["id"] == student_id), None)
     if not selected_student:
         flash("Student not found in selected class.", "warning")
@@ -1356,12 +1582,15 @@ def report_card_individual(class_name, student_id):
         results=[selected_student],
         subjects=subjects,
         single_mode=True,
+        class_exams=class_exams,
+        per_exam_marks=per_exam_marks,
+        exam_maxmarks=exam_maxmarks,
     )
 
 
 @app.route("/manage_students", methods=["GET", "POST"])
 def manage_students():
-    valid_tabs = {"students", "classes", "subjects"}
+    valid_tabs = {"students", "classes", "subjects", "exams"}
     setup_tab = request.args.get("setup_tab", "students")
     if setup_tab not in valid_tabs:
         setup_tab = "students"
@@ -1487,12 +1716,13 @@ def manage_students():
         students=students,
         classes=list(subjects_dict.keys()),
         class_subject_map=subjects_dict,
+        class_exams_map=get_all_class_exams(),
     )
 
 
 @app.route("/manage_structure", methods=["POST"])
 def manage_structure():
-    valid_tabs = {"students", "classes", "subjects"}
+    valid_tabs = {"students", "classes", "subjects", "exams"}
     setup_tab = request.form.get("setup_tab", "subjects")
     if setup_tab not in valid_tabs:
         setup_tab = "subjects"
@@ -1652,6 +1882,88 @@ def manage_structure():
             )
             conn.commit()
             flash("Subject deleted.", "success")
+            return redirect(url_for("manage_students", class_name=class_name, setup_tab=setup_tab))
+
+        if action == "add_exam":
+            class_name = (request.form.get("class_name") or "").strip()
+            new_exam_name = (request.form.get("new_exam_name") or "").strip()
+            if not class_name or not new_exam_name:
+                flash("Select class and enter exam name.", "warning")
+                return redirect(url_for("manage_students", class_name=selected_class, setup_tab=setup_tab))
+
+            existing = fetch_one(
+                conn,
+                "SELECT id FROM class_exams WHERE class_name = %s AND exam_name = %s",
+                (class_name, new_exam_name),
+            )
+            if existing:
+                flash("Exam already exists for this class.", "warning")
+                return redirect(url_for("manage_students", class_name=class_name, setup_tab=setup_tab))
+
+            # Get next sort order
+            max_order_row = fetch_one(
+                conn,
+                "SELECT MAX(sort_order) AS mx FROM class_exams WHERE class_name = %s",
+                (class_name,),
+            )
+            next_order = (max_order_row["mx"] or 0) + 1 if max_order_row else 1
+            execute_stmt(
+                conn,
+                "INSERT INTO class_exams (class_name, exam_name, sort_order) VALUES (%s, %s, %s)",
+                (class_name, new_exam_name, next_order),
+            )
+            # Insert per-subject max marks
+            subjects_for_class = get_subjects_dict().get(class_name, [])
+            for subj in subjects_for_class:
+                field_key = f"max_marks_{subj.replace(' ', '_')}"
+                try:
+                    mm = int(request.form.get(field_key, 100))
+                except (ValueError, TypeError):
+                    mm = 100
+                execute_stmt(
+                    conn,
+                    "INSERT INTO exam_subject_maxmarks (class_name, exam_name, subject, max_marks) VALUES (%s, %s, %s, %s)",
+                    (class_name, new_exam_name, subj, mm),
+                )
+            log_change(
+                conn,
+                action="add_exam",
+                entity_type="admin",
+                class_name=class_name,
+                details=f"Added exam '{new_exam_name}' to {class_name}.",
+                affected_count=1,
+            )
+            conn.commit()
+            flash(f"Exam '{new_exam_name}' added to {class_name}.", "success")
+            return redirect(url_for("manage_students", class_name=class_name, setup_tab=setup_tab))
+
+        if action == "delete_exam":
+            class_name = (request.form.get("class_name") or "").strip()
+            delete_exam_name = (request.form.get("delete_exam_name") or "").strip()
+            if not class_name or not delete_exam_name:
+                flash("Class and exam name required.", "warning")
+                return redirect(url_for("manage_students", class_name=selected_class, setup_tab=setup_tab))
+
+            execute_stmt(
+                conn,
+                "DELETE FROM class_exams WHERE class_name = %s AND exam_name = %s",
+                (class_name, delete_exam_name),
+            )
+            execute_stmt(
+                conn,
+                "DELETE FROM exam_subject_maxmarks WHERE class_name = %s AND exam_name = %s",
+                (class_name, delete_exam_name),
+            )
+            log_change(
+                conn,
+                action="delete_exam",
+                entity_type="admin",
+                class_name=class_name,
+                details=f"Deleted exam '{delete_exam_name}' from {class_name}.",
+                affected_count=1,
+            )
+            conn.commit()
+            flash(f"Exam '{delete_exam_name}' deleted from {class_name}.", "success")
             return redirect(url_for("manage_students", class_name=class_name, setup_tab=setup_tab))
 
         flash("Unknown structure action.", "warning")
