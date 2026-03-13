@@ -292,6 +292,15 @@ CLASS_DISPLAY_MAP = {
     "Class 9(B)": "Class IX(B)",
 }
 
+PROMOTION_MAP = {
+    "Class 6": "Class VII",
+    "Class 7": "Class VIII",
+    "Class 8(A)": "Class IX(A)",
+    "Class 8(B)": "Class IX(B)",
+    "Class 9(A)": "Class X",
+    "Class 9(B)": "Class X",
+}
+
 
 def class_label(class_name):
     return CLASS_DISPLAY_MAP.get(class_name, class_name)
@@ -900,6 +909,7 @@ def get_class_results(class_name, exam_name=None):
     subjects = subjects_dict.get(class_name, [])
 
     _num_exams = 1
+    _annual_rows = []
     conn = get_db_connection()
     try:
         students = fetch_all(
@@ -931,11 +941,35 @@ def get_class_results(class_name, exam_name=None):
                 (class_name,),
             )
             _num_exams = len(get_class_exams(class_name, conn=conn)) or 1
+            # Fetch Annual Exam marks for per-subject pass/fail (< 30/100 = FAIL)
+            # Matches any exam whose name contains the word "Annual"
+            _annual_rows = fetch_all(
+                conn,
+                """
+                SELECT m.student_id, m.subject, m.marks_obtained
+                FROM marks m
+                JOIN students s ON m.student_id = s.id
+                WHERE s.class_name = %s AND m.exam_name LIKE %s
+                """,
+                (class_name, "%Annual%"),
+            )
     finally:
         conn.close()
 
     max_per_sub = 100 * _num_exams
     grand_total_possible = len(subjects) * max_per_sub
+
+    # Use actual max marks from DB so percentage (and PASS/FAIL) is accurate
+    if exam_name is None:
+        _emm = get_exam_maxmarks(class_name)
+        _actual_total = sum(
+            mm
+            for exam_mm in _emm.values()
+            for sub, mm in exam_mm.items()
+            if sub in subjects
+        )
+        if _actual_total > 0:
+            grand_total_possible = _actual_total
 
     m_dict = {}
     for mark_row in marks:
@@ -943,14 +977,28 @@ def get_class_results(class_name, exam_name=None):
             m_dict[mark_row["student_id"]] = {}
         m_dict[mark_row["student_id"]][mark_row["subject"]] = mark_row["marks_obtained"]
 
+    _annual_by_student = {}
+    for row in _annual_rows:
+        _annual_by_student.setdefault(row["student_id"], {})[row["subject"]] = row["marks_obtained"]
+
     results = []
     for student in students:
         student_marks = m_dict.get(student["id"], {})
         total = sum(student_marks.values())
         percentage = round((total / grand_total_possible) * 100, 2) if total > 0 and grand_total_possible > 0 else 0
-        status = "PASS" if percentage >= 30 else "FAIL"
+
         if not student_marks:
             status = "ABSENT"
+        elif _annual_by_student:
+            student_annual = _annual_by_student.get(student["id"], {})
+            if student_annual:
+                # FAIL if any subject scored < 30 out of 100 in Annual Examination
+                status = "PASS" if all(m >= 30 for m in student_annual.values()) else "FAIL"
+            else:
+                status = "ABSENT"
+        else:
+            # No annual exam data — fall back to overall percentage
+            status = "PASS" if percentage >= 30 else "FAIL"
 
         results.append(
             {
@@ -963,6 +1011,7 @@ def get_class_results(class_name, exam_name=None):
                 "max_per_subject": max_per_sub,
                 "percentage": percentage,
                 "status": status,
+                "promoted_to": PROMOTION_MAP.get(class_name, "") if status == "PASS" else None,
             }
         )
 
@@ -1412,16 +1461,34 @@ def download_csv(class_name):
         flash("Invalid class.", "danger")
         return redirect(url_for("results_center"))
 
-    results, subjects = get_class_results(class_name)
+    subjects = get_subjects_dict().get(class_name, [])
+    exams = get_class_exams(class_name)
+    results, _ = get_class_results(class_name)
     stream = io.StringIO()
     writer = csv.writer(stream)
-    writer.writerow(["Roll", "Name"] + subjects + ["Total", "%", "Result"])
-    for row in results:
-        writer.writerow(
-            [row["roll_no"], row["name"]]
-            + [row["marks"].get(subject, "") for subject in subjects]
-            + [row["total"], row["percentage"], row["status"]]
-        )
+
+    if not exams:
+        writer.writerow(["Roll", "Name"] + subjects + ["Total", "%", "Result"])
+        for row in results:
+            writer.writerow(
+                [row["roll_no"], row["name"]]
+                + [row["marks"].get(sub, "") for sub in subjects]
+                + [row["total"], row["percentage"], row["status"]]
+            )
+    else:
+        per_exam_marks = get_per_exam_marks(class_name)
+        headers = [f"{exam} - {sub}" for exam in exams for sub in subjects]
+        writer.writerow(["Roll", "Name"] + headers + ["Total", "%", "Result"])
+        for row in results:
+            mark_cells = [
+                per_exam_marks.get(row["id"], {}).get(exam, {}).get(sub, "")
+                for exam in exams for sub in subjects
+            ]
+            writer.writerow(
+                [row["roll_no"], row["name"]]
+                + mark_cells
+                + [row["total"], row["percentage"], row["status"]]
+            )
 
     return Response(
         stream.getvalue(),
@@ -1436,7 +1503,9 @@ def download_result_portal_csv(class_name):
         flash("Invalid class.", "danger")
         return redirect(url_for("results_center"))
 
-    results, subjects = get_class_results(class_name)
+    subjects = get_subjects_dict().get(class_name, [])
+    exams = get_class_exams(class_name)
+    results, _ = get_class_results(class_name)
 
     conn = get_db_connection()
     try:
@@ -1452,14 +1521,31 @@ def download_result_portal_csv(class_name):
 
     stream = io.StringIO()
     writer = csv.writer(stream)
-    writer.writerow(["Roll", "Name", "DOB"] + subjects + ["Total", "%", "Result"])
-    for row in results:
-        dob = dob_map.get(row["id"], "")
-        writer.writerow(
-            [row["roll_no"], row["name"], dob]
-            + [row["marks"].get(subject, "") for subject in subjects]
-            + [row["total"], row["percentage"], row["status"]]
-        )
+
+    if not exams:
+        writer.writerow(["Roll", "Name", "DOB"] + subjects + ["Total", "%", "Result"])
+        for row in results:
+            dob = dob_map.get(row["id"], "")
+            writer.writerow(
+                [row["roll_no"], row["name"], dob]
+                + [row["marks"].get(sub, "") for sub in subjects]
+                + [row["total"], row["percentage"], row["status"]]
+            )
+    else:
+        per_exam_marks = get_per_exam_marks(class_name)
+        headers = [f"{exam} - {sub}" for exam in exams for sub in subjects]
+        writer.writerow(["Roll", "Name", "DOB"] + headers + ["Total", "%", "Result"])
+        for row in results:
+            dob = dob_map.get(row["id"], "")
+            mark_cells = [
+                per_exam_marks.get(row["id"], {}).get(exam, {}).get(sub, "")
+                for exam in exams for sub in subjects
+            ]
+            writer.writerow(
+                [row["roll_no"], row["name"], dob]
+                + mark_cells
+                + [row["total"], row["percentage"], row["status"]]
+            )
 
     safe_name = class_name.replace(" ", "_")
     return Response(
