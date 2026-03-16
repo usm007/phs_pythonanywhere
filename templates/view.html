@@ -1,77 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Class-wise Marks Register - {{ school_shortcode }}</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --navy: #0a1931;
-            --gold: #c9972a;
-            --green: #14633a;
-            --bg: #f0ede8;
-            --surface: #faf8f5;
-            --border: #d6cfc4;
-            --text: #1a1612;
-            --muted: #6b6058;
-        }
-        html, body { height: 100%; }
-        body {
-            margin: 0;
-            background: var(--bg);
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            color: var(--text);
-            overflow-x: hidden;
-            overflow-y: auto;
-        }
-        .app-shell {
-            min-height: 100dvh;
-            height: auto;
-            display: flex;
-            flex-direction: column;
-        }
-        .main-scroll {
-            flex: 1;
-            overflow: auto;
-            -webkit-overflow-scrolling: touch;
-            padding: 10px 0 18px;
-        }
-
-        .site-header {
-            background: var(--navy);
-            border-bottom: 4px solid var(--gold);
-            padding: 12px 20px;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        .header-title {
-            font-family: 'Fraunces', serif;
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: #fff;
-            margin: 0;
-        }
-        .header-sub {
-            font-size: 0.7rem;
-            color: rgba(255,255,255,0.45);
-            letter-spacing: .08em;
-            text-transform: uppercase;
-        }
-        .btn-back {
-            background: transparent;
-            color: rgba(255,255,255,0.7);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 7px;
-            padding: 6px 12px;
-            font-size: .8rem;
-            text-decoration: none;
-        }
-        .btn-back:hover { background: rgba(255,255,255,0.1); color: #fff; }
+{% extends "base.html" %}
+{% block title %}Class-wise Marks Register - {{ school_shortcode }}{% endblock %}
+{% block extra_css %}
+<style>
+        .main-scroll { padding: 10px 0 18px; }
+        .site-header { padding: 12px 20px; }
 
         .page-card {
             background: var(--surface);
@@ -195,17 +127,32 @@
             .header-title { font-size: 1rem; }
             .main-scroll { padding-top: 8px; }
             .page-card { padding: 10px; }
+            .btn-clear {
+                font-size: 0.82rem !important;
+                padding: 6px 12px !important;
+                min-height: 36px;
+            }
+        }
+
+        @media print {
+            .no-print, .class-tabs, .tools-row, .stat-row, .btn-clear, form[method="POST"] { display: none !important; }
+            .page-card { border: none; padding: 0; box-shadow: none; }
+            .main-scroll { overflow: visible; padding: 0; }
+            .phs-table { page-break-inside: avoid; }
         }
     </style>
-</head>
-<body>
+{% endblock %}
+{% block body %}
 <div class="app-shell">
-    <header class="site-header d-flex justify-content-between align-items-center">
-        <div>
-            <div class="header-title">📚 Class-wise Marks Register</div>
-            <div class="header-sub">{{ school_name }} · {{ exam_name }}</div>
-        </div>
-        <a href="{{ url_for('index') }}" class="btn-back">← Home</a>
+    <header class="site-header">
+        <div class="header-title">📚 Class-wise Marks Register</div>
+        <nav class="phs-breadcrumb no-print">
+            <a href="{{ url_for('index') }}">🏠 Home</a>
+            <span class="bc-sep">›</span>
+            <span class="bc-current">📚 Marks Register</span>
+            {% if selected_class %}<span class="bc-sep">›</span><span class="bc-current bc-cat">{{ class_label(selected_class) }}</span>{% endif %}
+        </nav>
+        <a href="{{ url_for('index') }}" class="btn-back no-print">← Home</a>
     </header>
 
     <main class="main-scroll">
@@ -241,9 +188,8 @@
 
                 <div class="class-tabs">
                     {% for cname in classes %}
-                        {% set d = grouped_data[cname] %}
                         <a class="class-tab {{ 'active' if cname == selected_class else '' }}" href="{{ url_for('view_marks', class_name=cname, exam_name=selected_exam) if selected_exam else url_for('view_marks', class_name=cname) }}">
-                            {{ class_label(cname) }} ({{ d.stats.total_students }})
+                            {{ class_label(cname) }}
                         </a>
                     {% endfor %}
                 </div>
@@ -259,8 +205,9 @@
                     {% endif %}
                 </div>
 
-                <div class="tools-row">
-                    <input id="searchInput" type="text" placeholder="Search student by name or roll number...">
+                <div class="tools-row no-print">
+                    <input id="searchInput" type="text" placeholder="Search student by name or roll number…">
+                    <button onclick="window.print()" style="background:var(--navy);color:#fff;border:none;border-radius:7px;padding:7px 16px;font-size:0.82rem;font-weight:600;cursor:pointer;">🖨 Print This View</button>
                 </div>
 
                 <div class="phs-table">
@@ -275,6 +222,12 @@
                                     {% endfor %}
                                     <th>Total</th>
                                     <th>%</th>
+                                    {# F6: per-exam % columns when multiple exams, no filter #}
+                                    {% if per_exam_data %}
+                                        {% for ex in selected_exams %}
+                                            <th title="{{ ex }}" style="white-space:nowrap;font-size:0.68rem;">{{ ex[:10] }}{% if ex|length > 10 %}…{% endif %} %</th>
+                                        {% endfor %}
+                                    {% endif %}
                                     <th>Result</th>
                                     <th>Action</th>
                                 </tr>
@@ -289,6 +242,13 @@
                                         {% endfor %}
                                         <td>{{ row.total }}</td>
                                         <td>{{ row.percentage }}</td>
+                                        {# F6: per-exam % values #}
+                                        {% if per_exam_data %}
+                                            {% for ex in selected_exams %}
+                                                {% set ex_row = per_exam_data.get(ex, {}).get(row.id) %}
+                                                <td style="font-size:0.76rem;color:var(--muted);">{{ ex_row.percentage if ex_row else '—' }}</td>
+                                            {% endfor %}
+                                        {% endif %}
                                         <td>
                                             {% if row.status == 'PASS' %}
                                                 <span class="status-pass">PASS</span>
@@ -333,5 +293,4 @@
     });
 
 </script>
-</body>
-</html>
+{% endblock %}

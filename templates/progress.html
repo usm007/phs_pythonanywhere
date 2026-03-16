@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% block title %}Marks Progress - {{ school_shortcode }}{% endblock %}
+{% block extra_css %}
+<style>
+    .main-scroll { padding: 16px 0 28px; }
+    .site-header { padding: 12px 20px; }
+
+    .progress-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 14px;
+        margin-top: 16px;
+    }
+    .progress-card {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    .progress-card-head {
+        background: var(--navy);
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+    .progress-card-title {
+        font-family: 'Fraunces', serif;
+        font-size: 1rem;
+        font-weight: 700;
+        color: #fff;
+        margin: 0;
+    }
+    .student-chip {
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: rgba(255,255,255,0.6);
+        white-space: nowrap;
+    }
+    .progress-card-body { padding: 12px 16px 14px; }
+
+    .exam-row { margin-bottom: 16px; }
+    .exam-row:last-child { margin-bottom: 0; }
+    .exam-row-label {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 4px;
+    }
+    .exam-name {
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 65%;
+    }
+    .exam-count {
+        font-size: 0.72rem;
+        color: var(--muted);
+        white-space: nowrap;
+    }
+    .phs-progress {
+        height: 7px;
+        background: var(--border);
+        border-radius: 99px;
+        overflow: hidden;
+    }
+    .phs-progress-bar {
+        height: 100%;
+        border-radius: 99px;
+        background: var(--navy);
+        transition: width 0.4s ease;
+    }
+    .phs-progress-bar.complete { background: #14633a; }
+    .phs-progress-bar.warn { background: #c07b00; }
+
+    .overall-row {
+        border-top: 1px solid var(--border);
+        margin-top: 10px;
+        padding-top: 10px;
+    }
+    .overall-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 4px;
+    }
+    .overall-pct {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--navy);
+        line-height: 1;
+    }
+    .subjects-line {
+        font-size: 0.8rem;
+        color: var(--muted);
+        margin-top: 6px;
+        line-height: 1.4;
+    }
+
+    .summary-bar {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 14px 20px;
+        display: flex;
+        gap: 28px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-top: 16px;
+    }
+    .summary-stat { text-align: center; }
+    .summary-stat-num { font-size: 1.4rem; font-weight: 700; color: var(--navy); line-height: 1; }
+    .summary-stat-lbl { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-top: 3px; }
+
+    .no-data { color: var(--muted); font-size: 0.85rem; padding: 8px 0; }
+</style>
+{% endblock %}
+{% block body %}
+<div class="app-shell">
+    <header class="site-header">
+        <div class="header-title">📈 Marks Progress</div>
+        <nav class="phs-breadcrumb no-print">
+            <a href="{{ url_for('index') }}">🏠 Home</a>
+            <span class="bc-sep">›</span>
+            <span class="bc-current">📈 Marks Progress</span>
+        </nav>
+        <a href="{{ url_for('index') }}" class="btn-back no-print">← Home</a>
+    </header>
+
+    <main class="main-scroll">
+        <div class="container-fluid px-3 px-md-4">
+
+            {% set total_entered = progress_data | sum(attribute='total_entered') %}
+            {% set total_expected = progress_data | sum(attribute='total_expected') %}
+            {% set overall_pct = ((total_entered / total_expected * 100) | round(0) | int) if total_expected > 0 else 0 %}
+
+            <div class="summary-bar">
+                <div class="summary-stat">
+                    <div class="summary-stat-num">{{ progress_data | length }}</div>
+                    <div class="summary-stat-lbl">Classes</div>
+                </div>
+                <div class="summary-stat">
+                    <div class="summary-stat-num">{{ total_entered }}</div>
+                    <div class="summary-stat-lbl">Marks Entered</div>
+                </div>
+                <div class="summary-stat">
+                    <div class="summary-stat-num">{{ total_expected }}</div>
+                    <div class="summary-stat-lbl">Total Expected</div>
+                </div>
+                <div class="summary-stat">
+                    <div class="summary-stat-num">{{ overall_pct }}%</div>
+                    <div class="summary-stat-lbl">Overall Complete</div>
+                </div>
+                <div style="flex:1;min-width:160px;">
+                    <div style="font-size:0.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;">Overall Progress</div>
+                    <div class="phs-progress" style="height:10px;">
+                        <div class="phs-progress-bar {{ 'complete' if overall_pct == 100 else ('warn' if overall_pct >= 50 else '') }}" style="width:{{ overall_pct }}%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="progress-grid">
+                {% for cls in progress_data %}
+                <div class="progress-card">
+                    <div class="progress-card-head">
+                        <div class="progress-card-title">{{ class_label(cls.class_name) }}</div>
+                        <span class="student-chip">{{ cls.student_count }} student{{ 's' if cls.student_count != 1 else '' }}</span>
+                    </div>
+                    <div class="progress-card-body">
+                        {% if cls.exam_progress %}
+                            {% for ep in cls.exam_progress %}
+                            <div class="exam-row">
+                                <div class="exam-row-label">
+                                    <span class="exam-name" title="{{ ep.exam }}">{{ ep.exam }}</span>
+                                    <span class="exam-count">{{ ep.entered }} / {{ ep.expected }} &nbsp;·&nbsp; {{ ep.pct }}%</span>
+                                </div>
+                                <div class="phs-progress">
+                                    <div class="phs-progress-bar {{ 'complete' if ep.pct == 100 else ('warn' if ep.pct >= 50 else '') }}" style="width:{{ ep.pct }}%;"></div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="no-data">No exams configured yet.</div>
+                        {% endif %}
+
+                        <div class="overall-row">
+                            <div class="overall-label">Overall</div>
+                            <div class="overall-pct">{{ cls.total_pct }}%</div>
+                            <div class="phs-progress" style="height:5px;margin-top:6px;">
+                                <div class="phs-progress-bar {{ 'complete' if cls.total_pct == 100 else ('warn' if cls.total_pct >= 50 else '') }}" style="width:{{ cls.total_pct }}%;"></div>
+                            </div>
+                        </div>
+
+                        <div class="subjects-line"><span style="font-weight:700;color:var(--muted);text-transform:uppercase;font-size:0.62rem;letter-spacing:0.08em;">Subjects: </span>{{ cls.subjects | join(' · ') }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+        </div>
+    </main>
+</div>
+{% endblock %}

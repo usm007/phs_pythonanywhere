@@ -1,44 +1,15 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Subject Entry — {{ school_shortcode }}</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
+{% extends "base.html" %}
+{% block title %}Subject Entry — {{ school_shortcode }}{% endblock %}
+{% block extra_css %}
+<style>
         :root {
-            --navy: #0a1931; --gold: #c9972a; --green: #14633a;
-            --bg: #f0ede8; --surface: #faf8f5; --border: #d6cfc4;
-            --text: #1a1612; --muted: #6b6058;
             --dense-head: 7px 10px;
             --dense-cell: 5px 10px;
             --dense-input-pad: 3px 6px;
             --dense-input-size: 0.78rem;
         }
-        html, body { height: 100%; }
-        body {
-            margin: 0;
-            background: var(--bg);
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            color: var(--text);
-            overflow-x: hidden;
-            overflow-y: auto;
-        }
-
-        .app-shell {
-            min-height: 100dvh;
-            height: auto;
-            display: flex;
-            flex-direction: column;
-        }
 
         .main-scroll {
-            flex: 1;
-            overflow: auto;
-            -webkit-overflow-scrolling: touch;
             padding: 10px 0 12px;
             min-height: 0;
         }
@@ -59,35 +30,45 @@
         }
 
         .site-header {
-            background: var(--navy);
-            border-bottom: 4px solid var(--gold);
             padding: 8px 16px;
             flex-shrink: 0;
         }
         .header-title { font-family: 'Fraunces', serif; font-size: 0.92rem; font-weight: 700; color: #fff; }
         .header-sub { font-size: 0.62rem; color: rgba(255,255,255,0.45); letter-spacing:.08em; text-transform: uppercase; }
 
-        .btn-back {
-            background: transparent; color: rgba(255,255,255,0.65);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 7px; font-size: 0.76rem; padding: 4px 10px; text-decoration: none;
-        }
-        .btn-back:hover { background: rgba(255,255,255,0.1); color: #fff; }
-
         .context-banner {
             background: var(--navy); color: #fff;
             border-radius: 10px; padding: 7px 10px;
-            display: flex; align-items: center; gap: 16px;
+            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
         }
-        .context-banner .class-pill {
-            background: var(--gold); color: #fff;
-            font-family: 'Fraunces', serif; font-weight: 700;
-            font-size: 0.86rem; border-radius: 6px; padding: 2px 8px;
+        .ctx-select {
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.25);
+            color: #fff; border-radius: 7px;
+            font-size: 0.82rem; font-weight: 600;
+            padding: 4px 26px 4px 8px;
+            appearance: none; -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,0.5)'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            cursor: pointer; outline: none;
+            transition: border-color 0.15s, background 0.15s;
+            max-width: 180px;
+        }
+        .ctx-select:focus { border-color: var(--gold); background: rgba(255,255,255,0.18); }
+        .ctx-select option { background: var(--navy); color: #fff; }
+        .ctx-sep { color: rgba(255,255,255,0.3); font-size: 0.8rem; }
+        .ctx-go {
+            background: rgba(255,255,255,0.15);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 7px;
+            font-size: 0.78rem; font-weight: 700;
+            padding: 4px 12px; cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
             white-space: nowrap;
         }
-        .context-banner .sub-name {
-            font-size: 0.9rem; font-weight: 600;
-        }
+        .ctx-go:hover { background: var(--gold); border-color: var(--gold); color: #1a1200; }
         .context-banner .max-badge {
             margin-left: auto;
             background: rgba(255,255,255,0.1);
@@ -124,9 +105,10 @@
         .name-cell { font-weight: 500; }
 
         .mark-input {
-            width: 74px; border: 1.5px solid var(--border); border-radius: 6px;
+            width: 88px; border: 1.5px solid var(--border); border-radius: 6px;
             padding: var(--dense-input-pad); font-size: var(--dense-input-size); text-align: center;
             transition: border-color 0.15s, box-shadow 0.15s; background: #fff;
+            min-height: 36px;
         }
         .mark-input:focus {
             border-color: var(--gold); outline: none;
@@ -150,8 +132,6 @@
             transition: all 0.15s;
         }
         .btn-cancel:hover { background: var(--border); color: var(--text); }
-
-        .flash-msg { border-radius: 8px; border: none; font-size: 0.875rem; }
 
         .main-scroll::-webkit-scrollbar,
         .phs-table::-webkit-scrollbar {
@@ -191,20 +171,43 @@
                 min-height: 260px;
             }
         }
+        /* ── Mobile touch targets for mark inputs ── */
+        @media (max-width: 768px) {
+            :root {
+                --dense-head: 8px 10px;
+                --dense-cell: 8px 10px;
+                --dense-input-pad: 8px 8px;
+                --dense-input-size: 0.9rem;
+            }
+            .mark-input {
+                min-height: 42px !important;
+                width: 100px !important;
+                font-size: 0.9rem !important;
+            }
+            .name-cell { font-size: 0.85rem; }
+            .btn-save { padding: 10px 18px !important; font-size: 0.88rem !important; min-height: 44px; }
+            .btn-cancel { padding: 9px 14px !important; font-size: 0.88rem !important; min-height: 44px; }
+            .ctx-select { padding: 9px 26px 9px 10px !important; font-size: 0.9rem !important; min-height: 42px; max-width: 100%; }
+            .ctx-go { padding: 9px 16px !important; font-size: 0.88rem !important; min-height: 42px; }
+            .context-banner { gap: 8px; padding: 8px 10px; flex-wrap: wrap; }
+        }
     </style>
-</head>
-<body>
+{% endblock %}
+{% block body %}
 <div class="app-shell">
-<header class="site-header d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <div class="header-title">📑 Subject-wise Entry</div>
-            <div class="header-sub">{{ school_name }} · {{ exam_name }}</div>
-    </div>
+<header class="site-header">
+    <div class="header-title"><i class="fas fa-pen-to-square"></i> Subject-wise Entry</div>
+    <nav class="phs-breadcrumb no-print">
+        <a href="{{ url_for('index') }}">🏠 Home</a>
+        <span class="bc-sep">›</span>
+        <span class="bc-current"><i class="fas fa-pen-to-square"></i> Subject Entry</span>
+        {% if class_name %}<span class="bc-sep">›</span><span class="bc-current bc-cat">{{ class_label(class_name) }}{% if subject %} · {{ subject }}{% endif %}</span>{% endif %}
+    </nav>
     <a href="{{ url_for('index') }}" class="btn-back">← Dashboard</a>
 </header>
 
 <main class="main-scroll">
-<div class="container h-100" style="max-width: 760px;">
+<div class="container-fluid h-100">
     <div class="page-frame">
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -214,12 +217,196 @@
         {% endif %}
     {% endwith %}
 
+{% if pick_mode %}
+    {# ── Picker mode: no class/subject selected yet ── #}
+    <div style="max-width:480px;margin:32px auto;">
+        <div style="background:#fff;border:1px solid var(--border);border-top:3px solid var(--gold);border-radius:14px;padding:28px 32px;box-shadow:0 2px 12px rgba(10,25,49,0.08);">
+            <h2 style="font-family:'Fraunces',serif;font-size:1.2rem;color:var(--navy);margin:0 0 6px;">Enter Marks</h2>
+            <p style="font-size:0.88rem;color:var(--muted);margin:0 0 18px;line-height:1.6;">
+                Choose your <strong>class</strong> and <strong>subject</strong>, then tap <em>Continue</em> to see the list of students and enter their marks.
+            </p>
+            <div style="background:#f0f7ff;border:1px solid #bcd4f0;border-radius:8px;padding:10px 14px;margin-bottom:18px;font-size:0.8rem;color:#1a4a7a;line-height:1.6;">
+                <strong>💡 Tip:</strong> You can type <strong>A</strong> for Absent or leave the box empty for students who haven't appeared yet.
+            </div>
+            <form method="GET" action="{{ url_for('subject_entry') }}" id="pickerForm">
+                <div style="margin-bottom:14px;">
+                    <label style="font-size:0.82rem;font-weight:600;color:var(--navy);display:block;margin-bottom:5px;">Class</label>
+                    <select class="form-select" name="class_name" id="pickerClass" required>
+                        <option value="" disabled selected>Select a class…</option>
+                        {% for cname in subjects_dict.keys() %}<option value="{{ cname }}">{{ class_label(cname) }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div style="margin-bottom:14px;">
+                    <label style="font-size:0.82rem;font-weight:600;color:var(--navy);display:block;margin-bottom:5px;">Subject</label>
+                    <select class="form-select" name="subject" id="pickerSubject" required disabled>
+                        <option value="" disabled selected>Choose a class first…</option>
+                    </select>
+                </div>
+                <div id="pickerExamRow" style="display:none;margin-bottom:14px;">
+                    <label style="font-size:0.82rem;font-weight:600;color:var(--navy);display:block;margin-bottom:5px;">Exam</label>
+                    <select class="form-select" name="exam_name" id="pickerExam">
+                        <option value="" disabled selected>Select an exam…</option>
+                    </select>
+                </div>
+                <div style="margin-top:20px;">
+                    <button type="submit" style="width:100%;padding:11px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:0.9rem;letter-spacing:0.05em;cursor:pointer;">CONTINUE →</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+        const _subs = {{ subjects_dict | tojson }};
+        const _exams = {{ class_exams_map | tojson }};
+        document.getElementById('pickerClass').addEventListener('change', function() {
+            const cls = this.value;
+            // Populate subjects
+            const s = document.getElementById('pickerSubject');
+            s.innerHTML = '<option value="" disabled selected>Select subject…</option>';
+            (_subs[cls] || []).forEach(x => {
+                const o = document.createElement('option'); o.value = x; o.textContent = x; s.appendChild(o);
+            });
+            s.disabled = false;
+            // Populate exams
+            const clsExams = _exams[cls] || [];
+            const examRow = document.getElementById('pickerExamRow');
+            const examSel = document.getElementById('pickerExam');
+            if (clsExams.length > 1) {
+                examSel.innerHTML = '<option value="" disabled selected>Select an exam…</option>';
+                clsExams.forEach(x => {
+                    const o = document.createElement('option'); o.value = x; o.textContent = x; examSel.appendChild(o);
+                });
+                examSel.required = true;
+                examRow.style.display = 'block';
+            } else {
+                examSel.required = false;
+                examRow.style.display = 'none';
+                // If exactly one exam, set its value so it submits automatically
+                examSel.innerHTML = '';
+                if (clsExams.length === 1) {
+                    const o = document.createElement('option'); o.value = clsExams[0]; o.textContent = clsExams[0];
+                    o.selected = true; examSel.appendChild(o);
+                }
+            }
+        });
+    </script>
+{% else %}
     <div class="context-banner">
-        <span class="class-pill">{{ class_label(class_name) }}</span>
-        <span class="sub-name">{{ subject }}</span>
-        {% if exam_name %}<span class="max-badge" style="background:rgba(201,151,42,0.15);color:#ffe08a;">📝 {{ exam_name }}</span>{% endif %}
+        {# Class dropdown #}
+        <select class="ctx-select" id="ctxClass">
+            {% for cls in subjects_dict.keys() %}
+            <option value="{{ cls }}" {% if cls == class_name %}selected{% endif %}>{{ class_label(cls) }}</option>
+            {% endfor %}
+        </select>
+        <span class="ctx-sep">›</span>
+        {# Subject dropdown #}
+        <select class="ctx-select" id="ctxSubject">
+            {% for sub in subjects_dict[class_name] %}
+            <option value="{{ sub }}" {% if sub == subject %}selected{% endif %}>{{ sub }}</option>
+            {% endfor %}
+        </select>
+        {# Exam dropdown — only when multiple exams #}
+        {% if exams | length > 1 %}
+        <span class="ctx-sep">›</span>
+        <select class="ctx-select" id="ctxExam">
+            {% for ex in exams %}
+            <option value="{{ ex }}" {% if ex == exam_name %}selected{% endif %}>{{ ex }}</option>
+            {% endfor %}
+        </select>
+        {% else %}
+        <input type="hidden" id="ctxExam" value="{{ exam_name }}">
+        {% endif %}
+        <button class="ctx-go" id="ctxGoBtn" type="button">Go →</button>
         <span class="max-badge">Max: {{ max_per_subject }}</span>
     </div>
+    <script>
+    (function() {
+        const _subs = {{ subjects_dict | tojson }};
+        const _exams = {{ class_exams_map | tojson }};
+        const clsEl = document.getElementById('ctxClass');
+        const subEl = document.getElementById('ctxSubject');
+        const examEl = document.getElementById('ctxExam');
+        const goBtn = document.getElementById('ctxGoBtn');
+
+        function rebuildSubjects(cls, keepSub) {
+            if (subEl.tagName !== 'SELECT') return;
+            const subs = _subs[cls] || [];
+            subEl.innerHTML = '';
+            subs.forEach(s => {
+                const o = document.createElement('option');
+                o.value = s; o.textContent = s;
+                if (s === keepSub) o.selected = true;
+                subEl.appendChild(o);
+            });
+            if (!subs.includes(keepSub) && subs.length) subEl.value = subs[0];
+        }
+
+        function rebuildExams(cls) {
+            if (!examEl || examEl.tagName !== 'SELECT') return;
+            const exs = _exams[cls] || [];
+            examEl.innerHTML = '';
+            exs.forEach(e => {
+                const o = document.createElement('option');
+                o.value = e; o.textContent = e; examEl.appendChild(o);
+            });
+        }
+
+        function navigate() {
+            const cls = clsEl.value;
+            const sub = subEl.tagName === 'SELECT' ? subEl.value : subEl.value;
+            const ex = examEl ? (examEl.tagName === 'SELECT' ? examEl.value : examEl.value) : '';
+            if (typeof subjectDirty !== 'undefined' && subjectDirty) {
+                if (!confirm('You have unsaved changes. Leave without saving?')) return;
+                subjectDirty = false;
+            }
+            window.location.href = '/subject_entry?class_name=' + encodeURIComponent(cls)
+                + '&subject=' + encodeURIComponent(sub)
+                + (ex ? '&exam_name=' + encodeURIComponent(ex) : '');
+        }
+
+        clsEl.addEventListener('change', function() {
+            rebuildSubjects(this.value, subEl.tagName === 'SELECT' ? subEl.value : '');
+            rebuildExams(this.value);
+        });
+        goBtn.addEventListener('click', navigate);
+    }());
+    </script>
+
+    {# Completion progress bar + keyboard tip — same row #}
+    {% set filled_count = students | selectattr('marks_obtained', 'ne', none) | list | length %}
+    {% set total_count = students | length %}
+    <div style="display:flex;gap:10px;align-items:stretch;">
+        <div class="progress-strip" id="progressStrip" style="flex:1;min-width:0;">
+            <span class="progress-label">Progress</span>
+            <div class="progress-bar-wrap">
+                <div class="progress-bar-fill" id="progressFill"></div>
+            </div>
+            <span class="progress-count" id="progressCount">
+                <span id="progFilled">{{ filled_count }}</span> / {{ total_count }}
+            </span>
+        </div>
+        <div class="keyboard-hint no-print" style="flex:1;min-width:0;margin:0;">
+            <i class="fas fa-keyboard"></i> Tip: Press <kbd>Enter</kbd> or <kbd>Tab</kbd> to move to the next mark
+        </div>
+    </div>
+    <script>
+        (function () {
+            var total = {{ total_count }};
+            var fill = document.getElementById('progressFill');
+            var countSpan = document.getElementById('progFilled');
+            function updateProgress() {
+                var filled = Array.from(document.querySelectorAll('.mark-input'))
+                    .filter(function(inp) { return inp.value.trim() !== ''; }).length;
+                var pct = total > 0 ? Math.round((filled / total) * 100) : 0;
+                fill.style.width = pct + '%';
+                fill.classList.toggle('complete', pct === 100);
+                countSpan.textContent = filled;
+            }
+            document.querySelectorAll('.mark-input').forEach(function(inp) {
+                inp.addEventListener('input', updateProgress);
+            });
+            updateProgress();
+        }());
+    </script>
 
     {% if portal_locked %}
         <div class="alert alert-warning mb-2" style="border-radius:8px;font-size:0.8rem;">Portal is locked. Marks editing is disabled.</div>
@@ -237,7 +424,7 @@
                     <tr>
                         <th class="roll-cell" style="width:80px;">Roll</th>
                         <th>Student Name</th>
-                        <th style="width:130px;">Marks</th>
+                        <th style="width:130px;">Marks &nbsp;<span style="background:var(--navy);color:#fff;border-radius:5px;padding:1px 7px;font-size:0.68rem;font-weight:700;white-space:nowrap;">/{{ max_per_subject }}</span></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -246,10 +433,17 @@
                             <td class="roll-cell">{{ s.roll_no }}</td>
                             <td class="name-cell">{{ s.name }}</td>
                             <td>
-                                <input class="mark-input" type="number" min="0" max="{{ max_per_subject }}"
+                                <input class="mark-input" type="number" min="0" max="{{ max_per_subject }}" step="0.5"
                                     name="mark_{{ s.id }}"
                                     value="{{ s.marks_obtained if s.marks_obtained is not none else '' }}"
                                     {{ 'disabled' if portal_locked else '' }}>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="3" style="text-align:center;padding:24px 10px;color:var(--muted);">
+                                No students in <strong>{{ class_label(class_name) }}</strong> yet.
+                                <a href="{{ url_for('manage_students', setup_tab='students', class_name=class_name) }}" style="color:var(--navy);font-weight:600;">Add students →</a>
                             </td>
                         </tr>
                     {% endfor %}
@@ -258,11 +452,13 @@
         </div>
 
         <div class="d-flex gap-2 align-items-center">
+            <div class="last-saved-strip" id="lastSavedStrip" style="display:none;">
+                ✓ Last saved: <span class="saved-time" id="lastSavedTime"></span>
+            </div>
+            <a href="{{ url_for('index') }}" class="btn-cancel ms-auto" id="cancelBtn">Cancel</a>
             {% if not portal_locked %}
-                <button class="btn-save" type="submit">✓ Save Marks</button>
+                <button class="btn-save" type="submit" id="saveBtn">SAVE MARKS</button>
             {% endif %}
-            <a href="{{ url_for('index') }}" class="btn-cancel">Cancel</a>
-            <span class="ms-auto" style="font-size:0.75rem;color:var(--muted);">Press Enter to advance rows</span>
         </div>
     </form>
     </div>
@@ -272,25 +468,75 @@
 
 <script>
     const markInputs = Array.from(document.querySelectorAll('.mark-input'));
-    if (markInputs.length) { markInputs[0].focus(); markInputs[0].select(); }
+    const MAX_MARK = {{ max_per_subject }};
+
+    function validateInput(inp) {
+        const v = inp.value.trim();
+        if (v === '') { inp.classList.remove('invalid'); inp.title = ''; return true; }
+        const n = Number(v);
+        const ok = Number.isInteger(n) && n >= 0 && n <= MAX_MARK;
+        inp.classList.toggle('invalid', !ok);
+        inp.title = ok ? '' : `Must be a whole number between 0 and ${MAX_MARK}`;
+        return ok;
+    }
+
     markInputs.forEach((input, index) => {
+        input.addEventListener('input', () => validateInput(input));
         input.addEventListener('keydown', e => {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 const next = markInputs[index + 1];
                 if (next) { next.focus(); next.select(); }
                 else {
-                    const form = document.getElementById('subjectForm');
-                    if (form.requestSubmit) {
-                        form.requestSubmit();
-                    } else {
-                        form.dispatchEvent(new Event('submit', { cancelable: true }));
-                    }
+                    document.getElementById('subjectForm').requestSubmit
+                        ? document.getElementById('subjectForm').requestSubmit()
+                        : document.getElementById('subjectForm').dispatchEvent(new Event('submit', { cancelable: true }));
                 }
             }
         });
     });
 
+    if (markInputs.length) { markInputs[0].focus(); markInputs[0].select(); }
+
+    // Show last saved time from localStorage
+    (function() {
+        const key = 'subjectLastSaved_{{ class_name|replace(" ","_") }}_{{ subject|replace(" ","_") }}';
+        const t = localStorage.getItem(key);
+        if (t) {
+            document.getElementById('lastSavedTime').textContent = t;
+            document.getElementById('lastSavedStrip').style.display = 'flex';
+        }
+    }());
+
+    document.getElementById('subjectForm').addEventListener('submit', function(e) {
+        const invalid = markInputs.filter(inp => !validateInput(inp));
+        if (invalid.length) {
+            e.preventDefault();
+            invalid[0].focus();
+            invalid[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+        subjectDirty = false;
+        // Loading state
+        const btn = document.getElementById('saveBtn');
+        if (btn) { btn.textContent = 'Saving…'; btn.classList.add('btn-saving'); }
+        // Store save time in localStorage
+        const key = 'subjectLastSaved_{{ class_name|replace(" ","_") }}_{{ subject|replace(" ","_") }}';
+        localStorage.setItem(key, new Date().toLocaleString());
+    });
+
+    // U9: warn on unsaved changes
+    let subjectDirty = false;
+    markInputs.forEach(inp => inp.addEventListener('input', () => { subjectDirty = true; }));
+    const cancelBtn = document.getElementById('cancelBtn');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', function(e) {
+            if (subjectDirty) { if (!confirm('You have unsaved changes. Leave without saving?')) { e.preventDefault(); } }
+        });
+    }
+    window.addEventListener('beforeunload', function(e) {
+        if (subjectDirty) { e.preventDefault(); e.returnValue = ''; }
+    });
 </script>
 
 <!-- Exam Selection Modal -->
@@ -331,5 +577,5 @@
     };
 }());
 </script>
-</body>
-</html>
+{% endif %}
+{% endblock %}

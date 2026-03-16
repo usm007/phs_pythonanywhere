@@ -1,32 +1,12 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Lock - {{ school_shortcode }}</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --navy: #0a1931;
-            --gold: #c9972a;
-            --bg: #f0ede8;
-            --surface: #faf8f5;
-            --border: #d6cfc4;
-            --text: #1a1612;
-            --muted: #6b6058;
-        }
+{% extends "base.html" %}
+{% block title %}Admin Lock - {{ school_shortcode }}{% endblock %}
+{% block extra_css %}
+<style>
         body {
-            margin: 0;
-            min-height: 100vh;
-            background: var(--bg);
-            color: var(--text);
-            font-family: 'Plus Jakarta Sans', sans-serif;
             display: grid;
             place-items: center;
             padding: 24px;
+            min-height: 100vh;
         }
         .lock-card {
             width: min(520px, 100%);
@@ -82,9 +62,17 @@
             text-decoration: none;
         }
         .btn-light-outline:hover { background: #ece7df; color: var(--text); }
+        @media (max-width: 900px) {
+            .btn-main,
+            .btn-light-outline {
+                min-height: 44px;
+                font-size: 0.9rem;
+                padding: 9px 14px;
+            }
+        }
     </style>
-</head>
-<body>
+{% endblock %}
+{% block body %}
     <div class="lock-card">
         <div class="lock-head">
             <h1 class="lock-title">Admin Access</h1>
@@ -105,7 +93,12 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="mb-3">
                     <label class="form-label" style="font-size:0.78rem;font-weight:600;">Master PIN</label>
-                    <input type="password" name="master_pin" class="form-control" placeholder="Enter PIN" required autofocus autocomplete="off">
+                    <div class="input-group">
+                        <input type="password" name="master_pin" id="masterPinInput" class="form-control" placeholder="Enter PIN" required autofocus autocomplete="off" style="border-radius:7px 0 0 7px;">
+                        <button type="button" class="pin-toggle" onclick="togglePin('masterPinInput','eyeIcon1')" title="Show/hide PIN" aria-label="Show PIN" id="pinToggle1">
+                            <i id="eyeIcon1" class="fas fa-eye" aria-hidden="true"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="d-flex gap-2 align-items-center">
                     <button type="submit" class="btn-main">Unlock Dashboard</button>
@@ -114,5 +107,20 @@
             </form>
         </div>
     </div>
-</body>
-</html>
+<script>
+function togglePin(inputId, iconId) {
+    const inp = document.getElementById(inputId);
+    const icon = document.getElementById(iconId);
+    const btn = inp.parentElement.querySelector('[aria-label]');
+    if (inp.type === 'password') {
+        inp.type = 'text';
+        icon.className = 'fas fa-eye-slash';
+        if (btn) btn.setAttribute('aria-label', 'Hide PIN');
+    } else {
+        inp.type = 'password';
+        icon.className = 'fas fa-eye';
+        if (btn) btn.setAttribute('aria-label', 'Show PIN');
+    }
+}
+</script>
+{% endblock %}

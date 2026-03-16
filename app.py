@@ -1,8 +1,9 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, Response, send_from_directory, session, abort
+from flask import Flask, render_template, request, redirect, url_for, flash, Response, send_from_directory, session, abort, jsonify, g
 import os
 import csv
 import io
 import re
+import json
 import sqlite3
 from datetime import datetime
 from functools import wraps
@@ -51,6 +52,22 @@ except ImportError:
 app = Flask(__name__)
 app.secret_key = os.environ.get("PHS_SECRET_KEY", "change-me-in-env")
 
+# Gzip compression for all responses
+try:
+    from flask_compress import Compress
+    Compress(app)
+except ImportError:
+    pass  # Optional dependency — degrades gracefully
+
+# Long-lived cache for versioned static assets
+@app.after_request
+def add_cache_headers(response):
+    if request.path.startswith('/static/'):
+        response.cache_control.public = True
+        response.cache_control.max_age = 31536000  # 1 year
+        response.cache_control.immutable = True
+    return response
+
 try:
     import pymysql
     import pymysql.cursors
@@ -87,6 +104,8 @@ SETTINGS_DEFAULTS = {
     "academic_session": "2025-26",
     "portal_locked": "0",
     "school_logo_updated_at": "",
+    "hidden_panels": "[]",
+    "visitor_count": "0",
 }
 
 
@@ -209,8 +228,10 @@ def log_change(
     )
 
 
-def get_recent_logs(limit=20):
-    conn = get_db_connection()
+def get_recent_logs(limit=20, conn=None):
+    _close = conn is None
+    if _close:
+        conn = get_db_connection()
     try:
         rows = fetch_all(
             conn,
@@ -224,7 +245,8 @@ def get_recent_logs(limit=20):
         )
         return rows
     finally:
-        conn.close()
+        if _close:
+            conn.close()
 
 SUBJECTS_DICT = {
     "Class 6": [
@@ -292,7 +314,7 @@ CLASS_DISPLAY_MAP = {
     "Class 9(B)": "Class IX(B)",
 }
 
-PROMOTION_MAP = {
+PROMOTION_MAP_DEFAULT = {
     "Class 6": "Class VII",
     "Class 7": "Class VIII",
     "Class 8(A)": "Class IX(A)",
@@ -300,6 +322,20 @@ PROMOTION_MAP = {
     "Class 9(A)": "Class X",
     "Class 9(B)": "Class X",
 }
+
+
+def get_promotion_map():
+    """Return the promotion map, reading from portal_settings if configured."""
+    try:
+        settings = get_portal_settings()
+        raw = settings.get("promotion_map_json", "")
+        if raw:
+            loaded = json.loads(raw)
+            if isinstance(loaded, dict):
+                return loaded
+    except Exception:
+        pass
+    return dict(PROMOTION_MAP_DEFAULT)
 
 
 def class_label(class_name):
@@ -446,6 +482,12 @@ def validate_post_requests():
 @app.context_processor
 def inject_class_label_helper():
     portal_settings = get_portal_settings()
+    try:
+        hidden_panels = json.loads(portal_settings.get("hidden_panels", "[]"))
+        if not isinstance(hidden_panels, list):
+            hidden_panels = []
+    except Exception:
+        hidden_panels = []
     return {
         "class_label": class_label,
         "csrf_token": get_csrf_token,
@@ -460,6 +502,7 @@ def inject_class_label_helper():
         ),
         "portal_locked": setting_bool(portal_settings.get("portal_locked", "0")),
         "admin_unlocked": bool(session.get("admin_unlocked")),
+        "hidden_panels": hidden_panels,
     }
 
 
@@ -476,6 +519,11 @@ def get_school_logo_url(updated_marker=""):
 
 
 def get_portal_settings(conn=None):
+    # P1: cache per-request so the context processor doesn't open a new DB conn every call
+    if conn is None:
+        cached = getattr(g, '_portal_settings', None)
+        if cached is not None:
+            return cached
     owns_connection = conn is None
     if owns_connection:
         conn = get_db_connection()
@@ -484,6 +532,8 @@ def get_portal_settings(conn=None):
         merged = dict(SETTINGS_DEFAULTS)
         for row in rows:
             merged[row["setting_key"]] = row["setting_value"]
+        if owns_connection:
+            g._portal_settings = merged
         return merged
     finally:
         if owns_connection:
@@ -547,6 +597,22 @@ def get_admin_pin_hash(conn=None):
 
 def set_admin_pin_hash(conn, pin_hash):
     set_setting_sqlite_safe(conn, "admin_pin_hash", pin_hash)
+
+
+def increment_visitor_count(conn):
+    row = fetch_one(
+        conn,
+        "SELECT setting_value FROM portal_settings WHERE setting_key = %s",
+        ("visitor_count",),
+    )
+    raw_value = row["setting_value"] if row else "0"
+    try:
+        current_count = int(str(raw_value).strip() or "0")
+    except ValueError:
+        current_count = 0
+    next_count = current_count + 1
+    set_setting_sqlite_safe(conn, "visitor_count", str(next_count))
+    return next_count
 
 
 def require_admin_view():
@@ -887,6 +953,26 @@ def init_db():
         if not get_admin_pin_hash(conn):
             set_admin_pin_hash(conn, generate_password_hash(DEFAULT_ADMIN_PIN))
 
+        # Migrate: notice_board table
+        if _is_sqlite_connection(conn):
+            execute_stmt(conn, """
+                CREATE TABLE IF NOT EXISTS notice_board (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    author TEXT NOT NULL,
+                    message TEXT NOT NULL,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+                )
+            """)
+        else:
+            execute_stmt(conn, """
+                CREATE TABLE IF NOT EXISTS notice_board (
+                    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                    author VARCHAR(128) NOT NULL,
+                    message TEXT NOT NULL,
+                    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+
         count_row = fetch_one(conn, "SELECT COUNT(*) AS c FROM students")
         count = count_row["c"] if count_row else 0
         if count == 0 and SEED_SAMPLE_DATA:
@@ -1011,7 +1097,7 @@ def get_class_results(class_name, exam_name=None):
                 "max_per_subject": max_per_sub,
                 "percentage": percentage,
                 "status": status,
-                "promoted_to": PROMOTION_MAP.get(class_name, "") if status == "PASS" else None,
+                "promoted_to": get_promotion_map().get(class_name, "") if status == "PASS" else None,
             }
         )
 
@@ -1123,13 +1209,143 @@ def get_exam_maxmarks(class_name):
     return result
 
 
+@app.route("/notice/add", methods=["POST"])
+def notice_add():
+    author = request.form.get("author", "").strip()[:64]
+    message = request.form.get("message", "").strip()[:500]
+    if not author:
+        author = "Anonymous"
+    if message:
+        conn = get_db_connection()
+        try:
+            execute_stmt(conn, "INSERT INTO notice_board (author, message) VALUES (%s, %s)", (author, message))
+            log_change(conn, action="notice_add", entity_type="notice", details=f"Notice by {author}", affected_count=1)
+            conn.commit()
+        finally:
+            conn.close()
+    return redirect(url_for("index"))
+
+
+@app.route("/notice/delete/<int:notice_id>", methods=["POST"])
+def notice_delete(notice_id):
+    if not session.get("admin_unlocked"):
+        flash("Admin access required to delete notices.", "warning")
+        return redirect(url_for("index"))
+    conn = get_db_connection()
+    try:
+        execute_stmt(conn, "DELETE FROM notice_board WHERE id = %s", (notice_id,))
+        log_change(conn, action="notice_delete", entity_type="notice", details=f"Deleted notice id={notice_id}", affected_count=1)
+        conn.commit()
+    finally:
+        conn.close()
+    return redirect(url_for("index"))
+
+
 @app.route("/")
 def index():
-    return render_template(
+    subjects_dict = get_subjects_dict()
+    class_exams_map = get_all_class_exams()
+
+    # F4+F7: build per-class completion summary for homepage
+    conn = get_db_connection()
+    try:
+        visitor_count = increment_visitor_count(conn)
+        conn.commit()
+
+        # ── Bulk queries (replaces N+1 per-class loops) ──────────────────────
+        # All student counts per class in one query
+        student_counts_rows = fetch_all(conn, "SELECT class_name, COUNT(*) AS c FROM students GROUP BY class_name")
+        student_counts = {r["class_name"]: r["c"] for r in student_counts_rows}
+
+        # All marks counts per class in one query
+        marks_counts_rows = fetch_all(
+            conn,
+            """
+            SELECT s.class_name, COUNT(m.id) AS c
+            FROM students s
+            LEFT JOIN marks m ON m.student_id = s.id
+            GROUP BY s.class_name
+            """,
+        )
+        marks_counts = {r["class_name"]: r["c"] for r in marks_counts_rows}
+
+        class_summary = []
+        for class_name, subjects in subjects_dict.items():
+            exams = class_exams_map.get(class_name, [])
+            student_count = student_counts.get(class_name, 0)
+            marks_entered = marks_counts.get(class_name, 0)
+            num_exams = len(exams) if exams else 1
+            marks_expected = student_count * len(subjects) * num_exams
+            pct_complete = round((marks_entered / marks_expected) * 100) if marks_expected > 0 else 0
+
+            class_summary.append({
+                "class_name": class_name,
+                "student_count": student_count,
+                "marks_entered": marks_entered,
+                "marks_expected": marks_expected,
+                "pct_complete": pct_complete,
+                "exams": exams,
+                "subjects": subjects,
+            })
+
+        # ── Card metadata ──────────────────────────────────────────────────
+        all_subjects = list({s for subs in subjects_dict.values() for s in subs})
+        total_students_count = sum(c["student_count"] for c in class_summary)
+        total_classes_count = len(class_summary)
+        total_subjects_count = len(all_subjects)
+
+        # Subjects with no marks — single GROUP BY query instead of per-subject loop
+        subjects_with_marks_rows = fetch_all(conn, "SELECT DISTINCT subject FROM marks")
+        subjects_with_marks = {r["subject"] for r in subjects_with_marks_rows}
+        subjects_pending = sum(1 for s in all_subjects if s not in subjects_with_marks)
+
+        # Last entered subject
+        last_entry_row = fetch_one(conn, "SELECT subject FROM marks ORDER BY id DESC LIMIT 1")
+        last_entry_subject = last_entry_row["subject"] if last_entry_row else None
+
+        # Total marks records entered + latest exam — combined in one query
+        meta_row = fetch_one(conn, "SELECT COUNT(*) AS total, MAX(id) AS max_id FROM marks")
+        total_records = meta_row["total"] if meta_row else 0
+        latest_exam_row = fetch_one(conn, "SELECT exam_name FROM marks ORDER BY id DESC LIMIT 1") if total_records else None
+        latest_exam_name = latest_exam_row["exam_name"] if latest_exam_row else None
+
+        # Classes where all marks are complete (pct == 100)
+        classes_complete = sum(1 for c in class_summary if c["pct_complete"] == 100)
+
+        # Overall pct for progress ring
+        total_entered_sum = sum(c["marks_entered"] for c in class_summary)
+        total_expected_sum = sum(c["marks_expected"] for c in class_summary)
+        overall_pct_val = round((total_entered_sum / total_expected_sum) * 100) if total_expected_sum > 0 else 0
+        # ───────────────────────────────────────────────────────────────────
+
+        notices = fetch_all(conn, "SELECT id, author, message, created_at FROM notice_board ORDER BY id DESC LIMIT 30")
+        recent_activity = get_recent_logs(5, conn=conn)
+    finally:
+        conn.close()
+
+    # Auto-lock admin after rendering — admin sees delete buttons on this visit
+    # but is locked on the next home screen visit
+    from flask import make_response
+    response = make_response(render_template(
         "index.html",
-        subjects_dict=get_subjects_dict(),
-        class_exams_map=get_all_class_exams(),
-    )
+        subjects_dict=subjects_dict,
+        class_exams_map=class_exams_map,
+        class_summary=class_summary,
+        notices=notices,
+        recent_activity=recent_activity,
+        subjects_pending=subjects_pending,
+        last_entry_subject=last_entry_subject,
+        total_records=total_records,
+        latest_exam_name=latest_exam_name,
+        classes_complete=classes_complete,
+        total_classes_count=total_classes_count,
+        total_subjects_count=total_subjects_count,
+        total_students_count=total_students_count,
+        overall_pct_val=overall_pct_val,
+        visitor_count=visitor_count,
+    ))
+    session.pop("admin_unlocked", None)
+    return response
 
 
 @app.route("/logs")
@@ -1138,18 +1354,95 @@ def view_logs():
     return render_template("logs.html", recent_logs=recent_logs)
 
 
+@app.route("/progress")
+def marks_progress():
+    subjects_dict = get_subjects_dict()
+    class_exams_map = get_all_class_exams()
+    conn = get_db_connection()
+    try:
+        # Bulk: student counts per class
+        sc_rows = fetch_all(conn, "SELECT class_name, COUNT(*) AS c FROM students GROUP BY class_name")
+        student_counts = {r["class_name"]: r["c"] for r in sc_rows}
+
+        # Bulk: marks counts per class+exam
+        mc_rows = fetch_all(
+            conn,
+            """
+            SELECT s.class_name, m.exam_name, COUNT(m.id) AS c
+            FROM students s
+            LEFT JOIN marks m ON m.student_id = s.id
+            GROUP BY s.class_name, m.exam_name
+            """,
+        )
+        marks_by_class_exam = {}
+        for r in mc_rows:
+            marks_by_class_exam.setdefault(r["class_name"], {})[r["exam_name"] or ""] = r["c"]
+
+        progress_data = []
+        for class_name, subjects in subjects_dict.items():
+            exams = class_exams_map.get(class_name, [])
+            student_count = student_counts.get(class_name, 0)
+            class_marks = marks_by_class_exam.get(class_name, {})
+
+            exam_progress = []
+            total_entered = 0
+            total_expected = 0
+            if exams:
+                for exam in exams:
+                    entered = class_marks.get(exam, 0)
+                    expected = student_count * len(subjects)
+                    pct = round((entered / expected) * 100) if expected > 0 else 0
+                    exam_progress.append({"exam": exam, "entered": entered, "expected": expected, "pct": pct})
+                    total_entered += entered
+                    total_expected += expected
+            else:
+                total_expected = student_count * len(subjects)
+                total_entered = sum(class_marks.values())
+
+            total_pct = round((total_entered / total_expected) * 100) if total_expected > 0 else 0
+            progress_data.append({
+                "class_name": class_name,
+                "student_count": student_count,
+                "exam_progress": exam_progress,
+                "total_entered": total_entered,
+                "total_expected": total_expected,
+                "total_pct": total_pct,
+                "subjects": subjects,
+            })
+    finally:
+        conn.close()
+
+    return render_template("progress.html", progress_data=progress_data)
+
+
 @app.route("/results_center")
 def results_center():
     subjects_dict = get_subjects_dict()
+    class_exams_map = get_all_class_exams()  # single DB call for all classes
     class_cards = []
     for class_name in subjects_dict.keys():
-        results, _ = get_class_results(class_name, exam_name=None)
-        class_cards.append(
-            {
-                "class_name": class_name,
-                "stats": calculate_class_stats(results),
-            }
-        )
+        exams = class_exams_map.get(class_name, [])
+        exam_results = []
+        if exams:
+            for ex in exams:
+                res, _ = get_class_results(class_name, exam_name=ex)
+                exam_results.append({
+                    "exam_name": ex,
+                    "results": res,
+                    "stats": calculate_class_stats(res),
+                })
+        else:
+            res, _ = get_class_results(class_name, exam_name=None)
+            exam_results.append({
+                "exam_name": None,
+                "results": res,
+                "stats": calculate_class_stats(res),
+            })
+        class_cards.append({
+            "class_name": class_name,
+            "exams": exams,
+            "exam_results": exam_results,
+        })
     return render_template(
         "results_center.html",
         class_cards=class_cards,
@@ -1167,12 +1460,18 @@ def subject_entry():
         subject = request.form["subject"]
         exam_name = request.form.get("exam_name", "")
 
-        max_per_sub = 100
         inserted_count = 0
         updated_count = 0
 
         conn = get_db_connection()
         try:
+            # Fetch per-subject max marks from DB (fallback 100)
+            mm_row = fetch_one(
+                conn,
+                "SELECT max_marks FROM exam_subject_maxmarks WHERE class_name=%s AND exam_name=%s AND subject=%s",
+                (class_name, exam_name, subject),
+            ) if exam_name else None
+            max_per_sub = int(mm_row["max_marks"]) if mm_row else 100
             for key, value in request.form.items():
                 if key.startswith("mark_") and value.strip() != "":
                     student_id = key.split("_")[1]
@@ -1232,8 +1531,19 @@ def subject_entry():
     class_name = request.args.get("class_name")
     subject = request.args.get("subject")
     if not class_name or not subject:
-        flash("Select class and subject first.", "warning")
-        return redirect(url_for("index"))
+        # Show picker page instead of redirecting with error
+        return render_template(
+            "subject_entry.html",
+            pick_mode=True,
+            subjects_dict=subjects_dict,
+            class_exams_map=get_all_class_exams(),
+            class_name=None,
+            subject=None,
+            students=[],
+            max_per_subject=100,
+            exam_name="",
+            exams=[],
+        )
     if class_name not in subjects_dict:
         flash("Invalid class selected.", "danger")
         return redirect(url_for("index"))
@@ -1261,10 +1571,17 @@ def subject_entry():
             """,
             (subject, exam_name, class_name),
         )
+        # F1: use configured max marks if available
+        mm_row = fetch_one(
+            conn,
+            "SELECT max_marks FROM exam_subject_maxmarks WHERE class_name = %s AND exam_name = %s AND subject = %s",
+            (class_name, exam_name, subject),
+        ) if exam_name else None
     finally:
         conn.close()
 
-    max_per_subject = 100
+    max_per_subject = int(mm_row["max_marks"]) if mm_row else 100
+    subjects_dict = get_subjects_dict()
     return render_template(
         "subject_entry.html",
         class_name=class_name,
@@ -1273,6 +1590,8 @@ def subject_entry():
         max_per_subject=max_per_subject,
         exam_name=exam_name,
         exams=exams,
+        subjects_dict=subjects_dict,
+        class_exams_map=get_all_class_exams(),
     )
 
 
@@ -1286,11 +1605,15 @@ def grid_entry():
     )
 
     if not class_name or class_name not in subjects_dict:
+        if request.method == "GET":
+            # Show picker instead of error redirect
+            return render_template("grid_entry.html", pick_mode=True, subjects_dict=subjects_dict,
+                                   class_name=None, subjects=[], exam_name="", exams=[], students=[], max_marks_dict={},
+                                   class_exams_map=get_all_class_exams())
         flash("Select a valid class.", "warning")
         return redirect(url_for("index"))
 
     subjects = subjects_dict[class_name]
-    max_per_subject = 100
 
     exam_name = request.form.get("exam_name", "") if request.method == "POST" else request.args.get("exam_name", "")
     exams = get_class_exams(class_name) if class_name in subjects_dict else []
@@ -1298,6 +1621,11 @@ def grid_entry():
     # Auto-select the only available exam on GET
     if request.method == "GET" and not exam_name and len(exams) == 1:
         return redirect(url_for("grid_entry", class_name=class_name, exam_name=exams[0]))
+
+    # F1: build per-subject max marks from DB (fall back to 100)
+    exam_maxmarks_db = get_exam_maxmarks(class_name)
+    max_marks_dict = {sub: exam_maxmarks_db.get(exam_name, {}).get(sub, 100) for sub in subjects} if exam_name else {sub: 100 for sub in subjects}
+    max_per_subject = 100  # kept for legacy template fallback
 
     conn = get_db_connection()
     if request.method == "POST":
@@ -1322,9 +1650,10 @@ def grid_entry():
                         flash("Invalid subject in grid payload.", "danger")
                         return redirect(url_for("grid_entry", class_name=class_name, exam_name=exam_name))
 
-                    if mark < 0 or mark > max_per_subject:
+                    sub_max = max_marks_dict.get(subject, 100)
+                    if mark < 0 or mark > sub_max:
                         flash(
-                            f"Invalid marks in grid. Enter between 0 and {max_per_subject}.",
+                            f"Invalid marks for {subject}. Enter between 0 and {sub_max}.",
                             "danger",
                         )
                         return redirect(url_for("grid_entry", class_name=class_name, exam_name=exam_name))
@@ -1394,55 +1723,67 @@ def grid_entry():
         students=students,
         marks_dict=marks_dict,
         max_per_subject=max_per_subject,
+        max_marks_dict=max_marks_dict,
         exam_name=exam_name,
         exams=exams,
+        subjects_dict=subjects_dict,
+        class_exams_map=get_all_class_exams(),
     )
 
 
 @app.route("/view")
 def view_marks():
-    grouped = {}
     classes = list(get_subjects_dict().keys())
     exam_name = request.args.get("exam_name")
 
-    for class_name in classes:
-        results, subjects = get_class_results(class_name, exam_name=exam_name)
-        stats = calculate_class_stats(results)
-        marks_entered = sum(len(row["marks"]) for row in results)
-        marks_expected = len(results) * len(subjects)
-        students_with_marks = sum(1 for row in results if len(row["marks"]) > 0)
-
-        grouped[class_name] = {
-            "results": results,
-            "subjects": subjects,
-            "stats": stats,
-            "marks_entered": marks_entered,
-            "marks_expected": marks_expected,
-            "students_with_marks": students_with_marks,
-        }
-
     selected_class = request.args.get("class_name")
-    if selected_class not in grouped:
+    if selected_class not in classes:
         selected_class = classes[0] if classes else None
 
-    selected_data = grouped.get(
-        selected_class,
-        {
-            "results": [],
-            "subjects": [],
-            "stats": {
-                "total_students": 0,
-                "appeared_count": 0,
-                "pass_count": 0,
-                "fail_count": 0,
-                "absent_count": 0,
-                "pass_rate": 0,
-            },
-            "marks_entered": 0,
-            "marks_expected": 0,
-            "students_with_marks": 0,
+    # P2: only compute results for the selected class, not all classes
+    grouped = {}
+    for class_name in classes:
+        if class_name == selected_class:
+            results, subjects = get_class_results(class_name, exam_name=exam_name)
+            stats = calculate_class_stats(results)
+            marks_entered = sum(len(row["marks"]) for row in results)
+            marks_expected = len(results) * len(subjects)
+            students_with_marks = sum(1 for row in results if len(row["marks"]) > 0)
+            grouped[class_name] = {
+                "results": results,
+                "subjects": subjects,
+                "stats": stats,
+                "marks_entered": marks_entered,
+                "marks_expected": marks_expected,
+                "students_with_marks": students_with_marks,
+            }
+        else:
+            # Lightweight placeholder — sidebar only needs class names
+            grouped[class_name] = None
+
+    selected_data = grouped.get(selected_class) or {
+        "results": [],
+        "subjects": [],
+        "stats": {
+            "total_students": 0,
+            "appeared_count": 0,
+            "pass_count": 0,
+            "fail_count": 0,
+            "absent_count": 0,
+            "pass_rate": 0,
         },
-    )
+        "marks_entered": 0,
+        "marks_expected": 0,
+        "students_with_marks": 0,
+    }
+
+    # F6: per-exam marks for the selected class (used for exam-wise summary columns)
+    selected_exams = get_class_exams(selected_class) if selected_class else []
+    per_exam_data = {}
+    if selected_class and not exam_name and len(selected_exams) > 1:
+        for ex in selected_exams:
+            ex_results, _ = get_class_results(selected_class, exam_name=ex)
+            per_exam_data[ex] = {r["id"]: r for r in ex_results}
 
     return render_template(
         "view.html",
@@ -1452,6 +1793,8 @@ def view_marks():
         selected_data=selected_data,
         class_exams_map=get_all_class_exams(),
         selected_exam=exam_name or "",
+        selected_exams=selected_exams,
+        per_exam_data=per_exam_data,
     )
 
 
@@ -1461,13 +1804,23 @@ def download_csv(class_name):
         flash("Invalid class.", "danger")
         return redirect(url_for("results_center"))
 
-    subjects = get_subjects_dict().get(class_name, [])
+    exam_name = request.args.get("exam_name")
     exams = get_class_exams(class_name)
-    results, _ = get_class_results(class_name)
     stream = io.StringIO()
     writer = csv.writer(stream)
 
-    if not exams:
+    if exam_name:
+        results, subjects = get_class_results(class_name, exam_name=exam_name)
+        writer.writerow(["Roll", "Name"] + subjects + ["Total", "%", "Result"])
+        for row in results:
+            writer.writerow(
+                [row["roll_no"], row["name"]]
+                + [row["marks"].get(sub, "") for sub in subjects]
+                + [row["total"], row["percentage"], row["status"]]
+            )
+    elif not exams:
+        subjects = get_subjects_dict().get(class_name, [])
+        results, _ = get_class_results(class_name)
         writer.writerow(["Roll", "Name"] + subjects + ["Total", "%", "Result"])
         for row in results:
             writer.writerow(
@@ -1476,18 +1829,21 @@ def download_csv(class_name):
                 + [row["total"], row["percentage"], row["status"]]
             )
     else:
-        per_exam_marks = get_per_exam_marks(class_name)
-        headers = [f"{exam} - {sub}" for exam in exams for sub in subjects]
-        writer.writerow(["Roll", "Name"] + headers + ["Total", "%", "Result"])
+        results, subjects, other_exams = get_final_result_data(class_name, exams)
+        headers = (
+            subjects
+            + ["Annual Total", "Annual %"]
+            + [f"{ex} %" for ex in other_exams]
+            + ["Avg %", "Result", "Rank"]
+        )
+        writer.writerow(["Roll", "Name"] + headers)
         for row in results:
-            mark_cells = [
-                per_exam_marks.get(row["id"], {}).get(exam, {}).get(sub, "")
-                for exam in exams for sub in subjects
-            ]
             writer.writerow(
                 [row["roll_no"], row["name"]]
-                + mark_cells
-                + [row["total"], row["percentage"], row["status"]]
+                + [row["marks"].get(sub, "") for sub in subjects]
+                + [row["total"], row["percentage"]]
+                + [row["exam_pcts"].get(ex, "") for ex in other_exams]
+                + [row["avg_percentage"], row["status"], row["final_rank"]]
             )
 
     return Response(
@@ -1503,9 +1859,8 @@ def download_result_portal_csv(class_name):
         flash("Invalid class.", "danger")
         return redirect(url_for("results_center"))
 
-    subjects = get_subjects_dict().get(class_name, [])
+    exam_name = request.args.get("exam_name")
     exams = get_class_exams(class_name)
-    results, _ = get_class_results(class_name)
 
     conn = get_db_connection()
     try:
@@ -1522,7 +1877,19 @@ def download_result_portal_csv(class_name):
     stream = io.StringIO()
     writer = csv.writer(stream)
 
-    if not exams:
+    if exam_name:
+        results, subjects = get_class_results(class_name, exam_name=exam_name)
+        writer.writerow(["Roll", "Name", "DOB"] + subjects + ["Total", "%", "Result"])
+        for row in results:
+            dob = dob_map.get(row["id"], "")
+            writer.writerow(
+                [row["roll_no"], row["name"], dob]
+                + [row["marks"].get(sub, "") for sub in subjects]
+                + [row["total"], row["percentage"], row["status"]]
+            )
+    elif not exams:
+        subjects = get_subjects_dict().get(class_name, [])
+        results, _ = get_class_results(class_name)
         writer.writerow(["Roll", "Name", "DOB"] + subjects + ["Total", "%", "Result"])
         for row in results:
             dob = dob_map.get(row["id"], "")
@@ -1532,19 +1899,22 @@ def download_result_portal_csv(class_name):
                 + [row["total"], row["percentage"], row["status"]]
             )
     else:
-        per_exam_marks = get_per_exam_marks(class_name)
-        headers = [f"{exam} - {sub}" for exam in exams for sub in subjects]
-        writer.writerow(["Roll", "Name", "DOB"] + headers + ["Total", "%", "Result"])
+        results, subjects, other_exams = get_final_result_data(class_name, exams)
+        headers = (
+            subjects
+            + ["Annual Total", "Annual %"]
+            + [f"{ex} %" for ex in other_exams]
+            + ["Avg %", "Result", "Rank"]
+        )
+        writer.writerow(["Roll", "Name", "DOB"] + headers)
         for row in results:
             dob = dob_map.get(row["id"], "")
-            mark_cells = [
-                per_exam_marks.get(row["id"], {}).get(exam, {}).get(sub, "")
-                for exam in exams for sub in subjects
-            ]
             writer.writerow(
                 [row["roll_no"], row["name"], dob]
-                + mark_cells
-                + [row["total"], row["percentage"], row["status"]]
+                + [row["marks"].get(sub, "") for sub in subjects]
+                + [row["total"], row["percentage"]]
+                + [row["exam_pcts"].get(ex, "") for ex in other_exams]
+                + [row["avg_percentage"], row["status"], row["final_rank"]]
             )
 
     safe_name = class_name.replace(" ", "_")
@@ -1598,6 +1968,50 @@ def download_student_import_sample_multi():
     )
 
 
+def get_final_result_data(class_name, class_exams):
+    """Build Final Result data: Annual exam marks + per-exam % for other exams + avg % + rank."""
+    annual_exam = next((e for e in class_exams if "annual" in e.lower()), None)
+    other_exams = [e for e in class_exams if e != annual_exam]
+
+    if annual_exam:
+        results, subjects = get_class_results(class_name, exam_name=annual_exam)
+    else:
+        results, subjects = get_class_results(class_name)
+        other_exams = []
+
+    other_exam_pcts = {}
+    for ex in other_exams:
+        ex_results, _ = get_class_results(class_name, exam_name=ex)
+        other_exam_pcts[ex] = {r["id"]: r["percentage"] for r in ex_results}
+
+    final_results = []
+    for r in results:
+        row = dict(r)
+        exam_pcts = {}
+        all_pcts = []
+        if r["status"] != "ABSENT":
+            all_pcts.append(float(r["percentage"]))
+        for ex in other_exams:
+            pct = other_exam_pcts[ex].get(r["id"])
+            exam_pcts[ex] = pct
+            if pct is not None:
+                all_pcts.append(float(pct))
+        row["exam_pcts"] = exam_pcts
+        row["avg_percentage"] = round(sum(all_pcts) / len(all_pcts), 2) if all_pcts else 0
+        row["final_rank"] = "—"
+        final_results.append(row)
+
+    pass_rows = [r for r in final_results if r["status"] == "PASS"]
+    pass_rows.sort(key=lambda x: x["avg_percentage"], reverse=True)
+    rank = 1
+    for i, r in enumerate(pass_rows):
+        if i > 0 and r["avg_percentage"] < pass_rows[i - 1]["avg_percentage"]:
+            rank = i + 1
+        r["final_rank"] = rank
+
+    return final_results, subjects, other_exams
+
+
 @app.route("/print_class_ledger/<string:class_name>")
 def print_class_ledger(class_name):
     if class_name not in get_subjects_dict():
@@ -1605,15 +2019,55 @@ def print_class_ledger(class_name):
         return redirect(url_for("results_center"))
 
     exam_name = request.args.get("exam_name")
-    results, subjects = get_class_results(class_name, exam_name=exam_name if exam_name else None)
+    class_exams = get_class_exams(class_name)
+
+    if not exam_name:
+        results, subjects, other_exams = get_final_result_data(class_name, class_exams)
+        stats = calculate_class_stats(results)
+        settings = get_portal_settings()
+        return render_template(
+            "print_ledger.html",
+            class_name=class_name,
+            results=results,
+            subjects=subjects,
+            stats=stats,
+            class_exams=class_exams,
+            exam_name="",
+            is_final_result=True,
+            other_exams=other_exams,
+            ledger_cfg_json=settings.get("ledger_layout", "null"),
+        )
+
+    results, subjects = get_class_results(class_name, exam_name=exam_name)
     stats = calculate_class_stats(results)
+    settings = get_portal_settings()
     return render_template(
         "print_ledger.html",
         class_name=class_name,
         results=results,
         subjects=subjects,
         stats=stats,
+        class_exams=class_exams,
+        exam_name=exam_name,
+        is_final_result=False,
+        other_exams=[],
+        ledger_cfg_json=settings.get("ledger_layout", "null"),
     )
+
+
+@app.route("/api/ledger-layout/save", methods=["POST"])
+def ledger_layout_save():
+    try:
+        cfg = request.get_json(force=True, silent=True) or {}
+        conn = get_db_connection()
+        try:
+            set_setting_sqlite_safe(conn, "ledger_layout", json.dumps(cfg))
+            conn.commit()
+        finally:
+            conn.close()
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 
 @app.route("/report_cards/<string:class_name>")
@@ -1622,8 +2076,10 @@ def report_cards_bulk(class_name):
         flash("Invalid class.", "danger")
         return redirect(url_for("results_center"))
 
-    results, subjects = get_class_results(class_name, exam_name=None)
-    class_exams = get_class_exams(class_name)
+    exam_name = request.args.get("exam_name")
+    all_class_exams = get_class_exams(class_name)
+    class_exams = [exam_name] if exam_name else all_class_exams
+    results, subjects = get_class_results(class_name, exam_name=exam_name or None)
     per_exam_marks = get_per_exam_marks(class_name)
     exam_maxmarks = get_exam_maxmarks(class_name)
     return render_template(
@@ -1634,6 +2090,7 @@ def report_cards_bulk(class_name):
         class_exams=class_exams,
         per_exam_marks=per_exam_marks,
         exam_maxmarks=exam_maxmarks,
+        exam_name=exam_name or "",
     )
 
 
@@ -1643,8 +2100,14 @@ def report_cards_individual_list(class_name):
         flash("Invalid class.", "danger")
         return redirect(url_for("results_center"))
 
-    results, _ = get_class_results(class_name, exam_name=None)
-    return render_template("individual_report_cards.html", class_name=class_name, results=results)
+    exam_name = request.args.get("exam_name")
+    results, _ = get_class_results(class_name, exam_name=exam_name or None)
+    return render_template(
+        "individual_report_cards.html",
+        class_name=class_name,
+        results=results,
+        exam_name=exam_name or "",
+    )
 
 
 @app.route("/report_cards/<string:class_name>/individual/<int:student_id>")
@@ -1653,8 +2116,10 @@ def report_card_individual(class_name, student_id):
         flash("Invalid class.", "danger")
         return redirect(url_for("results_center"))
 
-    results, subjects = get_class_results(class_name, exam_name=None)
-    class_exams = get_class_exams(class_name)
+    exam_name = request.args.get("exam_name")
+    all_class_exams = get_class_exams(class_name)
+    class_exams = [exam_name] if exam_name else all_class_exams
+    results, subjects = get_class_results(class_name, exam_name=exam_name or None)
     per_exam_marks = get_per_exam_marks(class_name)
     exam_maxmarks = get_exam_maxmarks(class_name)
     selected_student = next((row for row in results if row["id"] == student_id), None)
@@ -1671,6 +2136,7 @@ def report_card_individual(class_name, student_id):
         class_exams=class_exams,
         per_exam_marks=per_exam_marks,
         exam_maxmarks=exam_maxmarks,
+        exam_name=exam_name or "",
     )
 
 
@@ -2506,7 +2972,82 @@ def admin_logout():
 @admin_required
 def admin_dashboard():
     settings = get_portal_settings()
-    return render_template("admin_dashboard.html", settings=settings)
+    subjects_dict = get_subjects_dict()
+    promotion_map = get_promotion_map()
+
+    conn = get_db_connection()
+    try:
+        # Summary stats
+        total_students_row = fetch_one(conn, "SELECT COUNT(*) AS c FROM students")
+        total_marks_row = fetch_one(conn, "SELECT COUNT(*) AS c FROM marks")
+        total_students = total_students_row["c"] if total_students_row else 0
+        total_marks = total_marks_row["c"] if total_marks_row else 0
+
+        # Per-class stats
+        class_stats = []
+        all_class_exams = get_all_class_exams()
+        for cls, subjects in subjects_dict.items():
+            sc_row = fetch_one(conn, "SELECT COUNT(*) AS c FROM students WHERE class_name = %s", (cls,))
+            sc = sc_row["c"] if sc_row else 0
+            mc_row = fetch_one(
+                conn,
+                "SELECT COUNT(*) AS c FROM marks m JOIN students s ON s.id=m.student_id WHERE s.class_name=%s",
+                (cls,),
+            )
+            mc = mc_row["c"] if mc_row else 0
+            exams = all_class_exams.get(cls, [])
+            expected = sc * len(subjects) * max(len(exams), 1)
+            pct = round(mc / expected * 100) if expected > 0 else 0
+            class_stats.append({"class_name": cls, "students": sc, "marks": mc,
+                                 "expected": expected, "pct": pct, "exams": len(exams)})
+
+        # Recent activity (last 8)
+        recent_logs = fetch_all(
+            conn,
+            "SELECT action, entity_type, details, created_at FROM change_logs ORDER BY id DESC LIMIT 8",
+        )
+
+        # DB size
+        db_size_kb = 0
+        if _is_sqlite_connection(conn) and os.path.exists(LOCAL_DB_FILE):
+            db_size_kb = round(os.path.getsize(LOCAL_DB_FILE) / 1024, 1)
+    finally:
+        conn.close()
+
+    return render_template(
+        "admin_dashboard.html",
+        settings=settings,
+        all_classes=list(subjects_dict.keys()),
+        promotion_map=promotion_map,
+        total_students=total_students,
+        total_marks=total_marks,
+        class_stats=class_stats,
+        recent_logs=recent_logs,
+        db_size_kb=db_size_kb,
+        homepage_panels=HOMEPAGE_PANELS,
+    )
+
+
+@app.route("/admin/promotion_map", methods=["POST"])
+@admin_required
+def admin_save_promotion_map():
+    all_classes = list(get_subjects_dict().keys())
+    new_map = {}
+    for cls in all_classes:
+        target = (request.form.get(f"promo_{cls}") or "").strip()
+        if target:
+            new_map[cls] = target
+    conn = get_db_connection()
+    try:
+        set_setting_sqlite_safe(conn, "promotion_map_json", json.dumps(new_map))
+        g._portal_settings = None  # invalidate cache
+        log_change(conn, action="admin_update_promotion_map", entity_type="admin",
+                   details="Updated promotion map.", affected_count=len(new_map))
+        conn.commit()
+    finally:
+        conn.close()
+    flash("Promotion map saved.", "success")
+    return redirect(url_for("admin_dashboard"))
 
 
 @app.route("/admin/settings", methods=["POST"])
@@ -2543,7 +3084,7 @@ def admin_save_settings():
         conn.commit()
     finally:
         conn.close()
-
+    g._portal_settings = None  # invalidate cache
     flash("Global settings saved. Site headers and printouts now use updated values.", "success")
     return redirect(url_for("admin_dashboard"))
 
@@ -2564,6 +3105,15 @@ def admin_upload_logo():
     os.makedirs(UPLOADS_FOLDER, exist_ok=True)
     logo_path = get_school_logo_path()
     logo_file.save(logo_path)
+
+    # Resize to max 84×84px (2× retina for 42px display) to reduce bandwidth
+    try:
+        from PIL import Image as PilImage
+        img = PilImage.open(logo_path)
+        img.thumbnail((84, 84), PilImage.LANCZOS)
+        img.save(logo_path, optimize=True)
+    except Exception:
+        pass  # Pillow unavailable or corrupt image — keep original
 
     updated_at = datetime.now().strftime("%Y%m%d%H%M%S")
     conn = get_db_connection()
@@ -3075,7 +3625,122 @@ def admin_selective_reset():
     return redirect(url_for("admin_dashboard"))
 
 
-# Ensure DB tables exist when app is imported by WSGI servers (e.g. PythonAnywhere).
+@app.route("/admin/change_pin", methods=["POST"])
+@admin_required
+def admin_change_pin():
+    current_pin = (request.form.get("current_pin") or "").strip()
+    new_pin = (request.form.get("new_pin") or "").strip()
+    confirm_pin = (request.form.get("confirm_pin") or "").strip()
+
+    if not current_pin or not new_pin or not confirm_pin:
+        flash("All PIN fields are required.", "warning")
+        return redirect(url_for("admin_dashboard") + "#tab-control")
+
+    pin_hash = get_admin_pin_hash()
+    if not pin_hash or not check_password_hash(pin_hash, current_pin):
+        flash("Current PIN is incorrect.", "danger")
+        return redirect(url_for("admin_dashboard") + "#tab-control")
+
+    if new_pin != confirm_pin:
+        flash("New PIN and confirmation do not match.", "danger")
+        return redirect(url_for("admin_dashboard") + "#tab-control")
+
+    if len(new_pin) < 4:
+        flash("New PIN must be at least 4 characters.", "warning")
+        return redirect(url_for("admin_dashboard") + "#tab-control")
+
+    conn = get_db_connection()
+    try:
+        set_admin_pin_hash(conn, generate_password_hash(new_pin))
+        log_change(conn, action="admin_change_pin", entity_type="admin",
+                   details="Admin PIN changed successfully.", affected_count=1)
+        conn.commit()
+    finally:
+        conn.close()
+
+    flash("Admin PIN changed successfully.", "success")
+    return redirect(url_for("admin_dashboard") + "#tab-control")
+
+
+@app.route("/admin/reset/class_marks", methods=["POST"])
+@admin_required
+def admin_wipe_class_marks():
+    class_name = (request.form.get("class_name") or "").strip()
+    confirmation = (request.form.get("confirm_phrase") or "").strip()
+
+    all_classes = list(get_subjects_dict().keys())
+    if class_name not in all_classes:
+        flash("Invalid class name.", "danger")
+        return redirect(url_for("admin_dashboard") + "#tab-danger")
+
+    if confirmation != f"WIPE {class_name}":
+        flash(f'Type exactly: WIPE {class_name}', "warning")
+        return redirect(url_for("admin_dashboard") + "#tab-danger")
+
+    conn = get_db_connection()
+    try:
+        count_row = fetch_one(
+            conn,
+            "SELECT COUNT(*) AS c FROM marks m JOIN students s ON s.id = m.student_id WHERE s.class_name = %s",
+            (class_name,),
+        )
+        count = count_row["c"] if count_row else 0
+        execute_stmt(
+            conn,
+            "DELETE FROM marks WHERE student_id IN (SELECT id FROM students WHERE class_name = %s)",
+            (class_name,),
+        )
+        log_change(conn, action="admin_wipe_class_marks", entity_type="admin",
+                   class_name=class_name,
+                   details=f"Wiped {count} marks for {class_name}.", affected_count=count)
+        conn.commit()
+    finally:
+        conn.close()
+
+    flash(f"Wiped {count} mark entries for {class_name}.", "success")
+    return redirect(url_for("admin_dashboard") + "#tab-danger")
+
+
+HOMEPAGE_PANELS = [
+    ("enter_marks",    "Enter Marks",         "Main action card — subject-by-subject mark entry"),
+    ("marks_table",    "Marks Table",         "Main action card — full class grid entry"),
+    ("class_register", "Class-wise Register", "Main action card — view marks by class"),
+    ("result_centre",  "Result Centre",       "Main action card — results, ledgers, report cards"),
+    ("academic_setup", "Academic Setup",      "Secondary card — manage students/subjects/exams"),
+    ("marks_progress", "Marks Progress",      "Secondary card — entry progress overview"),
+    ("admin_panel",    "Admin Dashboard",     "Secondary card — admin shortcut link"),
+    ("activity_logs",  "Activity Logs",       "Secondary card — change log"),
+]
+
+
+@app.route("/admin/panel_visibility", methods=["POST"])
+@admin_required
+def admin_save_panel_visibility():
+    panel_ids = [p[0] for p in HOMEPAGE_PANELS]
+    hidden = [pid for pid in panel_ids if request.form.get(f"hide_{pid}") == "1"]
+    conn = get_db_connection()
+    try:
+        set_setting_sqlite_safe(conn, "hidden_panels", json.dumps(hidden))
+        g._portal_settings = None
+        log_change(conn, action="admin_panel_visibility", entity_type="admin",
+                   details=f"Hidden panels updated: {hidden if hidden else 'none'}", affected_count=len(hidden))
+        conn.commit()
+    finally:
+        conn.close()
+    flash(f"Panel visibility saved. {len(hidden)} panel(s) hidden.", "success")
+    return redirect(url_for("admin_dashboard") + "#tab-control")
+
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template("404.html"), 404
+
+
+@app.errorhandler(500)
+def internal_error(e):
+    return render_template("500.html"), 500
+
+
 init_db()
 
 

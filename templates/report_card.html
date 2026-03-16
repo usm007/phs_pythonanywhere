@@ -383,8 +383,13 @@
             <p class="school-address">Karki Chuk, Lahon Gaon, Majuli, Assam. PIN: 785105</p>
             <hr class="rule">
             <div class="session-badge">
-                <span class="rc-title">Report Card</span>
-                <span class="rc-sub">Session : {{ academic_session }}</span>
+                {% if exam_name %}
+                    <span class="rc-title">Report Card</span>
+                    <span class="rc-sub">{{ exam_name }} &nbsp;|&nbsp; Session : {{ academic_session }}</span>
+                {% else %}
+                    <span class="rc-title">Final Report Card</span>
+                    <span class="rc-sub">Session : {{ academic_session }}</span>
+                {% endif %}
             </div>
             <hr class="rule" style="margin-bottom:12px;">
         </div>

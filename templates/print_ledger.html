@@ -6,205 +6,489 @@
     <title>Consolidated Result Sheet - {{ class_label(class_name) }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; }
-
         :root {
-            --border: #000;
-            --shade: #f2f2f2;
-            --text: #000;
-        }
-
-        @page {
-            size: A4 landscape;
-            margin: 10mm;
+            --navy: #0a1931; --navy-mid: #132342; --gold: #c9972a;
+            --green: #14633a;
+            --bg: #f0ede8; --surface: #faf8f5; --border: #d6cfc4;
+            --text: #1a1612; --muted: #6b6058; --radius: 6px;
+            /* print table vars */
+            --tbl-border: #000; --shade: #f2f2f2; --highlight: #d4d4d4;
         }
 
         @media print {
             .no-print { display: none !important; }
-            body {
-                margin: 0 !important;
-                padding: 0 !important;
-                background: #fff !important;
-            }
-
-            /* Use full printable area and avoid outer frame affecting page flow. */
+            .ribbon-panel { display: none !important; }
+            body { margin: 0 !important; padding: 0 !important; background: #fff !important; }
             .sheet {
-                max-width: none !important;
-                width: 100% !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                border: 0 !important;
-                background: #fff !important;
+                max-width: none !important; width: 100% !important;
+                margin: 0 !important; padding: 0 !important;
+                border: 0 !important; background: #fff !important;
+                box-shadow: none !important;
             }
-
-            table {
-                width: 100%;
-            }
-
-            thead {
-                display: table-header-group;
-            }
-
-            tr {
-                page-break-inside: avoid;
-                break-inside: avoid;
-            }
+            table { width: 100%; }
+            thead { display: table-header-group; }
+            tr { page-break-inside: avoid; break-inside: avoid; }
         }
+
+        *, *::before, *::after { box-sizing: border-box; }
 
         body {
-            margin: 0;
-            padding: 16px;
-            background: #f7f7f7;
+            margin: 0; padding: 0;
+            background: var(--bg);
             color: var(--text);
             font-family: 'Plus Jakarta Sans', "Segoe UI", Arial, sans-serif;
-            font-size: 11px;
         }
 
-        .sheet {
-            background: #fff;
-            max-width: 1120px;
-            margin: 0 auto;
-            padding: 12px;
-            border: 1px solid var(--border);
-        }
-
+        /* ── Top nav bar ── */
         .no-print {
+            background: var(--navy);
+            background-image:
+                repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(255,255,255,.025) 39px,rgba(255,255,255,.025) 40px),
+                repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(255,255,255,.025) 39px,rgba(255,255,255,.025) 40px);
+            border-bottom: 3px solid var(--gold);
+            padding: 10px 20px;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            margin: 0 auto 10px;
-            max-width: 1120px;
+            gap: 8px;
+            flex-wrap: wrap;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
         .no-print a,
         .no-print button {
-            border: 1px solid #000;
-            background: #fff;
-            color: #000;
-            padding: 6px 12px;
+            background: transparent;
+            color: rgba(255,255,255,0.8);
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 5px 12px;
             font-size: 12px;
+            font-family: inherit;
             text-decoration: none;
             cursor: pointer;
+            border-radius: var(--radius);
+            white-space: nowrap;
+        }
+        .no-print a:hover, .no-print button:hover {
+            background: rgba(255,255,255,0.12);
+            color: #fff;
+            border-color: rgba(255,255,255,0.5);
         }
 
+        /* ── Exam tabs in nav ── */
+        .exam-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            align-items: center;
+            flex: 1;
+            justify-content: center;
+        }
+        .exam-tab {
+            color: rgba(255,255,255,0.65);
+            border: 1px solid rgba(255,255,255,0.18);
+            background: transparent;
+            padding: 4px 10px;
+            font-size: 11px;
+            text-decoration: none;
+            cursor: pointer;
+            text-align: center;
+            border-radius: 4px;
+        }
+        .exam-tab.active {
+            background: var(--gold);
+            color: #1a1200;
+            border-color: var(--gold);
+            font-weight: 700;
+        }
+        .exam-tab:hover:not(.active) {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+
+        /* ── Ribbon panel ── */
+        .ribbon-panel {
+            display: none;
+            background: #f3f2f1;
+            border-bottom: 2px solid #c8c6c4;
+            padding: 4px 8px;
+            font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif;
+        }
+        .ribbon-panel.open { display: flex; align-items: stretch; gap: 0; flex-wrap: wrap; }
+
+        /* Locked state — controls visible but non-interactive */
+        .ribbon-panel.locked .sp-btns button,
+        .ribbon-panel.locked .sp-row input,
+        .ribbon-panel.locked .rib-toggle,
+        .ribbon-panel.locked .rib-reset { pointer-events: none; opacity: 0.4; }
+
+        .rib-group {
+            display: flex; flex-direction: column;
+            padding: 4px 14px 2px;
+            border-right: 1px solid #c8c6c4;
+            gap: 4px;
+        }
+        .rib-group:last-child { border-right: none; }
+
+        .rib-controls { display: flex; gap: 10px; align-items: flex-end; }
+
+        .rib-group-label {
+            font-size: 9px; color: #605e5c;
+            text-transform: uppercase; letter-spacing: 0.06em;
+            text-align: center; margin-top: 3px;
+        }
+
+        .sp { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+        .sp-label { font-size: 9.5px; color: #323130; font-weight: 600; white-space: nowrap; }
+        .sp-row { display: flex; align-items: stretch; }
+        .sp-row input[type=number] {
+            width: 42px; border: 1px solid #c8c6c4; border-right: none;
+            border-radius: 2px 0 0 2px;
+            padding: 2px 4px; font-size: 11px; text-align: right;
+            color: #323130; background: #fff;
+            -moz-appearance: textfield;
+        }
+        .sp-row input[type=number]::-webkit-inner-spin-button,
+        .sp-row input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+        .sp-row input[type=number]:focus { outline: none; border-color: #0078d4; }
+        .sp-btns { display: flex; flex-direction: column; }
+        .sp-btns button {
+            width: 16px; height: 11px; line-height: 1;
+            background: #f3f2f1; border: 1px solid #c8c6c4;
+            padding: 0; cursor: pointer; font-size: 7px;
+            display: flex; align-items: center; justify-content: center;
+            color: #323130;
+        }
+        .sp-btns button:first-child { border-bottom: none; border-radius: 0 2px 0 0; }
+        .sp-btns button:last-child  { border-radius: 0 0 2px 0; }
+        .sp-btns button:hover { background: #edebe9; color: #106ebe; }
+        .sp-btns button:active { background: #deecf9; }
+
+        .rib-reset {
+            font-size: 10px; color: #605e5c;
+            background: transparent; border: 1px solid #c8c6c4;
+            border-radius: 2px; padding: 5px 10px;
+            cursor: pointer; font-family: inherit; align-self: center;
+        }
+        .rib-reset:hover { background: #edebe9; color: #323130; border-color: #0078d4; }
+
+        .rib-toggle {
+            font-size: 10px; padding: 3px 8px; border: 1px solid #c8c6c4;
+            border-radius: 2px; background: #f3f2f1; cursor: pointer;
+            color: #323130; font-family: inherit; white-space: nowrap;
+        }
+        .rib-toggle.on { background: #deecf9; border-color: #0078d4; color: #0078d4; font-weight: 600; }
+        .rib-toggle:hover:not(.on) { background: #edebe9; }
+
+        .rib-orient-group { display: flex; }
+        .rib-orient-group .rib-toggle { border-radius: 0; border-right: none; }
+        .rib-orient-group .rib-toggle:first-child { border-radius: 2px 0 0 2px; }
+        .rib-orient-group .rib-toggle:last-child  { border-right: 1px solid #c8c6c4; border-radius: 0 2px 2px 0; }
+
+        /* Stripe rows */
+        table.striped tbody tr:nth-child(even) td { background: var(--shade); }
+
+        /* Rotate subject headers */
+        table.hdr-rotated .subj-hdr-inner {
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            align-items: center;
+            justify-content: flex-start;
+            padding: 4px 0;
+        }
+
+        /* Hide rank column */
+        table.rank-hidden .rank-hide-col { display: none; }
+
+        /* Alignment */
+        table.align-left  td:not(.name-col), table.align-left  th:not(.name-col) { text-align: left; }
+        table.align-right td:not(.name-col), table.align-right th:not(.name-col) { text-align: right; }
+
+        /* Row height */
+        tbody td { height: var(--row-h, 18px); }
+
+        /* ── Sheet wrapper ── */
+        .page-pad {
+            padding: 20px;
+        }
+        .sheet {
+            background: #fff;
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 14px;
+            border: 1px solid #ccc;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+
+        /* ── Sheet header ── */
         .header {
             text-align: center;
-            border-bottom: 1.5px solid var(--border);
+            border-bottom: 1.5px solid #000;
             padding-bottom: 8px;
             margin-bottom: 8px;
         }
-
         .header h1 {
-            font-size: 18px;
-            margin: 2px 0;
+            font-size: 18px; margin: 2px 0;
             letter-spacing: 0.3px;
             font-family: 'Fraunces', Georgia, serif;
         }
-
-        .header .sub {
-            font-size: 11px;
-            margin: 1px 0;
-        }
+        .header .sub { font-size: 11px; margin: 1px 0; }
 
         .meta {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 8px;
-            border: 1px solid var(--border);
-            padding: 6px 8px;
-            margin-bottom: 8px;
-            font-size: 10px;
+            border: 1px solid #000;
+            padding: 6px 8px; margin-bottom: 8px; font-size: 10px;
         }
-
         .stats {
-            border: 1px solid var(--border);
-            padding: 6px 8px;
-            margin-bottom: 8px;
-            font-size: 10px;
-            line-height: 1.4;
+            border: 1px solid #000;
+            padding: 6px 8px; margin-bottom: 8px;
+            font-size: 10px; line-height: 1.4;
         }
 
+        /* ── Table ── */
         table {
             width: 100%;
             border-collapse: collapse;
-            table-layout: auto;
-            font-size: 9.5px;
+            table-layout: fixed;
+            font-size: var(--tbl-font, 9.5px);
         }
+        table.marks-hidden { table-layout: auto; }
 
-        th,
-        td {
-            border: 1px solid var(--border);
-            padding: 4px 3px;
+        th, td {
+            border: 1px solid #000;
+            padding: var(--cell-pad, 4px) 3px;
             text-align: center;
             vertical-align: middle;
         }
-
         thead tr:first-child th {
             background: var(--shade);
             font-weight: 700;
+            white-space: normal;
+            word-break: break-word;
         }
-
-        /* Subject headers: rotated vertically to save horizontal space */
         thead tr:nth-child(2) th {
             font-weight: 600;
-            white-space: nowrap;
-            height: 90px;
-            padding: 4px 2px;
-            vertical-align: bottom;
-        }
-
-        thead tr:nth-child(2) th .rotate-text {
-            display: inline-block;
-            writing-mode: vertical-rl;
-            transform: rotate(180deg);
-            white-space: nowrap;
-            max-height: 82px;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            white-space: normal;
+            word-break: break-word;
+            padding: 4px 3px;
+            vertical-align: middle;
         }
 
         .name-col {
             text-align: left;
-            width: 150px;
-            max-width: 150px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             font-weight: 600;
             text-transform: uppercase;
+            padding-left: 7px !important;
+        }
+        .roll-col { width: 28px; }
+        .subject-data-col { overflow: hidden; font-size: var(--subj-font, 8px); }
+        thead tr:nth-child(2) th.subject-data-col { vertical-align: bottom; padding: 0; }
+        .subj-hdr-inner {
+            min-height: 52px;
+            display: flex; align-items: flex-end; justify-content: center;
+            padding: 3px 2px;
+            overflow: hidden;
         }
 
-        .roll-col { width: 34px; }
+        table.marks-hidden .subject-data-col,
+        table.marks-hidden .marks-group-header,
+        table.marks-hidden .total-hide-col { display: none; }
 
-        .subject-data-col { width: 34px; min-width: 28px; }
-
-        .total-col,
-        .result-col,
-        .rank-col {
-            font-weight: 700;
-            white-space: nowrap;
-        }
+        .total-col, .result-col, .rank-col { font-weight: 700; white-space: nowrap; }
 
         @media (max-width: 900px) {
-            .meta {
-                grid-template-columns: 1fr;
-            }
+            .meta { grid-template-columns: 1fr; }
         }
     </style>
+    <style id="page-orientation">@page { size: A4 landscape; margin: 10mm; }</style>
 </head>
 <body>
+
+    <!-- Top nav bar -->
     <div class="no-print">
-        <a href="{{ url_for('results_center') }}">← Back to Results</a>
+        <a href="{{ url_for('results_center') }}">← Back</a>
+        <div class="exam-tabs">
+            <a class="exam-tab{% if not exam_name %} active{% endif %}"
+               href="{{ url_for('print_class_ledger', class_name=class_name) }}">All Exams</a>
+            {% for ex in class_exams %}
+                <a class="exam-tab{% if exam_name == ex %} active{% endif %}"
+                   href="{{ url_for('print_class_ledger', class_name=class_name, exam_name=ex) }}">{{ ex }}</a>
+            {% endfor %}
+        </div>
+        <button id="toggle-marks-btn" onclick="toggleMarks()">Hide Marks</button>
+        <button id="layout-btn" onclick="toggleLayout()">Layout</button>
         <button onclick="window.print()">Print</button>
     </div>
 
+    <!-- Ribbon layout panel -->
+    <div class="ribbon-panel" id="layout-panel">
+        <div class="rib-group">
+            <div class="rib-controls">
+                <div class="sp">
+                    <span class="sp-label">Name Width</span>
+                    <div class="sp-row">
+                        <input type="number" id="sl-name" min="60" max="300" step="5">
+                        <div class="sp-btns">
+                            <button onclick="nudge('name',5)">▲</button>
+                            <button onclick="nudge('name',-5)">▼</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="sp">
+                    <span class="sp-label">Subject Width</span>
+                    <div class="sp-row">
+                        <input type="number" id="sl-subj" min="15" max="100" step="1">
+                        <div class="sp-btns">
+                            <button onclick="nudge('subj',1)">▲</button>
+                            <button onclick="nudge('subj',-1)">▼</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="sp">
+                    <span class="sp-label">Hdr Height</span>
+                    <div class="sp-row">
+                        <input type="number" id="sl-hdrh" min="20" max="120" step="2">
+                        <div class="sp-btns">
+                            <button onclick="nudge('hdrh',2)">▲</button>
+                            <button onclick="nudge('hdrh',-2)">▼</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="rib-group-label">Columns</div>
+        </div>
+        <div class="rib-group">
+            <div class="rib-controls">
+                <div class="sp">
+                    <span class="sp-label">Table Font</span>
+                    <div class="sp-row">
+                        <input type="number" id="sl-font" min="6" max="20" step="0.5">
+                        <div class="sp-btns">
+                            <button onclick="nudge('font',0.5)">▲</button>
+                            <button onclick="nudge('font',-0.5)">▼</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="sp">
+                    <span class="sp-label">Subj Font</span>
+                    <div class="sp-row">
+                        <input type="number" id="sl-sfont" min="5" max="20" step="0.5">
+                        <div class="sp-btns">
+                            <button onclick="nudge('sfont',0.5)">▲</button>
+                            <button onclick="nudge('sfont',-0.5)">▼</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="sp">
+                    <span class="sp-label">Cell Pad</span>
+                    <div class="sp-row">
+                        <input type="number" id="sl-pad" min="1" max="20" step="1">
+                        <div class="sp-btns">
+                            <button onclick="nudge('pad',1)">▲</button>
+                            <button onclick="nudge('pad',-1)">▼</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="sp">
+                    <span class="sp-label">Alignment</span>
+                    <div class="rib-orient-group">
+                        <button id="btn-align-left"   class="rib-toggle" onclick="setAlign('left')">L</button>
+                        <button id="btn-align-center" class="rib-toggle on" onclick="setAlign('center')">C</button>
+                        <button id="btn-align-right"  class="rib-toggle" onclick="setAlign('right')">R</button>
+                    </div>
+                </div>
+            </div>
+            <div class="rib-group-label">Font &amp; Spacing</div>
+        </div>
+        <!-- Group: Rows -->
+        <div class="rib-group">
+            <div class="rib-controls">
+                <div class="sp">
+                    <span class="sp-label">Row Height</span>
+                    <div class="sp-row">
+                        <input type="number" id="sl-rowh" min="10" max="60" step="1">
+                        <div class="sp-btns">
+                            <button onclick="nudge('rowh',1)">▲</button>
+                            <button onclick="nudge('rowh',-1)">▼</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="sp">
+                    <span class="sp-label">Stripe</span>
+                    <button id="btn-stripe" class="rib-toggle" onclick="toggleOption('stripe')">Off</button>
+                </div>
+            </div>
+            <div class="rib-group-label">Rows</div>
+        </div>
+        <!-- Group: Page -->
+        <div class="rib-group">
+            <div class="rib-controls">
+                <div class="sp">
+                    <span class="sp-label">Scale %</span>
+                    <div class="sp-row">
+                        <input type="number" id="sl-scale" min="50" max="150" step="5">
+                        <div class="sp-btns">
+                            <button onclick="nudge('scale',5)">▲</button>
+                            <button onclick="nudge('scale',-5)">▼</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="sp">
+                    <span class="sp-label">Margin mm</span>
+                    <div class="sp-row">
+                        <input type="number" id="sl-margin" min="3" max="25" step="1">
+                        <div class="sp-btns">
+                            <button onclick="nudge('margin',1)">▲</button>
+                            <button onclick="nudge('margin',-1)">▼</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="sp">
+                    <span class="sp-label">Orientation</span>
+                    <div class="rib-orient-group">
+                        <button id="btn-orient-L" class="rib-toggle" onclick="setOrient('L')">L</button>
+                        <button id="btn-orient-auto" class="rib-toggle on" onclick="setOrient('auto')">Auto</button>
+                        <button id="btn-orient-P" class="rib-toggle" onclick="setOrient('P')">P</button>
+                    </div>
+                </div>
+            </div>
+            <div class="rib-group-label">Page</div>
+        </div>
+        <!-- Group: View -->
+        <div class="rib-group">
+            <div class="rib-controls">
+                <div class="sp">
+                    <span class="sp-label">Subj Headers</span>
+                    <button id="btn-rotate" class="rib-toggle" onclick="toggleOption('rotate')">Horizontal</button>
+                </div>
+                <div class="sp">
+                    <span class="sp-label">Rank</span>
+                    <button id="btn-hideRank" class="rib-toggle" onclick="toggleOption('hideRank')">Show</button>
+                </div>
+            </div>
+            <div class="rib-group-label">View</div>
+        </div>
+        <div class="rib-group" style="border-right:none; justify-content:center; gap:6px;">
+            <button class="rib-reset" onclick="resetLayout()">↺ Reset</button>
+            <button id="save-server-btn" class="rib-reset" style="background:#0a1931; color:#fff; border-color:#0a1931;" onclick="saveToServer()">Save to Server</button>
+        </div>
+    </div>
+
+    <!-- Printable sheet -->
+    <div class="page-pad">
     <div class="sheet">
         <div class="header">
             <div class="sub">Office of the Headmaster</div>
             <h1>{{ school_name|upper }}{% if school_address %}, {{ school_address|upper }}{% endif %}</h1>
-            <div class="sub">Consolidated Result Sheet - {{ exam_name }}</div>
+            <div class="sub">Consolidated Result Sheet — {% if is_final_result %}Final Result{% else %}{{ exam_name }}{% endif %}</div>
         </div>
 
         <div class="meta">
@@ -212,7 +496,6 @@
             <div><strong>Session:</strong> {{ academic_session }}</div>
             <div><strong>Full Marks:</strong> {{ results[0]['total_possible'] if results else 0 }}</div>
         </div>
-
         <div class="stats">
             <strong>Total Students:</strong> {{ stats.total_students }} |
             <strong>Appeared:</strong> {{ stats.appeared_count }} |
@@ -223,21 +506,65 @@
         </div>
 
         <table>
+            {% if is_final_result %}
+            <colgroup>
+                <col data-w="28" style="width:28px">
+                <col id="col-name" style="width:140px">
+                {% for sub in subjects %}<col class="col-subj" style="width:30px">{% endfor %}
+                <col data-w="42" style="width:42px">
+                <col data-w="42" style="width:42px">
+                {% for ex in other_exams %}<col data-w="46" style="width:46px">{% endfor %}
+                <col data-w="46" style="width:46px">
+                <col data-w="50" style="width:50px">
+                <col class="col-rank" data-w="38" style="width:38px">
+            </colgroup>
+            {% else %}
+            <colgroup>
+                <col data-w="28" style="width:28px">
+                <col id="col-name" style="width:140px">
+                {% for sub in subjects %}<col class="col-subj" style="width:30px">{% endfor %}
+                <col data-w="44" style="width:44px">
+                <col data-w="40" style="width:40px">
+                <col data-w="54" style="width:54px">
+                <col class="col-rank" data-w="40" style="width:40px">
+            </colgroup>
+            {% endif %}
             <thead>
+                {% if is_final_result %}
                 <tr>
                     <th rowspan="2" class="roll-col">Roll</th>
-                    <th rowspan="2" style="width:150px;text-align:left;">Name of Candidate</th>
-                    <th colspan="{{ subjects|length }}">Marks Obtained</th>
-                    <th rowspan="2" style="width:44px;">Total</th>
-                    <th rowspan="2" style="width:40px;">%</th>
-                    <th rowspan="2" style="width:54px;">Result</th>
-                    <th rowspan="2" style="width:40px;">Rank</th>
+                    <th rowspan="2" style="text-align:left;">Name of Candidate</th>
+                    <th colspan="{{ subjects|length }}" class="marks-group-header" style="background:var(--shade);">Annual Exam — Marks Obtained</th>
+                    <th rowspan="2" class="total-hide-col">Total</th>
+                    <th rowspan="2">Annual %</th>
+                    {% for ex in other_exams %}
+                        <th rowspan="2" style="font-weight:600;">{{ ex | replace(" Examination", "") }} %</th>
+                    {% endfor %}
+                    <th rowspan="2" style="font-weight:700;background:var(--highlight);">Avg %</th>
+                    <th rowspan="2" style="background:var(--highlight);">Result</th>
+                    <th rowspan="2" class="rank-hide-col" style="background:var(--highlight);">Rank</th>
                 </tr>
                 <tr>
                     {% for sub in subjects %}
-                        <th class="subject-data-col"><span class="rotate-text">{{ sub }}</span></th>
+                        <th class="subject-data-col"><div class="subj-hdr-inner">{{ sub | replace("General Science", "Gen. Science") | replace("General Mathematics", "Gen. Maths") }}</div></th>
                     {% endfor %}
                 </tr>
+                {% else %}
+                <tr>
+                    <th rowspan="2" class="roll-col">Roll</th>
+                    <th rowspan="2" style="text-align:left;">Name of Candidate</th>
+                    <th colspan="{{ subjects|length }}" class="marks-group-header">Marks Obtained</th>
+                    <th rowspan="2" class="total-hide-col">Total</th>
+                    <th rowspan="2">%</th>
+                    <th rowspan="2">Result</th>
+                    <th rowspan="2" class="rank-hide-col">Rank</th>
+                </tr>
+                <tr>
+                    {% for sub in subjects %}
+                        <th class="subject-data-col"><div class="subj-hdr-inner">{{ sub | replace("General Science", "Gen. Science") | replace("General Mathematics", "Gen. Maths") }}</div></th>
+                    {% endfor %}
+                </tr>
+                {% endif %}
             </thead>
             <tbody>
                 {% for r in results %}
@@ -247,20 +574,211 @@
                         {% for sub in subjects %}
                             <td class="subject-data-col">{{ r['marks'].get(sub, 'AB') }}</td>
                         {% endfor %}
-                        <td class="total-col">{{ r['total'] }}</td>
+                        <td class="total-col total-hide-col">{{ r['total'] }}</td>
                         <td>{{ r['percentage'] }}%</td>
-                        <td class="result-col">{{ r['status'] }}</td>
-                        <td class="rank-col">{{ r['rank'] }}</td>
+                        {% if is_final_result %}
+                            {% for ex in other_exams %}
+                                {% set pct = r['exam_pcts'].get(ex) %}
+                                <td>{% if pct is not none %}{{ pct }}%{% else %}N/A{% endif %}</td>
+                            {% endfor %}
+                            <td style="font-weight:700;background:var(--highlight);">{{ r['avg_percentage'] }}%</td>
+                            <td class="result-col" style="background:var(--highlight);">{{ r['status'] }}</td>
+                            <td class="rank-col rank-hide-col" style="background:var(--highlight);">{{ r['final_rank'] }}</td>
+                        {% else %}
+                            <td class="result-col">{{ r['status'] }}</td>
+                            <td class="rank-col rank-hide-col">{{ r['rank'] }}</td>
+                        {% endif %}
                     </tr>
                 {% endfor %}
                 {% if not results %}
                     <tr>
-                        <td colspan="{{ subjects|length + 6 }}" style="padding:12px;">No records found.</td>
+                        {% if is_final_result %}
+                            <td colspan="{{ subjects|length + other_exams|length + 7 }}" style="padding:12px;">No records found.</td>
+                        {% else %}
+                            <td colspan="{{ subjects|length + 6 }}" style="padding:12px;">No records found.</td>
+                        {% endif %}
                     </tr>
                 {% endif %}
             </tbody>
         </table>
-
     </div>
+    </div>
+
+    <script>
+        const SERVER_CFG = {{ ledger_cfg_json | safe }};
+        const LS_KEY = 'phs_ledger_layout';
+        const DEFAULTS = {
+            name: 140, subj: 30, hdrh: 52, font: 9.5, sfont: 8, pad: 4,
+            rowh: 18, margin: 10, scale: 100,
+            stripe: false, rotate: false, hideRank: false, orient: 'auto',
+            align: 'center'
+        };
+
+        function loadCfg() {
+            const base = SERVER_CFG || {};
+            try {
+                const local = JSON.parse(sessionStorage.getItem(LS_KEY));
+                return Object.assign({}, DEFAULTS, base, local || {});
+            } catch(e) {
+                return Object.assign({}, DEFAULTS, base);
+            }
+        }
+
+        function saveCfg(cfg) {
+            sessionStorage.setItem(LS_KEY, JSON.stringify(cfg));
+        }
+
+        function applyPageStyle(cfg) {
+            const tbl = document.querySelector('table');
+            const autoPortrait = tbl && tbl.classList.contains('marks-hidden');
+            const orient = cfg.orient === 'auto'
+                ? (autoPortrait ? 'portrait' : 'landscape')
+                : (cfg.orient === 'P' ? 'portrait' : 'landscape');
+            document.getElementById('page-orientation').textContent =
+                `@page { size: A4 ${orient}; margin: ${cfg.margin}mm; }`;
+        }
+
+        function applyCfg(cfg) {
+            document.getElementById('col-name').style.width = cfg.name + 'px';
+            document.querySelectorAll('.col-subj').forEach(c => c.style.width = cfg.subj + 'px');
+            const r = document.documentElement;
+            r.style.setProperty('--subj-hdr-h', cfg.hdrh + 'px');
+            r.style.setProperty('--tbl-font',   cfg.font  + 'px');
+            r.style.setProperty('--subj-font',  cfg.sfont + 'px');
+            r.style.setProperty('--cell-pad',   cfg.pad   + 'px');
+            r.style.setProperty('--row-h',      cfg.rowh  + 'px');
+            document.querySelectorAll('.subj-hdr-inner')
+                .forEach(d => d.style.minHeight = cfg.hdrh + 'px');
+            document.querySelector('.sheet').style.zoom = cfg.scale + '%';
+            applyPageStyle(cfg);
+            const tbl = document.querySelector('table');
+            tbl.classList.toggle('striped',     cfg.stripe);
+            tbl.classList.toggle('hdr-rotated', cfg.rotate);
+            tbl.classList.toggle('rank-hidden', cfg.hideRank);
+            ['align-left','align-center','align-right'].forEach(c => tbl.classList.remove(c));
+            if (cfg.align !== 'center') tbl.classList.add('align-' + cfg.align);
+            document.getElementById('sl-name').value   = cfg.name;
+            document.getElementById('sl-subj').value   = cfg.subj;
+            document.getElementById('sl-hdrh').value   = cfg.hdrh;
+            document.getElementById('sl-font').value   = cfg.font;
+            document.getElementById('sl-sfont').value  = cfg.sfont;
+            document.getElementById('sl-pad').value    = cfg.pad;
+            document.getElementById('sl-rowh').value   = cfg.rowh;
+            document.getElementById('sl-scale').value  = cfg.scale;
+            document.getElementById('sl-margin').value = cfg.margin;
+            syncToggle('stripe',   cfg.stripe,   'On',       'Off');
+            syncToggle('rotate',   cfg.rotate,   'Vertical', 'Horizontal');
+            syncToggle('hideRank', cfg.hideRank, 'Hidden',   'Show');
+            syncOrientBtns(cfg.orient);
+            syncAlignBtns(cfg.align);
+        }
+
+        function nudge(key, delta) {
+            const cfg   = loadCfg();
+            const input = document.getElementById('sl-' + key);
+            const min   = parseFloat(input.min), max = parseFloat(input.max);
+            cfg[key] = Math.min(max, Math.max(min, Math.round((cfg[key] + delta) * 100) / 100));
+            saveCfg(cfg);
+            applyCfg(cfg);
+        }
+
+        function toggleOption(key) {
+            const cfg = loadCfg(); cfg[key] = !cfg[key]; saveCfg(cfg); applyCfg(cfg);
+        }
+
+        function syncToggle(key, val, onLabel, offLabel) {
+            const btn = document.getElementById('btn-' + key);
+            if (!btn) return;
+            btn.classList.toggle('on', val);
+            btn.textContent = val ? onLabel : offLabel;
+        }
+
+        function setOrient(val) {
+            const cfg = loadCfg(); cfg.orient = val; saveCfg(cfg);
+            syncOrientBtns(val); applyPageStyle(cfg);
+        }
+
+        function syncOrientBtns(val) {
+            ['L', 'auto', 'P'].forEach(v => {
+                const b = document.getElementById('btn-orient-' + v);
+                if (b) b.classList.toggle('on', v === val);
+            });
+        }
+
+        function setAlign(val) {
+            const cfg = loadCfg(); cfg.align = val; saveCfg(cfg); applyCfg(cfg);
+        }
+
+        function syncAlignBtns(val) {
+            ['left', 'center', 'right'].forEach(v => {
+                const b = document.getElementById('btn-align-' + v);
+                if (b) b.classList.toggle('on', v === val);
+            });
+        }
+
+        function resetLayout() { sessionStorage.removeItem(LS_KEY); applyCfg(Object.assign({}, DEFAULTS, SERVER_CFG || {})); }
+
+        function toggleLayout() {
+            const panel = document.getElementById('layout-panel');
+            const btn   = document.getElementById('layout-btn');
+            const open  = panel.classList.toggle('open');
+            btn.textContent = open ? 'Layout ▴' : 'Layout';
+        }
+
+        function saveToServer() {
+            const cfg = loadCfg();
+            const btn = document.getElementById('save-server-btn');
+            btn.textContent = 'Saving...'; btn.disabled = true;
+            fetch('/api/ledger-layout/save', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(cfg)
+            })
+            .then(r => r.json())
+            .then(data => {
+                btn.disabled = false;
+                if (data.ok) {
+                    btn.textContent = '✓ Saved!';
+                    setTimeout(() => btn.textContent = 'Save to Server', 2000);
+                } else {
+                    btn.textContent = 'Error — retry';
+                    setTimeout(() => btn.textContent = 'Save to Server', 2500);
+                }
+            })
+            .catch(() => {
+                btn.disabled = false;
+                btn.textContent = 'Error — retry';
+                setTimeout(() => btn.textContent = 'Save to Server', 2500);
+            });
+        }
+
+        function toggleMarks() {
+            const table  = document.querySelector('table');
+            const btn    = document.getElementById('toggle-marks-btn');
+            const hidden = table.classList.toggle('marks-hidden');
+            btn.textContent = hidden ? 'Show Marks' : 'Hide Marks';
+            applyPageStyle(loadCfg());
+            if (hidden) {
+                document.querySelectorAll('colgroup col').forEach(c => c.style.width = '');
+            } else {
+                document.querySelectorAll('colgroup col[data-w]').forEach(c => c.style.width = c.dataset.w + 'px');
+                const cfg = loadCfg();
+                document.getElementById('col-name').style.width = cfg.name + 'px';
+                document.querySelectorAll('.col-subj').forEach(c => c.style.width = cfg.subj + 'px');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            applyCfg(loadCfg());
+            ['name', 'subj', 'hdrh', 'font', 'sfont', 'pad', 'rowh', 'scale', 'margin'].forEach(function(k) {
+                document.getElementById('sl-' + k).addEventListener('change', function() {
+                    const cfg = loadCfg();
+                    cfg[k] = parseFloat(this.value);
+                    saveCfg(cfg);
+                    applyCfg(cfg);
+                });
+            });
+        });
+    </script>
 </body>
 </html>

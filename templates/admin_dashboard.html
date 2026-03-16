@@ -1,310 +1,783 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - {{ school_shortcode }}</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --navy: #0a1931;
-            --gold: #c9972a;
-            --bg: #f0ede8;
-            --surface: #faf8f5;
-            --border: #d6cfc4;
-            --text: #1a1612;
-            --muted: #6b6058;
-            --danger: #a93226;
-            --danger-soft: #fdf0f0;
-        }
-        body {
-            margin: 0;
-            background: var(--bg);
-            color: var(--text);
-            font-family: 'Plus Jakarta Sans', sans-serif;
-        }
-        .site-header {
-            background: var(--navy);
-            border-bottom: 4px solid var(--gold);
-            color: #fff;
-            padding: 12px 18px;
-        }
-        .head-title {
-            margin: 0;
-            font-family: 'Fraunces', serif;
-            font-size: 1.1rem;
-            font-weight: 700;
-        }
-        .head-sub {
-            font-size: 0.72rem;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            opacity: 0.7;
-        }
-        .btn-head {
-            background: transparent;
-            color: rgba(255,255,255,0.75);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 7px;
-            padding: 6px 12px;
-            font-size: 0.78rem;
-            text-decoration: none;
-        }
-        .btn-head:hover { background: rgba(255,255,255,0.1); color: #fff; }
-        .wrap {
-            max-width: 100%;
-            margin: 14px auto 24px;
-            padding: 0 12px;
-        }
-        .grid {
-            display: grid;
-            grid-template-columns: 1.2fr 1fr;
-            gap: 12px;
-        }
-        .card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 14px;
-        }
-        .card-title {
-            font-size: 0.72rem;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            color: var(--muted);
-            margin-bottom: 10px;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 7px;
-            font-weight: 700;
-        }
-        .btn-main {
-            background: var(--navy);
-            color: #fff;
-            border: none;
-            border-radius: 7px;
-            padding: 8px 12px;
-            font-size: 0.82rem;
-            font-weight: 600;
-        }
-        .btn-main:hover { background: #132342; color: #fff; }
-        .btn-outline-main {
-            background: transparent;
-            color: var(--navy);
-            border: 1px solid var(--navy);
-            border-radius: 7px;
-            padding: 8px 12px;
-            font-size: 0.82rem;
-            font-weight: 600;
-            text-decoration: none;
-            display: inline-block;
-        }
-        .btn-outline-main:hover { background: var(--navy); color: #fff; }
-        .btn-danger-main {
-            background: var(--danger);
-            color: #fff;
-            border: none;
-            border-radius: 7px;
-            padding: 8px 12px;
-            font-size: 0.8rem;
-            font-weight: 700;
-        }
-        .btn-danger-main:hover { background: #8f2a1f; color: #fff; }
-        .muted { color: var(--muted); font-size: 0.78rem; }
-        .lock-state {
-            display: inline-block;
-            border-radius: 999px;
-            padding: 4px 10px;
-            font-size: 0.72rem;
-            font-weight: 700;
-            border: 1px solid var(--border);
-            background: #fff;
-        }
-        .lock-state.locked {
-            border-color: #e0a7a1;
-            background: var(--danger-soft);
-            color: var(--danger);
-        }
-        .danger-box {
-            border: 1px solid #e0a7a1;
-            background: var(--danger-soft);
-            border-radius: 10px;
-            padding: 10px;
-            margin-top: 8px;
-        }
-        .danger-note {
-            font-size: 0.74rem;
-            color: #6f231a;
-            margin-bottom: 8px;
-        }
-        .logo-preview {
-            width: 100%;
-            max-height: 130px;
-            object-fit: contain;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            background: #fff;
-            padding: 6px;
-        }
-        @media (max-width: 980px) {
-            .grid { grid-template-columns: 1fr; }
-        }
-    </style>
-</head>
-<body>
-    <header class="site-header">
-        <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
+{% extends "base.html" %}
+{% block title %}Admin Dashboard — {{ school_shortcode }}{% endblock %}
+{% block extra_css %}
+<style>
+/* ── Layout ── */
+.admin-shell {
+    display: flex;
+    height: calc(100vh - 44px);
+    overflow: hidden;
+}
+.admin-sidebar {
+    width: 200px;
+    flex-shrink: 0;
+    min-height: 0;
+    background: var(--navy);
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid rgba(255,255,255,0.08);
+    overflow-y: auto;
+}
+.admin-main {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    background: var(--bg);
+    padding: 20px 24px 32px;
+}
+
+/* ── Sidebar nav ── */
+.sidebar-logo {
+    padding: 16px 14px 10px;
+    font-family: 'Fraunces', serif;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--gold);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.sidebar-logo-sub {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    display: block;
+    margin-top: 1px;
+}
+.nav-section-label {
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.28);
+    padding: 14px 14px 4px;
+}
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 14px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: rgba(255,255,255,0.65);
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: left;
+    border-radius: 0;
+    transition: background 0.12s, color 0.12s;
+    text-decoration: none;
+    white-space: nowrap;
+}
+.nav-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+.nav-item.active { background: rgba(201,151,42,0.18); color: var(--gold); font-weight: 700; border-right: 3px solid var(--gold); }
+.nav-item .nav-icon { font-size: 0.95rem; flex-shrink: 0; width: 18px; text-align: center; }
+.nav-divider { height: 1px; background: rgba(255,255,255,0.07); margin: 6px 0; }
+.sidebar-footer {
+    margin-top: auto;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.sidebar-footer a,
+.sidebar-footer button {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 0.76rem; font-weight: 600;
+    color: rgba(255,255,255,0.55);
+    background: transparent; border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 6px; padding: 6px 10px;
+    text-decoration: none; cursor: pointer; width: 100%;
+    transition: background 0.12s, color 0.12s;
+}
+.sidebar-footer a:hover, .sidebar-footer button:hover {
+    background: rgba(255,255,255,0.08); color: #fff;
+}
+
+/* ── Panels ── */
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+.panel-title {
+    font-family: 'Fraunces', serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 4px;
+}
+.panel-sub {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-bottom: 20px;
+}
+
+/* ── Stat cards ── */
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.stat-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.stat-card-num {
+    font-family: 'Fraunces', serif;
+    font-size: 1.9rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--navy);
+}
+.stat-card-lbl {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+}
+.stat-card.green .stat-card-num { color: var(--green); }
+.stat-card.gold .stat-card-num { color: var(--gold); }
+
+/* ── Class progress table ── */
+.cls-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.cls-table th {
+    font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--muted); padding: 6px 10px;
+    border-bottom: 1px solid var(--border); text-align: left; background: var(--bg);
+}
+.cls-table th.num { text-align: right; }
+.cls-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.cls-table td.num { text-align: right; color: var(--muted); font-size: 0.78rem; }
+.cls-table tbody tr:hover td { background: #faf7f3; }
+.cls-pct-bar { width: 80px; height: 6px; background: var(--border); border-radius: 4px; overflow: hidden; display: inline-block; vertical-align: middle; margin-left: 6px; }
+.cls-pct-fill { height: 100%; border-radius: 4px; background: var(--gold); }
+.cls-pct-fill.done { background: var(--green); }
+
+/* ── Activity log ── */
+.activity-list { display: flex; flex-direction: column; gap: 6px; }
+.activity-item {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+.activity-icon {
+    font-size: 0.85rem;
+    flex-shrink: 0;
+    width: 24px; height: 24px;
+    background: var(--bg);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+}
+.activity-body { flex: 1; min-width: 0; }
+.activity-action {
+    font-size: 0.72rem; font-weight: 700;
+    color: var(--navy); text-transform: uppercase; letter-spacing: 0.06em;
+}
+.activity-detail { font-size: 0.74rem; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.activity-time { font-size: 0.68rem; color: var(--muted); flex-shrink: 0; }
+
+/* ── Section cards ── */
+.section-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 14px;
+}
+.section-card-title {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+.section-card-title .sct-icon { font-size: 0.9rem; }
+
+/* ── Form controls ── */
+.form-label { font-size: 0.82rem !important; font-weight: 600; }
+.btn-primary-phs {
+    background: var(--navy); color: #fff; border: none;
+    border-radius: 7px; padding: 8px 18px; font-size: 0.82rem; font-weight: 600;
+    cursor: pointer; transition: background 0.15s;
+}
+.btn-primary-phs:hover { background: var(--navy-mid); }
+.btn-outline-phs {
+    background: transparent; color: var(--navy); border: 1.5px solid var(--navy);
+    border-radius: 7px; padding: 7px 16px; font-size: 0.82rem; font-weight: 600;
+    text-decoration: none; display: inline-block; cursor: pointer;
+    transition: background 0.15s;
+}
+.btn-outline-phs:hover { background: var(--navy); color: #fff; }
+.btn-green-phs {
+    background: var(--green); color: #fff; border: none;
+    border-radius: 7px; padding: 8px 18px; font-size: 0.82rem; font-weight: 600;
+    cursor: pointer; transition: background 0.15s;
+}
+.btn-green-phs:hover { background: var(--green-light); }
+.btn-danger-phs {
+    background: var(--danger); color: #fff; border: none;
+    border-radius: 7px; padding: 8px 18px; font-size: 0.82rem; font-weight: 700;
+    cursor: pointer; transition: background 0.15s;
+}
+.btn-danger-phs:hover { background: #8f2a1f; }
+
+/* ── Lock state pill ── */
+.lock-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    border-radius: 999px; padding: 5px 12px;
+    font-size: 0.75rem; font-weight: 700;
+    border: 1px solid var(--border); background: #fff;
+}
+.lock-pill.locked { border-color: #e0a7a1; background: var(--danger-soft); color: var(--danger); }
+.lock-pill.unlocked { border-color: #a8d5ba; background: #edf7f1; color: var(--green); }
+
+/* ── Danger box ── */
+.danger-box {
+    border: 1px solid #e0a7a1;
+    background: var(--danger-soft);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+}
+.danger-box-title {
+    font-size: 0.78rem; font-weight: 700; color: var(--danger);
+    margin-bottom: 4px; display: flex; align-items: center; gap: 6px;
+}
+.danger-note { font-size: 0.74rem; color: #6f231a; margin-bottom: 10px; }
+
+/* ── Logo preview ── */
+.logo-preview {
+    width: 100%; max-height: 120px; object-fit: contain;
+    border: 1px solid var(--border); border-radius: 8px;
+    background: var(--bg); padding: 6px; margin-bottom: 10px;
+}
+.logo-empty {
+    height: 80px; display: flex; align-items: center; justify-content: center;
+    border: 2px dashed var(--border); border-radius: 8px;
+    color: var(--muted); font-size: 0.78rem; margin-bottom: 10px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 860px) {
+    .admin-shell { flex-direction: column; height: auto; overflow: visible; }
+    .admin-sidebar {
+        width: 100%; flex-direction: row; overflow-x: auto;
+        border-right: none; border-bottom: 1px solid rgba(255,255,255,0.08);
+        padding-bottom: 0;
+    }
+    .admin-main { padding: 16px; }
+    .sidebar-logo, .nav-section-label, .sidebar-footer, .nav-divider { display: none; }
+    .nav-item { flex-direction: column; gap: 3px; padding: 10px 12px; font-size: 0.68rem; flex-shrink: 0; border-right: none; border-bottom: 3px solid transparent; }
+    .nav-item.active { border-right: none; border-bottom: 3px solid var(--gold); background: rgba(201,151,42,0.12); }
+    .nav-icon { font-size: 1.1rem !important; width: auto !important; }
+    .stat-grid { grid-template-columns: repeat(2, 1fr); }
+    .btn-primary-phs,
+    .btn-outline-phs,
+    .btn-green-phs,
+    .btn-danger-phs {
+        min-height: 44px;
+        font-size: 0.9rem;
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+}
+</style>
+{% endblock %}
+{% block body %}
+<header class="site-header">
+    <div class="header-title">⚙️ Admin</div>
+    <nav class="phs-breadcrumb no-print">
+        <a href="{{ url_for('index') }}">🏠 Home</a>
+        <span class="bc-sep">›</span>
+        <span class="bc-current">⚙️ Admin Dashboard</span>
+    </nav>
+</header>
+
+<div class="admin-shell">
+    {# ── Sidebar ── #}
+    <aside class="admin-sidebar">
+        <div class="sidebar-logo">
+            ⚙️
             <div>
-                <h1 class="head-title">Admin Dashboard</h1>
-                <div class="head-sub">{{ school_name }} | {{ exam_name }}</div>
-            </div>
-            <div class="d-flex gap-2">
-                <a class="btn-head" href="{{ url_for('index') }}">Back to Home</a>
-                <form method="POST" action="{{ url_for('admin_logout') }}">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button class="btn-head" type="submit">Lock Dashboard</button>
-                </form>
+                Admin
+                <span class="sidebar-logo-sub">{{ school_shortcode }}</span>
             </div>
         </div>
-    </header>
 
-    <main class="wrap">
+        <div class="nav-section-label">Dashboard</div>
+        <button class="nav-item active" onclick="switchTab('overview', this)">
+            <span class="nav-icon">📊</span> Overview
+        </button>
+
+        <div class="nav-divider"></div>
+        <div class="nav-section-label">Configure</div>
+        <button class="nav-item" onclick="switchTab('settings', this)">
+            <span class="nav-icon">🏫</span> School Info
+        </button>
+        <button class="nav-item" onclick="switchTab('control', this)">
+            <span class="nav-icon">🔒</span> Control
+        </button>
+
+        <div class="nav-divider"></div>
+        <div class="nav-section-label">Data</div>
+        <button class="nav-item" onclick="switchTab('data', this)">
+            <span class="nav-icon">💾</span> Backup & Import
+        </button>
+        <button class="nav-item" onclick="switchTab('danger', this)" style="color:rgba(220,80,80,0.75);">
+            <span class="nav-icon">⚠️</span> Danger Zone
+        </button>
+
+        <div class="sidebar-footer">
+            <a href="{{ url_for('index') }}">← Back to Home</a>
+            <form method="POST" action="{{ url_for('admin_logout') }}" style="padding:0;border:none;background:transparent;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit">🔒 Lock Dashboard</button>
+            </form>
+        </div>
+    </aside>
+
+    {# ── Main content ── #}
+    <main class="admin-main" id="admin-main">
+
+        {# Flash messages #}
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ category if category in ['success','danger','warning','info'] else 'secondary' }}" style="border-radius:8px;font-size:0.84rem;">{{ message }}</div>
+                    <div class="alert alert-{{ category if category in ['success','danger','warning','info'] else 'secondary' }} alert-dismissible" style="border-radius:8px;font-size:0.84rem;">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
                 {% endfor %}
             {% endif %}
         {% endwith %}
 
-        <div class="grid">
-            <section class="card">
-                <div class="card-title">Global Settings</div>
+        {# ══════════════ OVERVIEW ══════════════ #}
+        <div class="tab-panel active" id="panel-overview">
+            <div class="panel-title">Overview</div>
+            <div class="panel-sub">System snapshot — students, marks, activity, and storage.</div>
+
+            <div class="stat-grid">
+                <div class="stat-card">
+                    <div class="stat-card-num">{{ total_students }}</div>
+                    <div class="stat-card-lbl">Total Students</div>
+                </div>
+                <div class="stat-card green">
+                    <div class="stat-card-num">{{ total_marks }}</div>
+                    <div class="stat-card-lbl">Marks Entered</div>
+                </div>
+                <div class="stat-card gold">
+                    <div class="stat-card-num">{{ class_stats | length }}</div>
+                    <div class="stat-card-lbl">Classes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-num">{{ db_size_kb }} <span style="font-size:0.9rem;font-weight:400;">KB</span></div>
+                    <div class="stat-card-lbl">Database Size</div>
+                </div>
+            </div>
+
+            {# Class progress #}
+            <div class="section-card" style="margin-bottom:16px;">
+                <div class="section-card-title"><span class="sct-icon">📋</span> Class Progress</div>
+                <table class="cls-table">
+                    <thead>
+                        <tr>
+                            <th>Class</th>
+                            <th class="num">Students</th>
+                            <th class="num">Exams</th>
+                            <th class="num">Marks</th>
+                            <th>Completion</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cs in class_stats %}
+                        <tr>
+                            <td><strong>{{ class_label(cs.class_name) }}</strong></td>
+                            <td class="num">{{ cs.students }}</td>
+                            <td class="num">{{ cs.exams }}</td>
+                            <td class="num">{{ cs.marks }} / {{ cs.expected }}</td>
+                            <td>
+                                <span style="font-size:0.76rem;font-weight:700;color:{{ 'var(--green)' if cs.pct == 100 else ('var(--gold)' if cs.pct >= 50 else 'var(--danger)') }}">{{ cs.pct }}%</span>
+                                <span class="cls-pct-bar"><span class="cls-pct-fill {{ 'done' if cs.pct == 100 else '' }}" style="width:{{ cs.pct }}%;"></span></span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {# Recent Activity #}
+            <div class="section-card">
+                <div class="section-card-title" style="justify-content:space-between;">
+                    <span><span class="sct-icon">🕐</span> Recent Activity</span>
+                    <a href="{{ url_for('view_logs') }}" style="font-size:0.72rem;color:var(--navy);font-weight:600;text-decoration:none;">View All →</a>
+                </div>
+                {% if recent_logs %}
+                <div class="activity-list">
+                    {% for log in recent_logs %}
+                    <div class="activity-item">
+                        <div class="activity-icon">
+                            {% if 'reset' in log.action %}⚠️
+                            {% elif 'import' in log.action %}📥
+                            {% elif 'export' in log.action or 'backup' in log.action %}📤
+                            {% elif 'lock' in log.action or 'unlock' in log.action %}🔒
+                            {% elif 'pin' in log.action %}🔑
+                            {% elif 'logo' in log.action %}🖼️
+                            {% elif 'settings' in log.action %}⚙️
+                            {% elif 'student' in log.action %}👤
+                            {% elif 'mark' in log.action %}📝
+                            {% else %}📋{% endif %}
+                        </div>
+                        <div class="activity-body">
+                            <div class="activity-action">{{ log.action.replace('_', ' ') }}</div>
+                            <div class="activity-detail">{{ log.details }}</div>
+                        </div>
+                        <div class="activity-time">{{ log.created_at }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p style="color:var(--muted);font-size:0.8rem;">No activity recorded yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        {# ══════════════ SETTINGS ══════════════ #}
+        <div class="tab-panel" id="panel-settings">
+            <div class="panel-title">School Info</div>
+            <div class="panel-sub">Portal title, headers, and printout labels all use these values.</div>
+
+            <div class="section-card">
+                <div class="section-card-title"><span class="sct-icon">🏫</span> School Details</div>
                 <form method="POST" action="{{ url_for('admin_save_settings') }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label" style="font-size:0.76rem;font-weight:600;">School Name</label>
+                            <label class="form-label">School Name</label>
                             <input class="form-control" name="school_name" value="{{ settings.school_name }}" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label" style="font-size:0.76rem;font-weight:600;">School Address</label>
+                            <label class="form-label">School Address</label>
                             <input class="form-control" name="school_address" value="{{ settings.school_address }}" required>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label" style="font-size:0.76rem;font-weight:600;">School Shortcode</label>
+                            <label class="form-label">School Shortcode</label>
                             <input class="form-control" name="school_shortcode" value="{{ settings.school_shortcode }}" required>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label" style="font-size:0.76rem;font-weight:600;">Examination Name</label>
+                            <label class="form-label">Examination Name</label>
                             <input class="form-control" name="exam_name" value="{{ settings.exam_name }}" required>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label" style="font-size:0.76rem;font-weight:600;">Academic Session</label>
+                            <label class="form-label">Academic Session</label>
                             <input class="form-control" name="academic_session" value="{{ settings.academic_session }}" required>
                         </div>
                     </div>
                     <div class="mt-3">
-                        <button type="submit" class="btn-main">Save Global Settings</button>
+                        <button type="submit" class="btn-primary-phs">Save Settings</button>
                     </div>
                 </form>
+            </div>
 
-                <div class="card-title" style="margin-top:14px;">School Logo</div>
+            <div class="section-card">
+                <div class="section-card-title"><span class="sct-icon">🖼️</span> School Logo</div>
+                {% if school_logo_url %}
+                    <img src="{{ school_logo_url }}" alt="School logo" class="logo-preview">
+                {% else %}
+                    <div class="logo-empty">No logo uploaded yet</div>
+                {% endif %}
                 <form method="POST" action="{{ url_for('admin_upload_logo') }}" enctype="multipart/form-data">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <div class="mb-2">
-                        {% if school_logo_url %}
-                            <img src="{{ school_logo_url }}" alt="School logo" class="logo-preview">
-                        {% else %}
-                            <div class="logo-preview d-flex align-items-center justify-content-center muted">No logo uploaded yet</div>
-                        {% endif %}
-                    </div>
                     <div class="input-group input-group-sm">
                         <input class="form-control" type="file" name="school_logo" accept="image/png" required>
-                        <button class="btn-main" type="submit">Upload PNG</button>
+                        <button class="btn-primary-phs" type="submit">Upload PNG</button>
                     </div>
-                    <p class="muted mt-2 mb-0">Recommended: transparent PNG, square or near-square.</p>
+                    <p style="font-size:0.74rem;color:var(--muted);margin-top:6px;">Transparent PNG recommended, square or near-square.</p>
                 </form>
-            </section>
+            </div>
+        </div>
 
-            <section class="card">
-                <div class="card-title">Portal Lock</div>
-                <p class="muted">Current state:
-                    <span class="lock-state {{ 'locked' if portal_locked else '' }}">{{ 'Locked' if portal_locked else 'Unlocked' }}</span>
-                </p>
-                <form method="POST" action="{{ url_for('admin_toggle_portal_lock') }}" class="d-flex gap-2 align-items-center flex-wrap mb-3">
+        {# ══════════════ CONTROL ══════════════ #}
+        <div class="tab-panel" id="panel-control">
+            <div class="panel-title">Control</div>
+            <div class="panel-sub">Portal access, PIN management, and promotion configuration.</div>
+
+            {# Portal lock #}
+            <div class="section-card">
+                <div class="section-card-title"><span class="sct-icon">🔒</span> Portal Lock</div>
+                <div class="d-flex align-items-center gap-12 mb-3" style="gap:12px;">
+                    <span>Current state:</span>
+                    <span class="lock-pill {{ 'locked' if portal_locked else 'unlocked' }}">
+                        {{ '🔒 Locked' if portal_locked else '🟢 Unlocked' }}
+                    </span>
+                </div>
+                <form method="POST" action="{{ url_for('admin_toggle_portal_lock') }}" class="mb-2">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="portal_locked" value="{{ '0' if portal_locked else '1' }}">
-                    <button type="submit" class="btn-main">{{ 'Unlock Portal Editing' if portal_locked else 'Lock Portal Editing' }}</button>
+                    <button type="submit" class="btn-primary-phs">
+                        {{ '🔓 Unlock Portal' if portal_locked else '🔒 Lock Portal' }}
+                    </button>
                 </form>
-                <p class="muted">When locked, teachers can view grids and reports, but edit/save controls are disabled.</p>
+                <p style="font-size:0.76rem;color:var(--muted);">When locked, mark entry and student editing are disabled for all users.</p>
+            </div>
 
-                <div class="card-title" style="margin-top:14px;">Export and Backup</div>
-                <div class="d-flex gap-2 flex-wrap mb-3">
-                    <a class="btn-outline-main" href="{{ url_for('admin_export_master_xlsx') }}">Download Master Excel</a>
-                    <a class="btn-outline-main" href="{{ url_for('admin_backup_database') }}">Download Raw DB Backup</a>
-                </div>
-                <form method="POST" action="{{ url_for('admin_import_master_excel') }}" enctype="multipart/form-data">
+            {# Change PIN #}
+            <div class="section-card">
+                <div class="section-card-title"><span class="sct-icon">🔑</span> Change Admin PIN</div>
+                <form method="POST" action="{{ url_for('admin_change_pin') }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <p class="muted mb-2">Upload a previously exported Master Excel to restore or update data. Existing records are updated; new ones are added.</p>
-                    <div class="input-group input-group-sm">
-                        <input class="form-control" type="file" name="master_excel" accept=".xlsx" required>
-                        <button class="btn-main" type="submit" onclick="return confirm('Import this Excel? Existing records will be updated, new ones added.')">Import Excel</button>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Current PIN</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" name="current_pin" id="pin0" placeholder="Current PIN" autocomplete="current-password">
+                                <button type="button" class="pin-toggle" onclick="togglePin('pin0','pi0')" aria-label="Show/hide"><span id="pi0" aria-hidden="true">👁</span></button>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">New PIN</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" name="new_pin" id="pin1" placeholder="New PIN (min 4)" autocomplete="new-password">
+                                <button type="button" class="pin-toggle" onclick="togglePin('pin1','pi1')" aria-label="Show/hide"><span id="pi1" aria-hidden="true">👁</span></button>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Confirm New PIN</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" name="confirm_pin" id="pin2" placeholder="Repeat new PIN" autocomplete="new-password">
+                                <button type="button" class="pin-toggle" onclick="togglePin('pin2','pi2')" aria-label="Show/hide"><span id="pi2" aria-hidden="true">👁</span></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button type="submit" class="btn-primary-phs">Update PIN</button>
                     </div>
                 </form>
+            </div>
 
-                <div class="card-title" style="margin-top:14px;">Reset Tools</div>
-                <div class="danger-box">
-                    <p class="danger-note"><strong>Selective Reset:</strong> choose what to delete. Deleting Students also removes all their marks.</p>
-                    <form method="POST" action="{{ url_for('admin_selective_reset') }}" onsubmit="return confirmSelectiveReset(this);">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <div class="mb-2 d-flex flex-wrap gap-3">
-                            <div class="form-check mb-0">
-                                <input class="form-check-input" type="checkbox" name="delete_marks" id="del_marks" value="1">
-                                <label class="form-check-label" for="del_marks" style="font-size:0.82rem;font-weight:600;">Marks data</label>
-                            </div>
-                            <div class="form-check mb-0">
-                                <input class="form-check-input" type="checkbox" name="delete_students" id="del_students" value="1">
-                                <label class="form-check-label" for="del_students" style="font-size:0.82rem;font-weight:600;">Student data <span class="muted">(+ marks)</span></label>
-                            </div>
-                            <div class="form-check mb-0">
-                                <input class="form-check-input" type="checkbox" name="delete_logs" id="del_logs" value="1">
-                                <label class="form-check-label" for="del_logs" style="font-size:0.82rem;font-weight:600;">Activity logs</label>
-                            </div>
+            {# Homepage Panel Visibility #}
+            <div class="section-card">
+                <div class="section-card-title"><span class="sct-icon">🏠</span> Homepage Panel Visibility</div>
+                <p style="font-size:0.76rem;color:var(--muted);margin-bottom:12px;">Check a panel to <strong>hide</strong> it from the homepage. Hidden panels are invisible to all users (admin still sees them when unlocked).</p>
+                <form method="POST" action="{{ url_for('admin_save_panel_visibility') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="row g-2 mb-3">
+                        {% for pid, plabel, pdesc in homepage_panels %}
+                        {% set is_hidden = pid in hidden_panels %}
+                        <div class="col-sm-6">
+                            <label style="display:flex;align-items:flex-start;gap:10px;padding:9px 12px;border:1.5px solid {{ 'var(--danger)' if is_hidden else 'var(--border)' }};border-radius:8px;cursor:pointer;background:{{ '#fff0f0' if is_hidden else '#fff' }};transition:all 0.15s;width:100%;">
+                                <input type="checkbox" name="hide_{{ pid }}" value="1" {{ 'checked' if is_hidden else '' }} style="margin-top:2px;accent-color:var(--danger);width:15px;height:15px;flex-shrink:0;">
+                                <div>
+                                    <div style="font-size:0.82rem;font-weight:700;color:{{ 'var(--danger)' if is_hidden else 'var(--navy)' }};">{{ '🚫 ' if is_hidden else '' }}{{ plabel }}</div>
+                                    <div style="font-size:0.71rem;color:var(--muted);margin-top:1px;">{{ pdesc }}</div>
+                                </div>
+                            </label>
                         </div>
-                        <div class="input-group input-group-sm mb-2">
-                            <span class="input-group-text">Type</span>
-                            <input class="form-control" name="confirm_phrase" placeholder="SELECTIVE RESET" required>
-                        </div>
-                        <button type="submit" class="btn-danger-main">Run Selective Reset</button>
-                    </form>
-                </div>
+                        {% endfor %}
+                    </div>
+                    <button type="submit" class="btn-primary-phs">Save Visibility</button>
+                </form>
+            </div>
 
-                <div class="danger-box" style="margin-top:10px;">
-                    <p class="danger-note"><strong>Factory Reset:</strong> wipes all students, marks, and related logs. This is irreversible.</p>
-                    <form method="POST" action="{{ url_for('admin_factory_reset') }}" onsubmit="return confirm('Factory reset will wipe all students and marks. Continue?');">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <div class="input-group input-group-sm mb-2">
-                            <span class="input-group-text">Type</span>
-                            <input class="form-control" name="confirm_phrase" placeholder="FACTORY RESET" required>
+            {# Promotion Map #}
+            <div class="section-card">
+                <div class="section-card-title"><span class="sct-icon">🎓</span> Promotion Map</div>
+                <p style="font-size:0.76rem;color:var(--muted);margin-bottom:12px;">Set which class each class is promoted to. Leave blank to hide the promotion column on report cards.</p>
+                <form method="POST" action="{{ url_for('admin_save_promotion_map') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="row g-2">
+                        {% for cls in all_classes %}
+                        <div class="col-sm-6 col-md-4">
+                            <label class="form-label" style="color:var(--navy);">{{ class_label(cls) }}</label>
+                            <input class="form-control form-control-sm" type="text"
+                                name="promo_{{ cls }}"
+                                value="{{ promotion_map.get(cls, '') }}"
+                                placeholder="e.g. Class X">
                         </div>
-                        <button type="submit" class="btn-danger-main">Run Factory Reset</button>
-                    </form>
-                </div>
-            </section>
+                        {% endfor %}
+                    </div>
+                    <div class="mt-3">
+                        <button type="submit" class="btn-primary-phs">Save Promotion Map</button>
+                    </div>
+                </form>
+            </div>
         </div>
+
+        {# ══════════════ DATA ══════════════ #}
+        <div class="tab-panel" id="panel-data">
+            <div class="panel-title">Backup & Import</div>
+            <div class="panel-sub">Export all data, download a raw database backup, or restore from a previous Excel export.</div>
+
+            <div class="section-card">
+                <div class="section-card-title"><span class="sct-icon">📤</span> Export</div>
+                <div class="d-flex flex-wrap gap-2 mb-2">
+                    <a class="btn-green-phs" href="{{ url_for('admin_export_master_xlsx') }}" style="text-decoration:none;color:#fff;">📊 Download Master Excel</a>
+                    <a class="btn-outline-phs" href="{{ url_for('admin_backup_database') }}">🗄 Download Raw DB (.db)</a>
+                </div>
+                <p style="font-size:0.74rem;color:var(--muted);">Master Excel includes all students, marks, and a class summary sheet. Raw DB backup is the full SQLite file.</p>
+            </div>
+
+            <div class="section-card">
+                <div class="section-card-title"><span class="sct-icon">📥</span> Import from Excel</div>
+                <p style="font-size:0.76rem;color:var(--muted);margin-bottom:10px;">Upload a previously exported Master Excel to restore or update data. Existing records are updated; new ones are added. No records are deleted.</p>
+                <form method="POST" action="{{ url_for('admin_import_master_excel') }}" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="input-group input-group-sm" style="max-width:480px;">
+                        <input class="form-control" type="file" name="master_excel" accept=".xlsx" required>
+                        <button class="btn-primary-phs" type="submit" onclick="return confirm('Import this Excel? Existing records will be updated.')">Import</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {# ══════════════ DANGER ZONE ══════════════ #}
+        <div class="tab-panel" id="panel-danger">
+            <div class="panel-title" style="color:var(--danger);">⚠️ Danger Zone</div>
+            <div class="panel-sub">Irreversible operations. All actions require explicit confirmation.</div>
+
+            {# Per-class marks wipe #}
+            <div class="danger-box">
+                <div class="danger-box-title">⚠️ Wipe Marks for One Class</div>
+                <p class="danger-note">Deletes all marks for a single class only. Student records are kept. Cannot be undone.</p>
+                <form method="POST" action="{{ url_for('admin_wipe_class_marks') }}" onsubmit="return confirmClassWipe(this);">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="row g-2 mb-2" style="max-width:560px;">
+                        <div class="col-sm-5">
+                            <select class="form-select form-select-sm" name="class_name" id="wipeClassSelect" required>
+                                <option value="" disabled selected>Select class…</option>
+                                {% for cls in all_classes %}
+                                <option value="{{ cls }}">{{ class_label(cls) }} ({{ cls }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-sm-7">
+                            <input class="form-control form-control-sm" name="confirm_phrase" id="wipeConfirmInput" placeholder='Type: WIPE Class 6' required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-danger-phs">Wipe Class Marks</button>
+                </form>
+            </div>
+
+            {# Selective Reset #}
+            <div class="danger-box">
+                <div class="danger-box-title">⚠️ Selective Reset</div>
+                <p class="danger-note">Choose exactly what to delete. Deleting Students also removes all their marks.</p>
+                <form method="POST" action="{{ url_for('admin_selective_reset') }}" onsubmit="return confirmSelectiveReset(this);">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="d-flex flex-wrap gap-3 mb-2">
+                        <div class="form-check mb-0">
+                            <input class="form-check-input" type="checkbox" name="delete_marks" id="del_marks" value="1">
+                            <label class="form-check-label" for="del_marks" style="font-size:0.82rem;font-weight:600;">All Marks data</label>
+                        </div>
+                        <div class="form-check mb-0">
+                            <input class="form-check-input" type="checkbox" name="delete_students" id="del_students" value="1">
+                            <label class="form-check-label" for="del_students" style="font-size:0.82rem;font-weight:600;">All Students <span style="color:var(--muted);">(+ marks)</span></label>
+                        </div>
+                        <div class="form-check mb-0">
+                            <input class="form-check-input" type="checkbox" name="delete_logs" id="del_logs" value="1">
+                            <label class="form-check-label" for="del_logs" style="font-size:0.82rem;font-weight:600;">Activity Logs</label>
+                        </div>
+                    </div>
+                    <div class="input-group input-group-sm mb-2" style="max-width:360px;">
+                        <span class="input-group-text">Type</span>
+                        <input class="form-control" name="confirm_phrase" placeholder="SELECTIVE RESET" required>
+                    </div>
+                    <button type="submit" class="btn-danger-phs">Run Selective Reset</button>
+                </form>
+            </div>
+
+            {# Factory Reset #}
+            <div class="danger-box">
+                <div class="danger-box-title">☠️ Factory Reset</div>
+                <p class="danger-note">Wipes <strong>all</strong> students, marks, and related logs. This cannot be undone under any circumstances.</p>
+                <form method="POST" action="{{ url_for('admin_factory_reset') }}" onsubmit="return confirm('⚠️ FACTORY RESET will permanently delete all students and marks.\n\nThis CANNOT be undone.\n\nContinue?');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="input-group input-group-sm mb-2" style="max-width:360px;">
+                        <span class="input-group-text">Type</span>
+                        <input class="form-control" name="confirm_phrase" placeholder="FACTORY RESET" required>
+                    </div>
+                    <button type="submit" class="btn-danger-phs">Run Factory Reset</button>
+                </form>
+            </div>
+        </div>
+
     </main>
-    <script>
-    function confirmSelectiveReset(form) {
-        var parts = [];
-        if (form.delete_students && form.delete_students.checked) parts.push('all students (and their marks)');
-        else if (form.delete_marks && form.delete_marks.checked) parts.push('all marks data');
-        if (form.delete_logs && form.delete_logs.checked) parts.push('all activity logs');
-        if (!parts.length) { alert('Select at least one data type to delete.'); return false; }
-        return confirm('This will permanently delete: ' + parts.join(', ') + '.\n\nThis cannot be undone. Continue?');
+</div>
+
+<script>
+// ── Tab switching ──
+function switchTab(name, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+    document.getElementById('panel-' + name).classList.add('active');
+    btn.classList.add('active');
+    // scroll to top of main area
+    document.getElementById('admin-main').scrollTop = 0;
+    // update URL hash without jumping
+    history.replaceState(null, '', '#tab-' + name);
+}
+
+// ── Open correct tab from URL hash on load ──
+(function() {
+    const hash = window.location.hash;
+    if (hash) {
+        const name = hash.replace('#tab-', '');
+        const btn = document.querySelector(`.nav-item[onclick*="'${name}'"]`);
+        if (btn) switchTab(name, btn);
     }
-    </script>
-</body>
-</html>
+})();
+
+// ── PIN show/hide ──
+function togglePin(inputId, iconId) {
+    const inp = document.getElementById(inputId);
+    const icon = document.getElementById(iconId);
+    if (inp.type === 'password') { inp.type = 'text'; icon.textContent = '🙈'; }
+    else { inp.type = 'password'; icon.textContent = '👁'; }
+}
+
+// ── Class wipe confirm: auto-fill expected phrase ──
+document.getElementById('wipeClassSelect').addEventListener('change', function() {
+    document.getElementById('wipeConfirmInput').placeholder = 'Type: WIPE ' + this.value;
+});
+function confirmClassWipe(form) {
+    const cls = form.class_name.value;
+    const typed = form.confirm_phrase.value.trim();
+    if (typed !== 'WIPE ' + cls) {
+        alert('Type exactly: WIPE ' + cls);
+        return false;
+    }
+    return confirm('Delete ALL marks for ' + cls + '? This cannot be undone.');
+}
+
+// ── Selective reset confirm ──
+function confirmSelectiveReset(form) {
+    var parts = [];
+    if (form.delete_students && form.delete_students.checked) parts.push('all students (and their marks)');
+    else if (form.delete_marks && form.delete_marks.checked) parts.push('all marks data');
+    if (form.delete_logs && form.delete_logs.checked) parts.push('all activity logs');
+    if (!parts.length) { alert('Select at least one data type to delete.'); return false; }
+    return confirm('This will permanently delete: ' + parts.join(', ') + '.\n\nThis cannot be undone. Continue?');
+}
+</script>
+{% endblock %}

@@ -1,80 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Academic Setup - {{ school_shortcode }}</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --navy: #0a1931;
-            --gold: #c9972a;
-            --bg: #f0ede8;
-            --surface: #faf8f5;
-            --border: #d6cfc4;
-            --text: #1a1612;
-            --muted: #6b6058;
-            --danger: #c0392b;
-        }
-
-        html, body { height: 100%; }
-
-        body {
-            margin: 0;
-            background: var(--bg);
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            color: var(--text);
-            overflow-x: hidden;
-            overflow-y: auto;
-        }
-
-        .app-shell {
-            min-height: 100dvh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .site-header {
-            background: var(--navy);
-            border-bottom: 4px solid var(--gold);
-            padding: 8px 16px;
-            flex-shrink: 0;
-        }
-
-        .header-title {
-            font-family: 'Fraunces', serif;
-            font-size: 0.95rem;
-            font-weight: 700;
-            color: #fff;
-            margin: 0;
-        }
-
-        .header-sub {
-            font-size: 0.62rem;
-            color: rgba(255,255,255,0.45);
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-        }
-
-        .btn-back {
-            background: transparent;
-            color: rgba(255,255,255,0.7);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 7px;
-            font-size: 0.75rem;
-            padding: 4px 10px;
-            text-decoration: none;
-        }
-
-        .btn-back:hover { background: rgba(255,255,255,0.1); color: #fff; }
-
+{% extends "base.html" %}
+{% block title %}Academic Setup - {{ school_shortcode }}{% endblock %}
+{% block extra_css %}
+<style>
         .main-scroll {
-            flex: 1;
-            overflow: auto;
-            -webkit-overflow-scrolling: touch;
             padding: 10px 0 14px;
             min-height: 0;
         }
@@ -183,7 +111,7 @@
         }
 
         .form-label {
-            font-size: 0.68rem;
+            font-size: 0.82rem;
             color: var(--muted);
             margin-bottom: 3px;
         }
@@ -394,23 +322,38 @@
             }
         }
 
+        @media (max-width: 768px) {
+            .category-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
         @media (max-width: 900px) {
             .category-grid {
                 grid-template-columns: 1fr;
+            }
+            .btn-delete {
+                font-size: 0.8rem;
+                padding: 6px 10px;
+                min-height: 38px;
             }
         }
         .highlight-missing td {
             background-color: #ffd0d0 !important;
         }
     </style>
-</head>
-<body>
+{% endblock %}
+{% block body %}
 <div class="app-shell">
-    <header class="site-header d-flex justify-content-between align-items-center">
-        <div>
-            <div class="header-title">🏫 Academic Setup</div>
-            <div class="header-sub">{{ school_name }} · {{ exam_name }}</div>
-        </div>
+    <header class="site-header">
+        <div class="header-title">🏫 Academic Setup</div>
+        <nav class="phs-breadcrumb no-print">
+            <a href="{{ url_for('index') }}">🏠 Home</a>
+            <span class="bc-sep">›</span>
+            <span class="bc-current">🏫 Academic Setup</span>
+            {% if setup_tab and setup_tab != 'students' %}<span class="bc-sep">›</span><span class="bc-current bc-cat">{{ setup_tab|capitalize }}</span>{% endif %}
+            {% if class_name and setup_tab == 'students' %}<span class="bc-sep">›</span><span class="bc-current bc-cat">{{ class_label(class_name) }}</span>{% endif %}
+        </nav>
         <a href="{{ url_for('index') }}" class="btn-back">← Dashboard</a>
     </header>
 
@@ -650,7 +593,7 @@
                                         <input type="hidden" name="setup_tab" value="students">
                                         <input type="hidden" name="class_name" value="{{ class_name or '' }}">
                                         <div class="col-3">
-                                            <input class="form-control" type="text" name="new_roll" placeholder="Roll" {{ 'required' if class_name else '' }} {{ 'disabled' if portal_locked else '' }}>
+                                            <input class="form-control" type="number" min="1" name="new_roll" placeholder="Roll" {{ 'required' if class_name else '' }} {{ 'disabled' if portal_locked else '' }}>
                                         </div>
                                         <div class="col-9">
                                             <input class="form-control" type="text" name="new_name" placeholder="Student name" {{ 'required' if class_name else '' }} {{ 'disabled' if portal_locked else '' }}>
@@ -696,9 +639,9 @@
                                     <div class="import-note" style="margin-top:3px;">For multi-class CSV, add <code>class_name</code> as the first column.</div>
                                     <div class="actions-row" style="margin-top:6px;gap:6px;">
                                         {% if class_name %}
-                                            <a href="{{ url_for('download_student_import_sample_single', class_name=class_name) }}" class="btn btn-navy" style="font-size:0.72rem;padding:4px 10px;">&#11015; Example CSV (Single Class)</a>
+                                            <a href="{{ url_for('download_student_import_sample_single', class_name=class_name) }}" class="btn btn-navy" style="font-size:0.82rem;padding:7px 12px;">&#11015; Example CSV (Single Class)</a>
                                         {% endif %}
-                                        <a href="{{ url_for('download_student_import_sample_multi') }}" class="btn btn-navy" style="font-size:0.72rem;padding:4px 10px;">&#11015; Example CSV (Multi-Class)</a>
+                                        <a href="{{ url_for('download_student_import_sample_multi') }}" class="btn btn-navy" style="font-size:0.82rem;padding:7px 12px;">&#11015; Example CSV (Multi-Class)</a>
                                     </div>
                                     <details class="import-help">
                                         <summary>How should the CSV file look?</summary>
@@ -725,12 +668,17 @@
                                     {% endif %}
                                 </div>
 
+                                <div class="student-search-strip no-print">
+                                    <input type="text" id="studentSearchInput" placeholder="🔍 Search by name or roll number…" oninput="filterStudents(this.value)" autocomplete="off">
+                                    <span class="student-search-count" id="studentSearchCount"></span>
+                                </div>
+
                                 <div class="phs-table">
                                     <table class="table mb-0">
                                         <thead>
                                             <tr>
                                                 <th style="width:36px;"><input type="checkbox" id="select-all" title="Select all"></th>
-                                                <th style="width:100px;">Roll No</th>
+                                                <th style="width:100px;">Roll No.</th>
                                                 <th>Student Name</th>
                                                 <th style="width:120px;">DOB</th>
                                                 <th>Father's Name</th>
@@ -738,11 +686,11 @@
                                                 <th style="width:100px;">Action</th>
                                             </tr>
                                         </thead>
-                                        <tbody>
+                                        <tbody id="studentTableBody">
                                             {% for s in students %}
                                                 <tr{% if (not s.roll_no or s.roll_no|trim == '' or not s.name or s.name|trim == '' or not s.dob or s.dob|trim == '' or s.dob|trim == 'DD/MM/YYYY' or not s.father_name or s.father_name|trim == '' or s.father_name|trim == "Father's name" or not s.mother_name or s.mother_name|trim == '' or s.mother_name|trim == "Mother's name") %} class="highlight-missing"{% endif %}>
                                                     <td><input class="row-check" type="checkbox" name="delete_ids_inline" value="{{ s.id }}" {{ 'disabled' if portal_locked else '' }}></td>
-                                                    <td><input class="form-control" type="text" name="roll_{{ s.id }}" value="{{ s.roll_no }}" required {{ 'readonly' if portal_locked else '' }}></td>
+                                                    <td><input class="form-control" type="number" min="1" name="roll_{{ s.id }}" value="{{ s.roll_no }}" required {{ 'readonly' if portal_locked else '' }}></td>
                                                     <td><input class="form-control" type="text" name="name_{{ s.id }}" value="{{ s.name }}" required {{ 'readonly' if portal_locked else '' }}></td>
                                                     <td><input class="form-control" type="text" name="dob_{{ s.id }}" value="{{ s.dob or '' }}" placeholder="DD/MM/YYYY" pattern="\d{2}/\d{2}/\d{4}" title="DD/MM/YYYY e.g. 15/08/2010" {{ 'readonly' if portal_locked else '' }}></td>
                                                     <td><input class="form-control" type="text" name="father_{{ s.id }}" value="{{ s.father_name or '' }}" placeholder="Father's name" {{ 'readonly' if portal_locked else '' }}></td>
@@ -955,6 +903,24 @@
             overlay.classList.remove('active');
         }
     }
+
+    // Student live search/filter
+    function filterStudents(q) {
+        const rows = document.querySelectorAll('#studentTableBody tr');
+        if (!rows.length) return;
+        q = q.trim().toLowerCase();
+        let visible = 0;
+        rows.forEach(function(row) {
+            const name = (row.querySelector('input[name^="name_"]')?.value || '').toLowerCase();
+            const roll = (row.querySelector('input[name^="roll_"]')?.value || '').toLowerCase();
+            const show = !q || name.includes(q) || roll.includes(q);
+            row.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+        const countEl = document.getElementById('studentSearchCount');
+        if (countEl) {
+            countEl.textContent = q ? (visible + ' of ' + rows.length + ' shown') : '';
+        }
+    }
 </script>
-</body>
-</html>
+{% endblock %}

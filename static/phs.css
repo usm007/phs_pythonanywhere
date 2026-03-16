@@ -1,0 +1,397 @@
+/* ── PHS Portal Shared Styles ── */
+:root {
+    --navy: #0a1931;
+    --navy-mid: #132342;
+    --gold: #c9972a;
+    --gold-light: #f2c463;
+    --green: #14633a;
+    --green-light: #1d8a50;
+    --bg: #e8ecf3;
+    --surface: #ffffff;
+    --warm-white: #ffffff;
+    --border: #d4d8e2;
+    --text: #1a1612;
+    --muted: #6b6058;
+    --danger: #a93226;
+    --danger-soft: #fdf0f0;
+    --radius: 10px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { height: 100%; scroll-behavior: smooth; }
+body { height: 100%; }
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    overflow-x: hidden;
+    overflow-y: auto;
+    line-height: 1.5;
+}
+
+.app-shell {
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.main-scroll {
+    flex: 1;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.site-header {
+    background: var(--navy);
+    border-bottom: 3px solid var(--gold);
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 7px 16px;
+}
+
+.header-title {
+    font-family: 'Fraunces', serif;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--gold);
+    background: rgba(201,151,42,0.18);
+    border: 1px solid rgba(201,151,42,0.45);
+    border-radius: 20px;
+    padding: 3px 14px;
+    margin: 0;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.btn-back {
+    background: transparent;
+    color: rgba(255,255,255,0.7);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 7px;
+    font-size: 0.82rem;
+    padding: 5px 12px;
+    text-decoration: none;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.btn-back:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+/* Marks validation highlight (U2) */
+input.invalid,
+.mark-input.invalid,
+.grid-input.invalid {
+    border: 2px solid var(--danger) !important;
+    border-color: var(--danger) !important;
+    background: var(--danger-soft) !important;
+    box-shadow: 0 0 0 3px rgba(169,50,38,0.15) !important;
+}
+
+/* Progress bar components (U5/U6) */
+.progress-strip {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.progress-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--muted);
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+.progress-bar-wrap {
+    flex: 1;
+    height: 8px;
+    background: var(--border);
+    border-radius: 999px;
+    overflow: hidden;
+}
+.progress-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--gold);
+    transition: width 0.25s ease, background 0.25s ease;
+    width: 0%;
+}
+.progress-bar-fill.complete { background: var(--green); }
+.progress-count {
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: var(--text);
+    white-space: nowrap;
+    min-width: 54px;
+    text-align: right;
+}
+.progress-count .prog-filled,
+.progress-count .prog-complete { color: var(--green); }
+
+/* Flash message */
+.flash-msg { border-radius: 8px; border: none; font-size: 0.875rem; }
+
+/* ── Bigger global form labels ── */
+.form-label { font-size: 0.88rem !important; font-weight: 600; }
+
+/* ── Comfortable base font size ── */
+body { font-size: 15.5px; }
+.form-control, .form-select { font-size: 0.93rem; }
+td, th { font-size: 0.9rem; }
+
+/* ── Sitewide portal-locked banner ── */
+.phs-lock-banner {
+    background: #b91c1c;
+    color: #fff;
+    font-size: 0.84rem;
+    font-weight: 600;
+    text-align: center;
+    padding: 8px 16px;
+    letter-spacing: 0.03em;
+    position: sticky;
+    top: 0;
+    z-index: 9999;
+}
+
+/* ── Breadcrumb navigation ── */
+.phs-breadcrumb {
+    background: var(--navy-mid);
+    padding: 5px 16px;
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.6);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    position: sticky;
+    top: 0;
+    z-index: 99;
+    flex-shrink: 0;
+}
+/* When breadcrumb is inside the header, render inline filling available space */
+.site-header .phs-breadcrumb {
+    flex: 1;
+    position: static;
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+    z-index: auto;
+    flex-wrap: nowrap;
+    overflow: hidden;
+}
+.phs-breadcrumb a {
+    color: rgba(255,255,255,0.6);
+    text-decoration: none;
+    transition: color 0.15s;
+}
+.phs-breadcrumb a:hover { color: #fff; }
+.phs-breadcrumb .bc-sep { opacity: 0.35; font-size: 0.75rem; }
+.phs-breadcrumb .bc-current { color: rgba(255,255,255,0.9); font-weight: 600; }
+.phs-breadcrumb .bc-cat {
+    background: rgba(201,151,42,0.18);
+    border: 1px solid rgba(201,151,42,0.45);
+    color: var(--gold);
+    border-radius: 20px;
+    padding: 1px 9px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* ── PIN / password show-hide toggle ── */
+.input-group .pin-toggle {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-left: none;
+    border-radius: 0 7px 7px 0 !important;
+    padding: 0 10px;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.85rem;
+    line-height: 1;
+}
+.input-group .pin-toggle:hover { background: #f0ede8; color: var(--text); }
+
+/* ── Loading/saving button state ── */
+@keyframes phs-spin {
+    to { transform: rotate(360deg); }
+}
+.btn-saving {
+    opacity: 0.75;
+    pointer-events: none;
+    cursor: not-allowed;
+    position: relative;
+    padding-left: 2.2em !important;
+}
+.btn-saving::before {
+    content: '';
+    position: absolute;
+    left: 0.6em;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0.85em;
+    height: 0.85em;
+    border: 2px solid rgba(255,255,255,0.35);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: phs-spin 0.6s linear infinite;
+}
+
+/* ── Last-saved timestamp ── */
+.last-saved-strip {
+    font-size: 0.76rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 0;
+}
+.last-saved-strip .saved-time { font-weight: 600; color: var(--green); }
+
+/* ── Logs filter bar ── */
+.logs-filter-bar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+    align-items: center;
+}
+.logs-filter-bar input,
+.logs-filter-bar select {
+    border: 1.5px solid var(--border);
+    border-radius: 7px;
+    padding: 6px 10px;
+    font-size: 0.82rem;
+    background: #fff;
+    color: var(--text);
+}
+.logs-filter-bar input:focus,
+.logs-filter-bar select:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(201,151,42,0.15);
+    outline: none;
+}
+
+/* ── Student search strip ── */
+.student-search-strip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.student-search-strip input {
+    flex: 1;
+    border: 1.5px solid var(--border);
+    border-radius: 7px;
+    padding: 7px 12px;
+    font-size: 0.84rem;
+    background: #fff;
+}
+.student-search-strip input:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(201,151,42,0.15);
+    outline: none;
+}
+.student-search-count {
+    font-size: 0.76rem;
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+/* ── Keyboard hint callout ── */
+.keyboard-hint {
+    background: rgba(201,151,42,0.08);
+    border-left: 3px solid var(--gold);
+    border-radius: 0 6px 6px 0;
+    padding: 6px 12px;
+    font-size: 0.78rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+.keyboard-hint kbd {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 0.72rem;
+    color: var(--text);
+}
+
+/* ── Global table padding floors ── */
+.phs-table td, .phs-table th { padding: 8px 10px; }
+.stat-cell { padding: 10px 8px !important; }
+
+/* ── Print utilities ── */
+@media print {
+    .no-print { display: none !important; }
+    .phs-lock-banner { display: none !important; }
+    .phs-breadcrumb { display: none !important; }
+    .app-shell { height: auto !important; overflow: visible !important; }
+    .main-scroll { overflow: visible; }
+    body { background: #fff !important; }
+}
+
+/* ── Mobile: allow body scroll, keep header sticky ── */
+@media (max-width: 900px) {
+    .app-shell { height: auto; min-height: 100dvh; overflow: visible; }
+    body { overflow-y: auto; }
+}
+
+/* ── Small-screen tweaks ── */
+@media (max-width: 600px) {
+    .form-label { font-size: 0.85rem !important; }
+    .btn-back { font-size: 0.8rem; padding: 5px 10px; }
+    .phs-breadcrumb { font-size: 0.75rem; padding: 4px 10px; }
+    .site-header .phs-breadcrumb { padding: 0; font-size: 0.72rem; }
+    .header-title { font-size: 0.9rem; }
+}
+
+/* ── Touch target minimums on mobile ── */
+@media (max-width: 900px) {
+    /* Ensure all interactive controls meet 44px minimum height */
+    .form-control, .form-select {
+        min-height: 44px;
+        font-size: 1rem !important; /* Prevents iOS zoom on focus */
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+    .btn, button, [type="submit"], [type="button"] {
+        min-height: 44px;
+        padding-top: 10px !important;
+        padding-bottom: 10px !important;
+        font-size: 0.9rem !important;
+    }
+    /* Breadcrumb back button — keep compact */
+    .btn-back {
+        min-height: 36px;
+        padding-top: 6px !important;
+        padding-bottom: 6px !important;
+    }
+    /* Class tabs — bigger tap area */
+    .class-tab {
+        padding: 8px 14px !important;
+        font-size: 0.85rem !important;
+        min-height: 40px;
+        display: inline-flex;
+        align-items: center;
+    }
+    /* Flash messages — readable size */
+    .flash-msg { font-size: 0.9rem !important; padding: 10px 14px !important; }
+    /* Table cells — comfortable reading */
+    td, th { font-size: 0.88rem; }
+}

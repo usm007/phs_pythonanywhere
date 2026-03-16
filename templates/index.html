@@ -1,600 +1,868 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ school_shortcode }} Examination Portal</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --navy: #0a1931;
-            --navy-mid: #132342;
-            --gold: #c9972a;
-            --gold-light: #f2c463;
-            --green: #14633a;
-            --green-light: #1d8a50;
-            --bg: #f0ede8;
-            --surface: #faf8f5;
-            --border: #d6cfc4;
-            --text: #1a1612;
-            --muted: #6b6058;
-            --radius: 10px;
-        }
+{% extends "base.html" %}
+{% block title %}{{ school_shortcode }} Examination Portal{% endblock %}
+{% block extra_css %}
+<style>
+/* ── Base ── */
+html, body {
+    height: 100%; overflow: hidden;
+    background: #cdd5e0;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
 
-        *, *::before, *::after { box-sizing: border-box; }
+/* Full-page shell */
+.pg-page { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
 
-        html, body {
-            height: 100%;
-        }
+/* ── Header ── */
+.pg-header {
+    background: #1f2f44;
+    padding: 8px 24px;
+    display: flex; align-items: center; gap: 16px;
+    min-height: 64px;
+    flex-shrink: 0;
+    border-bottom: 2px solid #c9a34a;
+    z-index: 100;
+}
+.pg-logo {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    background: rgba(201,163,74,0.15);
+    border: 2px solid #c9a34a;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; flex-shrink: 0;
+}
+.pg-logo img { width: 100%; height: 100%; object-fit: cover; }
+.pg-logo-initials { color: #c9a34a; font-weight: 800; font-size: 0.85rem; }
+.pg-school-name {
+    color: #fff;
+    font-size: 1.15rem;
+    font-weight: 800;
+    line-height: 1.3;
+    letter-spacing: 0.1px;
+    margin-right: 10px;
+    min-width: 0;
+    max-width: clamp(220px, 45vw, 760px);
+}
+.pg-school-title {
+    display: block;
+    font-size: clamp(0.8rem, 1.05vw, 1.06rem);
+    font-weight: 800;
+    line-height: 1.18;
+    padding-bottom: 1px;
+    color: #fff;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.pg-school-subtitle {
+    display: block;
+    font-size: 0.65rem;
+    font-weight: 400;
+    color: rgba(255,255,255,0.55);
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    margin-top: 2.5px;
+}
+.pg-header-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; margin-left: auto; }
+.pg-session-pill {
+    background: rgba(201,163,74,0.14);
+    color: #f2c463;
+    border: 1px solid rgba(201,163,74,0.28);
+    border-radius: 4px;
+    padding: 5px 12px;
+    font-size: 0.71rem;
+    font-weight: 700;
+    min-height: 34px;
+    display: flex; align-items: center; gap: 4px;
+}
+.pg-visitor-counter {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.14);
+    color: rgba(255,255,255,0.78);
+    border-radius: 4px;
+    padding: 5px 12px;
+    font-size: 0.71rem;
+    font-weight: 700;
+    min-height: 34px;
+    display: flex; align-items: center; gap: 5px;
+    letter-spacing: 0.02em;
+}
 
-        body {
-            background: var(--bg);
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            color: var(--text);
-            margin: 0;
-            overflow-x: hidden;
-            overflow-y: auto;
-        }
+/* ── Stats bar — removed ── */
 
-        .app-shell {
-            min-height: 100dvh;
-            height: auto;
-            display: flex;
-            flex-direction: column;
-        }
+/* ── Page body ── */
+.pg-body {
+    flex: 1; min-height: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr auto;
+    gap: 6px;
+    padding: 6px 8px;
+    overflow: hidden;
+    align-items: stretch;
+    box-sizing: border-box;
+}
 
-        .main-scroll {
-            flex: 1;
-            overflow: auto;
-            -webkit-overflow-scrolling: touch;
-            padding: 16px 0;
-            min-height: 0;
-            display: flex;
-            align-items: center;
-        }
+/* ── Flash messages ── */
+.flash-zone { flex-shrink: 0; display: flex; flex-direction: column; gap: 5px; }
+.flash-msg { border-radius: 6px; font-size: 0.81rem; margin: 0; padding: 7px 13px; }
 
-        .home-content {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
+/* ── Quick start banner ── */
+.qs-banner {
+    flex-shrink: 0;
+    background: #ffffff;
+    border-radius: 5px;
+    border: 1px solid #c4cdd8;
+    border-left: 3px solid #c9a34a;
+    padding: 10px 14px;
+    color: #1c1c1c;
+    display: flex; align-items: flex-start; gap: 12px;
+    position: relative;
+}
+.qs-icon { font-size: 1.15rem; flex-shrink: 0; }
+.qs-content { flex: 1; }
+.qs-title { font-weight: 700; font-size: 0.82rem; margin-bottom: 4px; color: #1c1c1c; }
+.qs-steps { margin: 0; padding-left: 18px; font-size: 0.73rem; line-height: 1.7; color: #6b7683; }
+.qs-close-btn {
+    position: absolute; top: 9px; right: 11px;
+    background: #e8ecf0; border: none; color: #6b7683;
+    width: 32px; height: 32px; border-radius: 3px; cursor: pointer;
+    font-size: 0.65rem; display: flex; align-items: center; justify-content: center;
+    touch-action: manipulation;
+}
+.qs-close-btn:hover { background: #d8dee6; color: #1c1c1c; }
 
-        /* ─── HEADER ─── */
-        .site-header {
-            background: var(--navy);
-            background-image:
-                repeating-linear-gradient(
-                    0deg,
-                    transparent,
-                    transparent 39px,
-                    rgba(255,255,255,0.025) 39px,
-                    rgba(255,255,255,0.025) 40px
-                ),
-                repeating-linear-gradient(
-                    90deg,
-                    transparent,
-                    transparent 39px,
-                    rgba(255,255,255,0.025) 39px,
-                    rgba(255,255,255,0.025) 40px
-                );
-            border-bottom: 4px solid var(--gold);
-            padding: 18px 0 14px;
-            position: relative;
-            overflow: hidden;
-            flex-shrink: 0;
-        }
-        .site-header::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(ellipse 70% 100% at 50% 0%, rgba(201,151,42,0.08) 0%, transparent 70%);
-            pointer-events: none;
-        }
-        .header-school {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-weight: 400;
-            font-size: clamp(0.75rem, 1.5vw, 0.95rem);
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            color: rgba(255,255,255,0.55);
-            margin-bottom: 6px;
-        }
-        .header-session {
-            font-size: 0.7rem;
-            color: rgba(255,255,255,0.72);
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            margin-top: 7px;
-        }
-        .header-inner {
-            width: min(1040px, calc(100% - 30px));
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: 96px 1fr;
-            gap: 12px;
-            align-items: center;
-        }
-        .header-logo-slot {
-            width: 86px;
-            height: 86px;
-            border: 1px solid rgba(255,255,255,0.28);
-            border-radius: 12px;
-            background: rgba(255,255,255,0.08);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            margin: 0 auto;
-        }
-        .header-logo-slot img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            background: #fff;
-            padding: 4px;
-        }
-        .header-logo-placeholder {
-            font-size: 0.62rem;
-            color: rgba(255,255,255,0.6);
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            text-align: center;
-            line-height: 1.3;
-        }
-        .header-text {
-            text-align: center;
-        }
-        .header-main {
-            font-family: 'Fraunces', Georgia, serif;
-            font-size: clamp(1.35rem, 2.8vw, 2.2rem);
-            font-weight: 700;
-            color: #fff;
-            line-height: 1.15;
-            letter-spacing: 0.03em;
-            text-transform: uppercase;
-        }
-        .header-rule {
-            width: 60px;
-            height: 2px;
-            background: linear-gradient(90deg, var(--gold), transparent);
-            margin: 12px auto 0;
-        }
+/* ── Left / main column ── */
+.main-col { 
+    display: flex;
+    flex-direction: column; 
+    gap: 6px; 
+    min-height: 0; 
+    overflow: hidden; 
+}
 
-        /* ─── CARDS ─── */
-        .phs-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05), 0 0 0 0px var(--gold);
-            transition: box-shadow 0.2s ease, transform 0.2s ease;
-        }
-        .phs-card:hover { box-shadow: 0 8px 26px rgba(0,0,0,0.1); transform: translateY(-1px); }
+/* ── Primary panel ── */
+.primary-panel {
+    flex: 1;
+    min-height: 0;
+    display: flex; flex-direction: column;
+    border-radius: 5px;
+    overflow: hidden;
+    border: 1px solid #c4cdd8;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.13);
+    background: #f0f4f8;
+}
+/* ── Primary actions label ── */
+.primary-tiles-label {
+    font-size: 0.68rem; font-weight: 700;
+    color: #fff; background: #1f2f44;
+    text-transform: uppercase; letter-spacing: 0.8px;
+    padding: 7px 11px;
+    flex-shrink: 0;
+}
+/* ── Primary tiles — single column ── */
+.tiles-grid {
+    flex: 1; min-height: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-auto-rows: 1fr;
+    gap: 4px;
+    background: transparent;
+    padding: 5px;
+}
+.tile {
+    border-radius: 5px;
+    padding: 0;
+    text-decoration: none;
+    color: #1c1c1c;
+    display: flex; flex-direction: row; align-items: stretch;
+    gap: 0;
+    transition: border-color 0.22s ease, box-shadow 0.22s ease, background 0.22s ease, transform 0.22s ease;
+    position: relative;
+    overflow: hidden;
+    background: #ffffff;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.13);
+    border: 1px solid #c4cdd8;
+    border-left: 4px solid #c9a34a;
+}
+.tile:hover { border-color: #d1d9e4; border-left-color: #c9a34a; box-shadow: 0 10px 22px rgba(20,30,45,0.2); background: #fffdf6; transform: translateY(-3px); }
+.tile:hover .tile-arrow { opacity: 1; transform: translateY(-50%) translateX(9px); }
+.tile:active { transform: scale(0.99); }
+.tile-icon-wrap {
+    width: 56px;
+    flex-shrink: 0;
+    background: #1f2f44;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.25rem;
+    color: #ffffff;
+}
+.tile-body {
+    flex: 1;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 8px 34px 8px 12px;
+}
+.tile-title { font-size: 1rem; font-weight: 700; line-height: 1.2; margin-bottom: 3px; letter-spacing: -0.1px; color: #1c1c1c; }
+.tile-desc  { font-size: 0.75rem; line-height: 1.45; color: #6b7683; font-weight: 400; }
+.tile-arrow { position: absolute; top: 50%; right: 18px; transform: translateY(-50%); opacity: 0.62; font-size: 1.22rem; color: #1f2f44; transition: opacity 0.15s, transform 0.15s; }
 
-        .main-scroll::-webkit-scrollbar {
-            width: 10px;
-            height: 10px;
-        }
-        .main-scroll::-webkit-scrollbar-thumb {
-            background: #c7bfb5;
-            border-radius: 10px;
-        }
+/* All tiles uniform */
+.tile-green, .tile-red, .tile-blue, .tile-amber { border-left: 4px solid #c9a34a; }
 
-        .card-admin { border-top: 3px solid var(--navy); }
-        .card-results { border-top: 3px solid var(--green); }
+/* ── Secondary (utility) rows — 2x2 grid ── */
+.sec-list {
+    flex-shrink: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+}
+.sec-item {
+    background: #ffffff;
+    border-radius: 5px;
+    padding: 8px 10px;
+    display: flex; align-items: center; gap: 10px;
+    text-decoration: none;
+    color: #1c1c1c;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.09);
+    transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    border: 1px solid #c4cdd8;
+}
+.sec-item:hover { background: #f7fbff; border-color: #c9a34a; color: #1c1c1c; box-shadow: 0 8px 18px rgba(18,30,44,0.16); transform: translateY(-2px); }
+.sec-item-icon {
+    width: 26px; height: 26px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.82rem; color: #6b7683;
+}
+.si-purple, .si-teal, .si-slate { background: none; }
+.sec-item-text { flex: 1; }
+.si-title { font-size: 0.79rem; font-weight: 600; letter-spacing: -0.1px; color: #1c1c1c; }
+.si-desc  { font-size: 0.65rem; color: #6b7683; margin-top: 1px; }
+.sec-item-chev { color: #98a7bd; font-size: 1.08rem; line-height: 1; margin-left: 4px; }
 
-        /* ─── SECTION LABELS ─── */
-        .section-label {
-            font-size: 0.68rem;
-            font-weight: 600;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            color: var(--muted);
-            padding-bottom: 6px;
-            border-bottom: 1px solid var(--border);
-            margin-bottom: 10px;
-        }
+/* ── Right column ── */
+.right-col { 
+    display: flex;
+    flex-direction: column; 
+    gap: 6px; 
+    min-height: 0; 
+    overflow: hidden; 
+}
 
-        /* ─── SUB-PANELS ─── */
-        .sub-panel {
-            background: #f4f1ec;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 12px 14px;
-            margin-bottom: 14px;
-        }
-        .sub-panel-title {
-            font-weight: 600;
-            font-size: 0.8rem;
-            color: var(--navy);
-            margin-bottom: 8px;
-        }
-        .sub-panel.mobile-highlight {
-            border-left: 3px solid #1a56db;
-            background: #f4f6ff;
-        }
-        .sub-panel.desktop-highlight {
-            border-left: 3px solid var(--gold);
-            background: #fffbf2;
-        }
-        .sub-panel.register-highlight {
-            border-left: 3px solid var(--green);
-            background: #f3faf6;
-        }
+/* ── System Overview card ── */
+.overview-card {
+    background: #ffffff;
+    border-radius: 5px;
+    border: 1px solid #c4cdd8;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    flex: 1;
+    min-height: 0;
+}
+.overview-hdr {
+    background: #1f2f44;
+    color: #fff;
+    padding: 9px 13px;
+    font-size: 0.68rem; font-weight: 700; letter-spacing: 0.8px;
+    text-transform: uppercase;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+}
+.overview-hdr-time { font-size: 0.68rem; font-weight: 400; color: rgba(255,255,255,0.5); letter-spacing: 0; }
+.overview-body {
+    padding: 8px 10px;
+    display: grid;
+    grid-template-columns: 0.85fr 2.15fr;
+    gap: 8px;
+}
+.ov-left-panel { min-width: 0; display: flex; flex-direction: column; }
+.ov-right-panel {
+    min-width: 0;
+    border-left: 1px solid #d8dee6;
+    padding-left: 12px;
+    display: flex;
+    flex-direction: column;
+}
+.ov-section-label {
+    font-size: 0.6rem; font-weight: 700;
+    color: #6b7683; text-transform: uppercase; letter-spacing: 0.5px;
+    margin-bottom: 7px;
+    flex-shrink: 0;
+}
+/* Top row: progress + stats side by side */
+.ov-top-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-shrink: 0;
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+.ov-col-divider { display: none; }
+.ov-progress-block { display: flex; flex-direction: column; align-items: center; justify-content: center; padding-right: 4px; gap: 6px; }
+.ov-summary-block {
+    border-top: 1px solid #e4e9f0;
+    padding-top: 8px;
+}
+/* Circular progress */
+.ov-circ-wrap { position: relative; width: 80px; height: 80px; flex-shrink: 0; }
+.ov-circ-svg { width: 80px; height: 80px; transform: rotate(-90deg); }
+.ov-circ-track { fill: none; stroke: #e0e6ef; stroke-width: 7; }
+.ov-circ-fill  { fill: none; stroke: #1f2f44; stroke-width: 7; stroke-linecap: round;
+                  stroke-dasharray: 207.3; transition: stroke-dashoffset 0.8s ease; }
+.ov-circ-label {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    font-size: 1rem; font-weight: 800; color: #1f2f44; line-height: 1; white-space: nowrap;
+}
+.ov-progress-sub { font-size: 0.68rem; color: #6b7683; text-align: center; }
+/* Stats */
+.ov-stats {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    flex-shrink: 0;
+}
+.ov-stat-box {
+    background: #fff;
+    border: 1px solid #e4e9f0;
+    border-radius: 4px;
+    padding: 5px 7px;
+}
+.ov-stat-val { font-size: 0.95rem; font-weight: 800; color: #1f2f44; line-height: 1; }
+.ov-stat-lbl { font-size: 0.58rem; color: #6b7683; text-transform: uppercase; letter-spacing: 0.3px; margin-top: 2px; }
+/* Activity */
+.ov-divider { border: none; border-top: 2px solid #c9a34a44; margin: 10px 0 8px; flex-shrink: 0; }
+.ov-activity-list { display: flex; flex-direction: column; overflow: auto; }
+.ov-activity-item {
+    font-size: 0.71rem; color: #1c1c1c; line-height: 1.4;
+    padding: 4px 0 4px 12px;
+    position: relative;
+    border-bottom: 1px solid #e8ecf2;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+.ov-activity-item:last-child { border-bottom: none; }
+.ov-activity-time {
+    font-size: 0.64rem;
+    color: #7e8a9b;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.ov-activity-text { min-width: 0; }
+.ov-activity-item::before {
+    content: '';
+    position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+    width: 4px; height: 4px; border-radius: 50%;
+    background: #c9a34a;
+}
 
-        /* ─── FORM CONTROLS ─── */
-        .form-select, .form-control {
-            border-color: var(--border);
-            background: #fff;
-            border-radius: 7px;
-            font-size: 0.875rem;
-            color: var(--text);
-        }
-        .form-select:focus, .form-control:focus {
-            border-color: var(--gold);
-            box-shadow: 0 0 0 3px rgba(201,151,42,0.15);
-        }
+/* ── Notice board ── */
+.notice-card {
+    background: #ffffff;
+    border-radius: 5px;
+    border: 1px solid #c4cdd8;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+.notice-hdr {
+    background: #1f2f44;
+    color: #fff;
+    padding: 9px 13px;
+    font-size: 0.68rem; font-weight: 700; letter-spacing: 0.8px;
+    text-transform: uppercase;
+    display: flex; align-items: center; justify-content: space-between; gap: 7px;
+    flex-shrink: 0;
+}
+.notice-hdr-title { display: inline-flex; align-items: center; gap: 7px; }
+.notice-hdr i { color: #c9a34a; font-size: 0.75rem; }
+.notice-body-inner {
+    padding: 8px;
+    display: flex; flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+/* Collapsed form: show only button */
+.notice-compose-trigger {
+    flex-shrink: 0;
+    margin-bottom: 6px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #d8dee6;
+}
+.notice-compose-fields {
+    display: flex; flex-direction: column; gap: 4px;
+    margin-top: 5px;
+}
+.notice-input {
+    width: 100%; padding: 6px 9px;
+    border: 1px solid #c4cdd8; border-radius: 3px;
+    font-size: 1rem; font-family: inherit;
+    background: #fff; resize: none;
+    transition: border-color 0.15s;
+    box-sizing: border-box;
+    outline: none;
+    color: #1c1c1c;
+}
+.notice-input:focus { border-color: #6b7683; background: #fff; box-shadow: 0 1px 6px rgba(0,0,0,0.09); }
+.notice-post-btn {
+    background: #1f2f44; color: rgba(255,255,255,0.88);
+    border: none; border-radius: 3px;
+    padding: 7px 14px; font-size: 0.78rem; font-weight: 600;
+    cursor: pointer; transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    display: flex; align-items: center; gap: 5px;
+    letter-spacing: 0.3px; text-transform: uppercase;
+    min-height: 36px;
+}
+.notice-post-btn:hover { background: #2a3f58; box-shadow: 0 8px 16px rgba(16,28,44,0.25); transform: translateY(-1px); }
+.notice-post-btn.notice-post-btn-hdr {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.18);
+    color: rgba(255,255,255,0.9);
+    font-size: 0.6rem;
+    min-height: 26px;
+    padding: 3px 8px;
+}
+.notice-post-btn.notice-post-btn-hdr:hover { background: rgba(255,255,255,0.18); }
+.notice-list { overflow-y: auto; display: flex; flex-direction: column; gap: 0; flex: 1; min-height: 0; }
+.notice-item {
+    padding: 6px 8px;
+    border-bottom: 1px solid #e4e9f0;
+    display: flex; gap: 7px; align-items: flex-start;
+}
+.notice-avatar {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: #1f2f44;
+    color: #fff; font-size: 0.63rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.notice-content { flex: 1; }
+.notice-author { font-size: 0.67rem; font-weight: 700; color: #1c1c1c; }
+.notice-time   { font-size: 0.68rem; color: #94a3b8; margin-left: 4px; }
+.notice-text   { font-size: 0.71rem; color: #6b7683; line-height: 1.4; margin-top: 1px; }
+.notice-del-btn {
+    background: none; border: none; cursor: pointer;
+    color: #c0c8d0; font-size: 0.72rem; padding: 4px 5px;
+    transition: color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+    min-height: 30px;
+    min-width: 30px;
+}
+.notice-del-btn:hover { color: #c0392b; background: #fdf0f0; transform: scale(1.08); }
+.notice-empty { padding: 18px 10px; text-align: center; color: #94a3b8; font-size: 0.73rem; }
+.notice-empty-icon { font-size: 1.4rem; margin-bottom: 4px; }
 
-        /* ─── BUTTONS ─── */
-        .btn-phs-primary {
-            background: var(--navy);
-            color: #fff;
-            border: none;
-            border-radius: 7px;
-            font-weight: 500;
-            font-size: 0.85rem;
-            padding: 8px 18px;
-            transition: background 0.18s;
-        }
-        .btn-phs-primary:hover { background: var(--navy-mid); color: #fff; }
+@media (min-width: 861px) {
+    .pg-body {
+        width: min(84vw, 1320px);
+        margin: 0 auto;
+        padding: 4px 6px;
+        gap: 4px;
+    }
+    .main-col, .right-col { gap: 4px; }
+    .right-col {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        overflow: visible;
+    }
+    .tiles-grid { grid-auto-rows: auto; gap: 3px; padding: 4px; }
+    .tile-body { padding: 6px 30px 6px 10px; }
+    .sec-list { gap: 3px; }
+    .sec-item { padding: 6px 8px; }
+    .overview-body { padding: 6px 8px; gap: 6px; }
+    .ov-top-section { gap: 6px; }
+    .ov-summary-block { padding-top: 6px; }
+    .ov-stats { gap: 3px; }
+    .ov-stat-box { padding: 4px 6px; }
+    .notice-body-inner { padding: 6px; }
+    .notice-compose-trigger { margin-bottom: 4px; padding-bottom: 4px; }
+    .notice-list { overflow-y: auto; }
+    .notice-item { padding: 5px 6px; }
+}
 
-        .btn-phs-outline {
-            background: transparent;
-            color: var(--navy);
-            border: 1.5px solid var(--navy);
-            border-radius: 7px;
-            font-weight: 500;
-            font-size: 0.85rem;
-            padding: 7px 18px;
-            transition: all 0.18s;
-        }
-        .btn-phs-outline:hover { background: var(--navy); color: #fff; }
+/* Slightly rounder homepage UI */
+.pg-session-pill,
+.pg-visitor-counter,
+.flash-msg,
+.qs-banner,
+.qs-close-btn,
+.primary-panel,
+.tile,
+.sec-item,
+.overview-card,
+.notice-card,
+.ov-stat-box,
+.notice-input,
+.notice-post-btn {
+    border-radius: 8px;
+}
+.notice-post-btn.notice-post-btn-hdr { border-radius: 7px; }
 
-        .btn-phs-gold {
-            background: var(--gold);
-            color: #fff;
-            border: none;
-            border-radius: 7px;
-            font-weight: 600;
-            font-size: 0.85rem;
-            transition: background 0.18s;
-        }
-        .btn-phs-gold:hover { background: #b08222; color: #fff; }
+/* ── Responsive ── */
+@media (max-width: 860px) {
+    html, body { overflow-y: auto; }
+    .pg-page { height: auto; }
+    .pg-header { gap: 10px; padding: 0 14px; }
+    .pg-body { grid-template-columns: 1fr; overflow-y: auto; height: auto; }
+    .main-col { overflow: visible; min-height: 0; }
+    .tiles-grid { grid-template-columns: 1fr; grid-auto-rows: 1fr; flex: none; }
+    .sec-list { grid-template-columns: 1fr; }
+    .right-col { overflow: visible; flex-direction: row; flex-wrap: wrap; gap: 8px; }
+    .overview-body { display: flex; flex-direction: column; }
+    .ov-right-panel {
+        border-left: none;
+        padding-left: 0;
+        border-top: 2px solid #c9a34a44;
+        padding-top: 8px;
+    }
+    .overview-card { flex: 1; min-width: 240px; }
+    .notice-card { flex: 1; min-width: 240px; }
+}
+@media (max-width: 600px) {
+    html, body { overflow-y: auto; }
+    .pg-page { height: auto; }
+    .pg-header { min-height: 50px; padding: 6px 12px; }
+    .pg-school-name { font-size: 0.88rem; }
+    .pg-school-title { font-size: 0.9rem; }
+    .pg-session-pill { display: none; }
+    .pg-visitor-counter { font-size: 0.66rem; min-height: 30px; padding: 4px 10px; }
+    .pg-body { padding: 8px; gap: 8px; overflow: visible; }
+    .right-col { flex-direction: column; }
+    .overview-card, .notice-card { /* natural height */ }
+}
+</style>
+{% endblock %}
 
-        .btn-phs-green {
-            background: var(--green);
-            color: #fff;
-            border: none;
-            border-radius: 7px;
-            font-weight: 600;
-            transition: background 0.18s;
-        }
-        .btn-phs-green:hover { background: var(--green-light); color: #fff; }
+{% block body %}
+{%- set total_entered  = class_summary | sum(attribute='marks_entered') -%}
+{%- set total_expected = class_summary | sum(attribute='marks_expected') -%}
+{%- set ns = namespace(all_subs=[]) -%}
+{%- for subs in subjects_dict.values() %}{% for s in subs %}{% if s not in ns.all_subs %}{% set ns.all_subs = ns.all_subs + [s] %}{% endif %}{% endfor %}{% endfor -%}
 
-        .btn-back {
-            background: transparent;
-            color: var(--muted);
-            border: 1px solid var(--border);
-            border-radius: 7px;
-            font-size: 0.82rem;
-            padding: 5px 14px;
-        }
-        .btn-back:hover { background: var(--border); color: var(--text); }
+<div class="pg-page">
 
-        /* ─── STAT CHIPS ─── */
-        .stat-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin-bottom: 12px;
-        }
-        .stat-chip {
-            font-size: 0.72rem;
-            font-weight: 500;
-            padding: 3px 10px;
-            border-radius: 20px;
-            border: 1px solid var(--border);
-            background: #fff;
-            color: var(--muted);
-        }
-        .stat-chip.pass { border-color: #a8d5ba; background: #edf7f1; color: #14633a; }
-        .stat-chip.fail { border-color: #f4a0a0; background: #fdf0f0; color: #a02020; }
-        .stat-chip.absent { border-color: #d6cfc4; background: #f4f1ec; color: #7a6a58; }
+<!-- ═══ HEADER ═══ -->
+<header class="pg-header">
+    <div class="pg-logo">
+        {% if school_logo_url %}
+            <img src="{{ school_logo_url }}" alt="Logo" width="42" height="42" loading="eager">
+        {% else %}
+            <div class="pg-logo-initials">{{ school_shortcode }}</div>
+        {% endif %}
+    </div>
+    <div class="pg-school-name">
+        <span class="pg-school-title">{{ school_name }}</span>
+        <span class="pg-school-subtitle">Examination Record Management System</span>
+    </div>
+    <div class="pg-header-right">
+        <span class="pg-session-pill">
+            <i class="fas fa-calendar-alt" style="font-size:0.58rem"></i>
+            Session : {{ academic_session }}{% if portal_locked %}&nbsp;<i class="fas fa-lock"></i>{% endif %}
+        </span>
+        <div class="pg-visitor-counter"><i class="fas fa-users"></i> Visitors : {{ visitor_count }}</div>
+    </div>
+</header>
 
-        /* ─── FLASH MESSAGES ─── */
-        .flash-msg {
-            border-radius: 8px;
-            border: none;
-            font-size: 0.82rem;
-            padding: 8px 12px;
-        }
+<!-- ═══ BODY ═══ -->
+<div class="pg-body">
 
-        /* ─── RESULT HERO ─── */
-        .result-hero {
-            background: linear-gradient(135deg, var(--green) 0%, #0e4a2a 100%);
-            border-radius: 10px;
-            padding: 20px 18px;
-            text-align: center;
-            color: #fff;
-            position: relative;
-            overflow: hidden;
-        }
-        .result-hero::before {
-            content: '{{ school_shortcode }}';
-            position: absolute;
-            font-size: 84px;
-            right: -20px;
-            bottom: -20px;
-            opacity: 0.09;
-            line-height: 1;
-            font-family: 'Fraunces', Georgia, serif;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-        }
-        .result-hero-btn {
-            display: block;
-            background: #fff;
-            color: var(--green);
-            border-radius: 8px;
-            font-family: 'Fraunces', Georgia, serif;
-            font-size: 0.98rem;
-            font-weight: 700;
-            padding: 12px 18px;
-            text-decoration: none;
-            transition: all 0.2s;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-        .result-hero-btn:hover {
-            background: var(--gold-light);
-            color: #000;
-            transform: translateY(-2px);
-        }
-        .result-hero small {
-            font-size: 0.75rem;
-            opacity: 0.65;
-            letter-spacing: 0.06em;
-        }
+    <!-- ── LEFT / MAIN COLUMN ── -->
+    <div class="main-col">
 
-        /* ─── SESSION TAG ─── */
-        .session-tag {
-            background: rgba(255,255,255,0.12);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 20px;
-            display: inline-block;
-            padding: 3px 10px;
-            font-size: 0.68rem;
-            letter-spacing: 0.06em;
-            margin-top: 10px;
-        }
-
-        .home-card {
-            padding: 16px !important;
-        }
-
-        .device-badge {
-            display: inline-block;
-            font-size: 0.62rem;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            padding: 2px 8px;
-            border-radius: 20px;
-            vertical-align: middle;
-            margin-left: 6px;
-        }
-        .device-badge.mobile {
-            background: #e8f0fe;
-            color: #1a56db;
-            border: 1px solid #bfcffc;
-        }
-        .device-badge.desktop {
-            background: #fef3c7;
-            color: #92400e;
-            border: 1px solid #fcd34d;
-        }
-        .flash-wrap {
-            max-height: 72px;
-            overflow: auto;
-        }
-
-        .flash-wrap:empty {
-            display: none;
-        }
-
-        .mini-footer {
-            margin-top: auto;
-            padding: 6px 2px 0;
-            display: flex;
-            justify-content: center;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-        .mini-footer-link {
-            font-size: 0.7rem;
-            letter-spacing: 0.04em;
-            color: #8a8078;
-            text-decoration: none;
-            padding: 2px 4px;
-            border-radius: 5px;
-            transition: color 0.15s ease, background 0.15s ease;
-        }
-        .mini-footer-link:hover {
-            color: #5a5048;
-            background: rgba(214, 207, 196, 0.35);
-        }
-
-        @media (max-height: 760px) {
-            .site-header { padding: 12px 0 10px; }
-            .header-rule { margin-top: 8px; }
-            .home-card { padding: 12px !important; }
-            .sub-panel { padding: 10px 12px; margin-bottom: 8px; }
-            .result-hero { padding: 14px 14px; }
-        }
-
-        @media (max-width: 900px) {
-            .header-inner {
-                grid-template-columns: 1fr;
-                gap: 8px;
-            }
-            .header-logo-slot {
-                width: 64px;
-                height: 64px;
-            }
-            body { overflow: auto; }
-            .app-shell { height: auto; min-height: 100dvh; }
-            .main-scroll {
-                display: block;
-                padding: 10px 0 16px;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="app-shell">
-    <header class="site-header">
-        <div class="header-inner">
-            <div class="header-logo-slot">
-                {% if school_logo_url %}
-                    <img src="{{ school_logo_url }}" alt="School Logo">
-                {% else %}
-                    <div class="header-logo-placeholder">School<br>Logo</div>
-                {% endif %}
-            </div>
-            <div class="header-text">
-                <div class="header-school">{{ school_name }}</div>
-                <div class="header-main">EXAMINATION RECORD MANAGEMENT SYSTEM</div>
-                <div class="header-session">Session {{ academic_session }}</div>
-                <div class="header-rule"></div>
-            </div>
-        </div>
-    </header>
-
-    <main class="main-scroll">
-    <div class="container-fluid h-100">
-        <div class="home-content">
+        <!-- Flash messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-                <div class="flash-wrap">
-                    {% for category, message in messages %}
-                        <div class="alert flash-msg alert-{{ category if category in ['success', 'danger', 'warning', 'info'] else 'secondary' }} alert-dismissible fade show">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endfor %}
+            <div class="flash-zone">
+                {% for category, message in messages %}
+                <div class="alert flash-msg alert-{{ category if category in ['success','danger','warning','info'] else 'secondary' }} alert-dismissible fade show">
+                    {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
+                {% endfor %}
+            </div>
             {% endif %}
         {% endwith %}
 
-        <div class="row g-3 home-grid">
-            <!-- ── SECTION A: ENTRY ── -->
-            <div class="col-lg-8">
-                <div class="phs-card card-admin home-card h-100 d-flex flex-column">
-                    <div class="section-label">Section A | Marks Entry and Records</div>
+        <!-- Quick start (first time) -->
+        {% if total_entered == 0 %}
+        <div class="qs-banner" id="qsBanner">
+            <div class="qs-icon">💡</div>
+            <div class="qs-content">
+                <div class="qs-title">Welcome! Here's how to get started:</div>
+                <ol class="qs-steps">
+                    <li>Tap <strong>Enter Marks</strong> → choose a class &amp; subject → fill marks → Save.</li>
+                    <li>Once marks are in, use <strong>Results &amp; Report Cards</strong> to generate them.</li>
+                </ol>
+            </div>
+            <button class="qs-close-btn" onclick="document.getElementById('qsBanner').style.display='none'" title="Dismiss">✕</button>
+        </div>
+        {% endif %}
 
-                    <div class="sub-panel mobile-highlight">
-                        <div class="sub-panel-title">📝 Enter Marks (One Subject) <span class="device-badge mobile">📱 Phones</span></div>
-                        <form method="GET" action="{{ url_for('subject_entry') }}" id="mobileEntryForm">
-                            <div class="row g-2">
-                                <div class="col-6">
-                                    <select class="form-select form-select-sm" name="class_name" id="classSelectMobile" required>
-                                        <option value="" disabled selected>Class…</option>
-                                        {% for cname in subjects_dict.keys() %}
-                                            <option value="{{ cname }}">{{ class_label(cname) }}</option>
-                                        {% endfor %}
-                                    </select>
+        <!-- Primary tiles -->
+        <div class="primary-panel">
+            <div class="primary-tiles-label">PRIMARY ACTIONS</div>
+            <div class="tiles-grid">
+            {% if 'enter_marks' not in hidden_panels %}
+            <a href="{{ url_for('subject_entry') }}" class="tile tile-green">
+                <div class="tile-icon-wrap"><i class="fas fa-pen-nib"></i></div>
+                <div class="tile-body">
+                    <div class="tile-title">Enter Marks for One Subject</div>
+                    <div class="tile-desc">Choose a class and subject, type in the marks, and save.</div>
+                </div>
+                <span class="tile-arrow">›</span>
+            </a>
+            {% endif %}
+            {% if 'marks_table' not in hidden_panels %}
+            <a href="{{ url_for('grid_entry') }}" class="tile tile-blue">
+                <div class="tile-icon-wrap"><i class="fas fa-table-cells"></i></div>
+                <div class="tile-body">
+                    <div class="tile-title">Enter Marks for All Subjects</div>
+                    <div class="tile-desc">See all subjects for a class in one table — fill marks quickly without switching pages.</div>
+                </div>
+                <span class="tile-arrow">›</span>
+            </a>
+            {% endif %}
+            {% if 'class_register' not in hidden_panels %}
+            <a href="{{ url_for('view_marks') }}" class="tile tile-amber">
+                <div class="tile-icon-wrap"><i class="fas fa-list-check"></i></div>
+                <div class="tile-body">
+                    <div class="tile-title">Review Entered Marks</div>
+                    <div class="tile-desc">Check and confirm the marks that have already been entered for any class.</div>
+                </div>
+                <span class="tile-arrow">›</span>
+            </a>
+            {% endif %}
+            {% if 'result_centre' not in hidden_panels %}
+            <a href="{{ url_for('results_center') }}" class="tile tile-red">
+                <div class="tile-icon-wrap"><i class="fas fa-award"></i></div>
+                <div class="tile-body">
+                    <div class="tile-title">View Results &amp; Report Cards</div>
+                    <div class="tile-desc">View class results, print individual report cards, and download mark ledgers.</div>
+                </div>
+                <span class="tile-arrow">›</span>
+            </a>
+            {% endif %}
+            </div><!-- /tiles-grid -->
+        </div><!-- /primary-panel -->
+
+        <!-- Secondary tools + admin (2x2 grid) -->
+        <div class="sec-list">
+            {% if 'academic_setup' not in hidden_panels %}
+            <a href="{{ url_for('manage_students') }}" class="sec-item">
+                <div class="sec-item-icon si-purple"><i class="fas fa-graduation-cap"></i></div>
+                <div class="sec-item-text">
+                    <div class="si-title">Academic Setup</div>
+                    <div class="si-desc">Add or update students, classes, and subjects.</div>
+                </div>
+                <span class="sec-item-chev">›</span>
+            </a>
+            {% endif %}
+            {% if 'marks_progress' not in hidden_panels %}
+            <a href="{{ url_for('marks_progress') }}" class="sec-item">
+                <div class="sec-item-icon si-teal"><i class="fas fa-chart-line"></i></div>
+                <div class="sec-item-text">
+                    <div class="si-title">Entry Progress</div>
+                    <div class="si-desc">See how many marks have been filled in for each class.</div>
+                </div>
+                <span class="sec-item-chev">›</span>
+            </a>
+            {% endif %}
+            {% if 'activity_logs' not in hidden_panels %}
+            <a href="{{ url_for('view_logs') }}" class="sec-item">
+                <div class="sec-item-icon si-slate"><i class="fas fa-clock-rotate-left"></i></div>
+                <div class="sec-item-text">
+                    <div class="si-title">Activity Logs</div>
+                    <div class="si-desc">See a history of all changes made in the system.</div>
+                </div>
+                <span class="sec-item-chev">›</span>
+            </a>
+            {% endif %}
+            {% if 'admin_panel' not in hidden_panels %}
+            <a href="{{ url_for('admin_dashboard' if admin_unlocked else 'admin_lock') }}" class="sec-item">
+                <div class="sec-item-icon"><i class="fas fa-shield-halved"></i></div>
+                <div class="sec-item-text">
+                    <div class="si-title">System Settings &amp; Admin Panel</div>
+                    <div class="si-desc">{% if portal_locked %}<i class="fas fa-lock"></i> Portal Locked — entry disabled{% else %}Manage portal settings, students, and access control.{% endif %}</div>
+                </div>
+                <span class="sec-item-chev">›</span>
+            </a>
+            {% endif %}
+        </div>
+
+    </div><!-- /main-col -->
+
+    <!-- ── RIGHT COLUMN ── -->
+    <div class="right-col">
+
+        <!-- System Overview -->
+        <div class="overview-card">
+            <div class="overview-hdr">
+                System Overview
+                <span class="overview-hdr-time" id="ovTime"></span>
+            </div>
+            <div class="overview-body">
+                <div class="ov-left-panel">
+                    <!-- Progress + Stats side by side -->
+                    <div class="ov-top-section">
+                        <!-- Progress -->
+                        <div class="ov-progress-block">
+                            <div class="ov-section-label">Marks Entry Progress</div>
+                            <div class="ov-circ-wrap">
+                                <svg class="ov-circ-svg" viewBox="0 0 80 80">
+                                    <circle class="ov-circ-track" cx="40" cy="40" r="33"/>
+                                    <circle class="ov-circ-fill" cx="40" cy="40" r="33"
+                                        style="stroke-dashoffset: {{ (207.3 * (1 - overall_pct_val / 100)) | round(1) }}"/>
+                                </svg>
+                                <div class="ov-circ-label">{{ overall_pct_val }}%</div>
+                            </div>
+                            <div class="ov-progress-sub">{{ total_entered }} of {{ total_expected }} marks filled</div>
+                        </div>
+                        <!-- Vertical divider -->
+                        <div class="ov-col-divider"></div>
+                        <!-- Stats -->
+                        <div class="ov-summary-block">
+                            <div class="ov-section-label">School Summary</div>
+                            <div class="ov-stats">
+                                <div class="ov-stat-box">
+                                    <div class="ov-stat-val">{{ total_students_count }}</div>
+                                    <div class="ov-stat-lbl">Students</div>
                                 </div>
-                                <div class="col-6">
-                                    <select class="form-select form-select-sm" name="subject" id="subjectSelectMobile" required>
-                                        <option value="" disabled selected>Subject…</option>
-                                    </select>
+                                <div class="ov-stat-box">
+                                    <div class="ov-stat-val">{{ total_classes_count }}</div>
+                                    <div class="ov-stat-lbl">Classes</div>
                                 </div>
-                                <div class="col-12">
-                                    <button type="submit" class="btn btn-phs-primary w-100">Open Student List</button>
+                                <div class="ov-stat-box">
+                                    <div class="ov-stat-val">{{ total_subjects_count }}</div>
+                                    <div class="ov-stat-lbl">Subjects</div>
+                                </div>
+                                <div class="ov-stat-box">
+                                    <div class="ov-stat-val">{{ classes_complete }}</div>
+                                    <div class="ov-stat-lbl">Done</div>
                                 </div>
                             </div>
-                        </form>
-                    </div>
-
-                    <div class="sub-panel desktop-highlight">
-                        <div class="sub-panel-title">▦ Enter Marks (All Subjects) <span class="device-badge desktop">🖥 PC</span></div>
-                        <form method="GET" action="{{ url_for('grid_entry') }}" id="desktopEntryForm" class="row g-2">
-                            <div class="col-8">
-                                <select class="form-select form-select-sm" name="class_name" required>
-                                    <option value="" disabled selected>Select Class…</option>
-                                    {% for cname in subjects_dict.keys() %}
-                                        <option value="{{ cname }}">{{ class_label(cname) }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="col-4">
-                                <button type="submit" class="btn btn-phs-outline w-100">Open Marks Table</button>
-                            </div>
-                        </form>
-                    </div>
-
-                    <div class="sub-panel register-highlight">
-                        <div class="sub-panel-title">📚 Class-wise Marks Register</div>
-                        <a href="{{ url_for('view_marks') }}" class="btn btn-phs-outline w-100">Open Register</a>
-                    </div>
-
-                    <hr style="border-color: var(--border); margin: 4px 0 10px;">
-                    <div class="section-label mt-1">Setup and Logs</div>
-                    <div class="d-grid gap-2">
-                        <a href="{{ url_for('manage_students') }}" class="btn btn-phs-gold fw-semibold">🏫 Academic Setup</a>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- ── SECTION B: RESULTS ── -->
-            <div class="col-lg-4">
-                <div class="phs-card card-results home-card h-100 d-flex flex-column">
-                    <div class="section-label">Section B | Results</div>
-                    <div class="result-hero flex-grow-1 d-flex flex-column justify-content-center mt-1">
-                        <div class="mb-3" style="font-size:0.75rem;letter-spacing:0.1em;opacity:0.75;">CLASS RESULTS</div>
-                        <a href="{{ url_for('results_center') }}" class="result-hero-btn">📊 Result Centre</a>
-                        <div class="session-tag">Session {{ academic_session }} · {{ school_shortcode }}{% if portal_locked %} · Locked{% endif %}</div>
+                <div class="ov-right-panel">
+                    <div class="ov-section-label">Recent Activity</div>
+                    <div class="ov-activity-list">
+                        {% if recent_activity %}
+                            {% for log in recent_activity %}
+                            <div class="ov-activity-item">
+                                <div class="ov-activity-text">{{ log.action | replace('_', ' ') | title }}{% if log.class_name %} — {{ log.class_name }}{% endif %}{% if log.subject %} {{ log.subject }}{% endif %}</div>
+                                <div class="ov-activity-time">{{ log.created_at }}</div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="ov-activity-item" style="padding-left:0;color:#94a3b8;border:none">No recent activity recorded.</div>
+                        {% endif %}
                     </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Notice board -->
+        <div class="notice-card">
+            <div class="notice-hdr">
+                <span class="notice-hdr-title"><i class="fas fa-thumbtack"></i> Notice Board</span>
+                <button type="button" class="notice-post-btn notice-post-btn-hdr" id="noticeToggleBtn" onclick="toggleNoticeForm()">
+                    <i class="fas fa-plus"></i> Post a Notice
+                </button>
+            </div>
+            <div class="notice-body-inner">
+                <div class="notice-compose-trigger">
+                    <form id="noticeForm" class="notice-compose-fields" method="POST" action="{{ url_for('notice_add') }}" style="display:none">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="text"   class="notice-input" name="author"  placeholder="Your name" maxlength="64" required>
+                        <textarea           class="notice-input" name="message" id="noticeMsg" placeholder="Type a notice…" rows="2" maxlength="500" required oninput="updateCharCount(this)"></textarea>
+                        <div style="text-align:right;font-size:0.65rem;color:#94a3b8;margin-top:2px"><span id="noticeCharCount">0</span>/500</div>
+                        <div style="display:flex;gap:6px;justify-content:flex-end">
+                            <button type="button" onclick="toggleNoticeForm()" style="background:transparent;border:1px solid #d8dee6;border-radius:3px;padding:5px 12px;font-size:0.68rem;font-weight:600;cursor:pointer;color:#94a3b8;letter-spacing:0.2px;text-transform:uppercase">Cancel</button>
+                            <button type="submit" class="notice-post-btn">Post</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="notice-list">
+                    {% if notices %}
+                        {% for n in notices %}
+                        <div class="notice-item">
+                            <div class="notice-avatar">{{ n.author[0].upper() }}</div>
+                            <div class="notice-content">
+                                <span class="notice-author">{{ n.author }}</span>
+                                <span class="notice-time">{{ n.created_at }}</span>
+                                <div class="notice-text">{{ n.message }}</div>
+                            </div>
+                            {% if admin_unlocked %}
+                            <form method="POST" action="{{ url_for('notice_delete', notice_id=n.id) }}" style="display:inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="notice-del-btn" onclick="return confirm('Delete?')">✕</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="notice-empty">
+                            <div class="notice-empty-icon">📭</div>
+                            No notices yet.
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
 
-        <footer class="mini-footer">
-            <a href="{{ url_for('admin_dashboard' if admin_unlocked else 'admin_lock') }}" class="mini-footer-link">Admin</a>
-            <a href="{{ url_for('view_logs') }}" target="_blank" rel="noopener" class="mini-footer-link">Logs</a>
-        </footer>
+    </div><!-- /right-col -->
 
-        </div>
-    </div>
-    </main>
-    </div>
+</div><!-- /pg-body -->
+</div><!-- /pg-page -->
+{% endblock %}
 
-    <script id="subjects-data" type="application/json">{{ subjects_dict | tojson }}</script>
-    <script>
-        const subs = JSON.parse(document.getElementById('subjects-data').textContent);
-        document.getElementById('classSelectMobile').addEventListener('change', function(){
-            const s = document.getElementById('subjectSelectMobile');
-            s.innerHTML = '<option value="" disabled selected>Subject…</option>';
-            (subs[this.value] || []).forEach(x => {
-                const o = document.createElement('option');
-                o.value = x; o.textContent = x;
-                s.appendChild(o);
-            });
-        });
-
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+{% block extra_js %}
+<script>
+function toggleNoticeForm() {
+    var form = document.getElementById('noticeForm');
+    var btn  = document.getElementById('noticeToggleBtn');
+    if (form.style.display === 'none') {
+        form.style.display = 'flex';
+        btn.style.display = 'none';
+    } else {
+        form.style.display = 'none';
+        btn.style.display = 'flex';
+    }
+    setTimeout(syncHomepageHeights, 0);
+}
+function updateCharCount(el) {
+    var counter = document.getElementById('noticeCharCount');
+    if (counter) counter.textContent = el.value.length;
+}
+function syncHomepageHeights() {
+    // Height sync disabled - elements use natural flow
+}
+// Loading feedback on tile nav links
+document.querySelectorAll('.tile').forEach(function(tile) {
+    tile.addEventListener('click', function() {
+        var icon = tile.querySelector('.tile-icon-wrap i');
+        if (icon) { icon.className = 'fas fa-spinner fa-spin'; }
+    });
+});
+(function(){
+    function pad(n){ return n < 10 ? '0'+n : ''+n; }
+    function tick(){
+        var d = new Date();
+        var h = d.getHours(), m = d.getMinutes();
+        var ampm = h >= 12 ? 'PM' : 'AM', h12 = h % 12 || 12;
+        var el = document.getElementById('ovTime');
+        if(el) el.textContent = 'Updated ' + pad(h12) + ':' + pad(m) + ' ' + ampm;
+    }
+    tick(); setInterval(tick, 60000);
+})();
+window.addEventListener('load', syncHomepageHeights);
+window.addEventListener('resize', syncHomepageHeights);
+document.addEventListener('DOMContentLoaded', function () {
+    syncHomepageHeights();
+    setTimeout(syncHomepageHeights, 150);
+});
+</script>
+{% endblock %}

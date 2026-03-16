@@ -1,0 +1,630 @@
+{% extends "base.html" %}
+{% block title %}{{ school_shortcode }} Examination Portal{% endblock %}
+{% block extra_css %}
+<style>
+    /* ─── LAYOUT (no-scroll, viewport-fill) ─── */
+    .app-shell { display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
+    .main-scroll { flex: 1; overflow: hidden; display: flex; flex-direction: column; padding: 0; background: #ede8dc; min-height: 0; }
+    .home-content { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+    .home-grid {
+        flex: 1; min-height: 0; overflow: hidden;
+        display: grid;
+        grid-template-columns: 7fr 3fr;
+        gap: 0;
+        padding: clamp(4px,0.7vh,10px) clamp(6px,0.8vw,12px);
+    }
+    .home-col { display: flex; flex-direction: column; gap: clamp(5px,0.8vh,10px); min-height: 0; overflow: hidden; padding: 0 clamp(3px,0.4vw,6px); }
+
+    /* ─── NOTICE BOARD ─── */
+    .notice-panel {
+        background: #fff;
+        border-radius: 10px;
+        border: 1px solid #d0ccbf;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+    }
+    .notice-header {
+        background: #0f2b4c;
+        color: #fff;
+        padding: clamp(7px,1vh,10px) clamp(12px,1.4vw,18px);
+        font-size: clamp(0.62rem,1.1vh,0.72rem); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+        display: flex; align-items: center; gap: 7px; flex-shrink: 0;
+    }
+    .notice-header i { color: #ffc857; font-size: 0.85em; }
+    .notice-form {
+        padding: 8px 12px;
+        border-bottom: 1px solid #efefef;
+        background: #faf8f4;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        flex-shrink: 0;
+    }
+    .notice-form-row {
+        display: flex;
+        gap: 6px;
+        align-items: flex-end;
+    }
+    .notice-name-input {
+        flex: 0 0 90px;
+        border: 1px solid #d0ccbf;
+        border-radius: 6px;
+        padding: 5px 9px;
+        font-size: 0.75rem;
+        background: #fff;
+        color: var(--text);
+        outline: none;
+    }
+    .notice-name-input:focus { border-color: #0f2b4c; }
+    .notice-msg-input {
+        flex: 1;
+        border: 1px solid #d0ccbf;
+        border-radius: 6px;
+        padding: 5px 9px;
+        font-size: 0.75rem;
+        background: #fff;
+        color: var(--text);
+        outline: none;
+        resize: none;
+        height: 36px;
+        line-height: 1.4;
+    }
+    .notice-msg-input:focus { border-color: #0f2b4c; }
+    .notice-post-btn {
+        background: #fff; color: #0f2b4c;
+        border: 1.5px solid #0f2b4c; border-radius: 6px;
+        padding: 5px 13px; font-size: 0.72rem; font-weight: 700;
+        cursor: pointer; white-space: nowrap;
+        transition: background 0.12s, color 0.12s;
+        flex-shrink: 0;
+    }
+    .notice-post-btn:hover { background: #0f2b4c; color: #ffc857; }
+    .notice-list {
+        flex: 1;
+        overflow-y: auto;
+        min-height: 0;
+        padding: 2px 0;
+    }
+    .notice-item {
+        padding: 8px 12px;
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+    }
+    .notice-item + .notice-item { border-top: 1px solid #f2ede4; }
+    .notice-dot {
+        width: 24px; height: 24px; border-radius: 50%;
+        background: #0f2b4c; color: #ffc857;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.63rem; font-weight: 700; flex-shrink: 0; margin-top: 2px;
+    }
+    .notice-body { flex: 1; min-width: 0; }
+    .notice-bubble {
+        background: #f5f1ea;
+        border-radius: 4px 9px 9px 9px;
+        padding: 6px 10px;
+        display: block;
+        border: 1px solid #e8e2d6;
+    }
+    .notice-meta { font-size: 0.61rem; color: #9ca3af; margin-bottom: 3px; }
+    .notice-meta strong { color: #0f2b4c; font-weight: 700; }
+    .notice-text { font-size: 0.78rem; color: var(--text); line-height: 1.4; word-break: break-word; }
+    .notice-del-btn {
+        background: none; border: none; color: #ccc;
+        font-size: 0.72rem; cursor: pointer; padding: 2px 4px;
+        border-radius: 4px; flex-shrink: 0; margin-top: 2px;
+        transition: color 0.12s, background 0.12s;
+    }
+    .notice-del-btn:hover { color: #c0392b; background: #fdf0f0; }
+    .notice-empty {
+        padding: 30px 16px 20px;
+        text-align: center;
+        color: #9ca3af;
+        font-size: 0.78rem;
+        line-height: 1.8;
+    }
+    .notice-empty-icon { font-size: 1.5rem; margin-bottom: 6px; opacity: 0.4; }
+
+    /* ─── HEADER ─── */
+    .site-header {
+        background: var(--navy);
+        border-bottom: 3px solid var(--gold);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.18);   /* #7: anchor header */
+        position: sticky; top: 0; z-index: 100;
+        padding: 0 24px;
+        flex-shrink: 0;
+    }
+    .header-inner { display: flex; align-items: center; gap: 14px; height: 56px; width: 100%; }
+    .header-logo-circle {
+        width: 44px; height: 44px; border-radius: 50%;
+        background: var(--gold);
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0; overflow: hidden;
+    }
+    .header-logo-circle img { width: 100%; height: 100%; object-fit: cover; }
+    .header-logo-initials { font-family: 'Fraunces', Georgia, serif; font-size: 0.8rem; font-weight: 700; color: var(--navy); letter-spacing: 0.04em; }
+    .header-name-block { flex: 1; min-width: 0; }
+    .header-school-name { font-family: 'Fraunces', Georgia, serif; font-size: 1.15rem; font-weight: 700; color: #fff; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .header-subtitle { font-size: 0.7rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-top: 2px; }
+    .header-right { margin-left: auto; display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+    .header-session-pill { background: transparent; border: 1.5px solid var(--gold); color: var(--gold-light); border-radius: 20px; font-size: 0.75rem; font-weight: 600; padding: 4px 12px; letter-spacing: 0.04em; white-space: nowrap; }
+    .header-nav-link { color: rgba(255,255,255,0.6); font-size: 0.82rem; font-weight: 500; text-decoration: none; padding: 5px 10px; border-radius: 6px; transition: color 0.15s; white-space: nowrap; }
+    .header-nav-link:hover { color: #fff; }
+    .header-divider { color: rgba(255,255,255,0.2); font-size: 0.8rem; }
+
+    /* ─── INFO BAR (mini stat cards) ─── */
+    .info-bar {
+        background: var(--navy);
+        border-bottom: 3px solid rgba(0,0,0,0.18);
+        padding: 4px 16px;
+        display: flex; align-items: center; gap: 6px;
+        flex-wrap: wrap; flex-shrink: 0;
+    }
+    .info-stat {
+        display: flex; align-items: center; gap: 6px;
+        background: rgba(255,255,255,0.07);
+        border: 1px solid rgba(255,255,255,0.10);
+        border-radius: 7px;
+        padding: 3px 10px;
+        min-width: 70px;
+        cursor: default;
+        transition: transform 0.15s ease, background 0.15s;
+    }
+    .info-stat:hover { transform: translateY(-1px); background: rgba(255,255,255,0.13); }
+    .info-stat + .info-stat { border-left: none; }
+    .info-num { font-size: 0.95rem; font-weight: 800; color: var(--gold-light); line-height: 1; }
+    .info-lbl { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: rgba(255,255,255,0.5); }
+    .info-bar-progress { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    .info-prog-label { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: rgba(255,255,255,0.45); white-space: nowrap; }
+    .info-prog-bar { width: 100px; height: 7px; background: rgba(255,255,255,0.15); border-radius: 999px; overflow: hidden; }
+    .info-prog-fill { height: 100%; border-radius: 999px; background: var(--gold); transition: width 0.4s ease; }
+    .info-prog-fill.complete { background: #2ecc71; }
+    .info-prog-pct { font-size: 0.85rem; font-weight: 800; color: var(--gold-light); min-width: 36px; text-align: right; }
+    .info-prog-pct.complete { color: #2ecc71; }
+
+    /* ─── FLASH ─── */
+    .flash-wrap { padding: 6px 14px 0; flex-shrink: 0; }
+    .flash-wrap:empty { display: none; }
+    .flash-msg { border-radius: 8px; border: none; font-size: 0.82rem; padding: 6px 12px; margin-bottom: 4px; }
+
+    /* ─── SECTION ─── */
+    .home-section { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+    .sec-marks   { flex: 3; }
+    .sec-results { flex: 1; }
+    .sec-academic { flex: 2; }
+    .sec-system  { flex: 2; }
+
+    /* Section block — navy header bar + white card area */
+    .section-block {
+        display: flex; flex-direction: column; flex: 1; min-height: 0;
+        background: #ffffff;
+        border-radius: 10px;
+        border: 1px solid #d0ccbf;
+        overflow: hidden;
+    }
+    /* Full-width navy header bar — replaces old section-heading */
+    .section-heading, .section-heading-sm {
+        background: #0f2b4c;
+        color: #ffffff;
+        padding: clamp(5px,0.7vh,8px) clamp(10px,1.2vw,16px);
+        font-size: clamp(0.58rem,0.9vh,0.68rem); font-weight: 700;
+        letter-spacing: 0.1em; text-transform: uppercase;
+        display: flex; align-items: center; gap: 6px;
+        flex-shrink: 0; margin: 0;
+    }
+    .section-heading i, .section-heading-sm i { color: #ffc857; font-size: 0.85em; }
+
+    .btn-list{
+        flex:1;
+        display:flex;
+        flex-direction:column;
+        min-height:0;
+        overflow:hidden;
+    }
+    .btn-pair{
+        display:flex;
+        flex-direction:row;
+        flex:1;
+        min-height:0;
+        border-bottom:1px solid #efefef;
+    }
+    .btn-pair .row-btn, .btn-pair .row-btn-sm {
+        flex: 1; border-bottom: none; border-right: 1px solid #efefef;
+    }
+    .btn-pair .row-btn:last-child, .btn-pair .row-btn-sm:last-child { border-right: none; }
+    .btn-list > .row-btn { flex: 1; }
+    .row-btn-icon, .row-btn-sm-icon { flex-shrink: 0; }
+
+    /* ─── ACTION CARDS (primary) ─── */
+    .row-btn {
+        display: flex; align-items: center;
+        gap: clamp(8px, 1.2vw, 14px);
+        padding: clamp(6px,0.9vh,10px) clamp(10px,1.2vw,16px);
+        background: #ffffff;
+        border: none;
+        border-bottom: 1px solid #efefef;
+        border-radius: 0;
+        box-shadow: none;
+        text-decoration: none; color: var(--text);
+        transition: background 0.12s ease;
+        flex: 1; min-height: 0; overflow: hidden;
+    }
+    .row-btn:last-child { border-bottom: none; }
+    .row-btn:hover { background: #f9f6f1; color: var(--navy); }
+    .row-btn:hover .row-btn-chevron { color: #c9a227; opacity: 1; }
+    .row-btn-icon {
+        width: clamp(30px, 4vh, 44px); height: clamp(30px, 4vh, 44px);
+        border-radius: 9px;
+        background: #0f2b4c; color: #ffc857;
+        display: flex; align-items: center; justify-content: center;
+        font-size: clamp(0.8rem, 1.8vh, 1.1rem); flex-shrink: 0;
+    }
+    .row-btn-body { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+    .row-btn-title { font-size: clamp(0.82rem, 2.2vh, 1.12rem); font-weight: 700; color: #1a2637; line-height: 1.2; }
+    .row-btn-desc  { font-size: clamp(0.65rem, 1.3vh, 0.82rem); color: var(--muted); line-height: 1.2; margin-top: 2px; }
+    /* Enter Marks — biggest titles on the page (just under school name 1.15rem) */
+    .sec-marks .row-btn-title { font-size: clamp(0.86rem, 2.4vh, 1.18rem); }
+    .sec-marks .row-btn-desc  { font-size: clamp(0.67rem, 1.4vh, 0.88rem); }
+    .sec-marks .row-btn-icon  { width: clamp(34px, 4.5vh, 50px); height: clamp(34px, 4.5vh, 50px); font-size: clamp(0.9rem, 2vh, 1.3rem); }
+    /* Results */
+    .sec-results .row-btn-title { font-size: clamp(0.84rem, 2.3vh, 1.15rem); }
+    .sec-results .row-btn-desc  { font-size: clamp(0.66rem, 1.35vh, 0.85rem); }
+    .row-btn-chevron { color: #c0c5ce; font-size: 0.7rem; flex-shrink: 0; opacity: 0.7; transition: opacity 0.12s, color 0.12s; }
+
+    /* ─── ACTION CARDS (secondary) — same flat style ─── */
+    .row-btn-sm {
+        display: flex; align-items: center;
+        gap: clamp(6px, 0.9vw, 12px);
+        padding: clamp(6px,0.9vh,10px) clamp(10px,1.2vw,16px);
+        background: #ffffff;
+        border: none;
+        border-bottom: 1px solid #efefef;
+        border-radius: 0;
+        box-shadow: none;
+        text-decoration: none; color: var(--text);
+        transition: background 0.12s ease;
+        flex: 1; min-height: 0; overflow: hidden;
+    }
+    .row-btn-sm:last-child { border-bottom: none; }
+    .row-btn-sm:hover { background: #f9f6f1; color: var(--navy); }
+    .row-btn-sm-icon {
+        width: clamp(24px, 3.2vh, 34px); height: clamp(24px, 3.2vh, 34px);
+        border-radius: 7px; background: #0f2b4c; color: #ffc857;
+        display: flex; align-items: center; justify-content: center;
+        font-size: clamp(0.6rem, 1.2vh, 0.8rem); flex-shrink: 0;
+    }
+    .row-btn-sm-body { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+    .row-btn-sm-title { font-size: clamp(0.75rem, 1.6vh, 0.95rem); font-weight: 600; color: #1a2637; line-height: 1.2; }
+    .row-btn-sm-desc  { font-size: clamp(0.62rem, 1.1vh, 0.78rem); color: var(--muted); line-height: 1.2; margin-top: 2px; }
+    .row-btn-sm-chevron { color: #c0c5ce; font-size: 0.63rem; flex-shrink: 0; opacity: 0.7; }
+
+    /* ─── CLOCK WIDGET ─── */
+    .clock-widget {
+        background: #0f2b4c;
+        border-radius: 10px;
+        border: 1px solid #1a3d6b;
+        padding: clamp(10px,1.6vh,18px) clamp(14px,1.6vw,20px);
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        flex-shrink: 0;
+        text-align: center;
+    }
+    .clock-time { font-size: clamp(1.4rem,4.5vh,2.4rem); font-weight: 800; color: #ffffff; letter-spacing: 0.04em; line-height: 1; font-variant-numeric: tabular-nums; }
+    .clock-ampm { font-size: clamp(0.55rem,1.2vh,0.75rem); font-weight: 600; color: rgba(255,255,255,0.5); vertical-align: super; margin-left: 3px; }
+    .clock-date { font-size: clamp(0.65rem,1.2vh,0.78rem); color: rgba(255,255,255,0.55); margin-top: 4px; }
+    .clock-day  { font-size: clamp(0.55rem,1vh,0.65rem); font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #ffc857; margin-top: 2px; }
+    .clock-footer { width: 100%; margin-top: clamp(8px,1.2vh,14px); padding-top: clamp(6px,0.8vh,10px); border-top: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: space-between; }
+    .clock-footer-lbl { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #ffc857; display: flex; align-items: center; gap: 5px; }
+    .clock-footer-lbl::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #ffc857; flex-shrink: 0; }
+    .clock-footer-val { font-size: 0.9rem; font-weight: 800; color: #ffc857; }
+
+    /* ─── MOBILE fallback ─── */
+    @media (max-width: 900px) {
+        .app-shell { height: auto; overflow: visible; }
+        .main-scroll { overflow: auto; background: #ede8dc; }
+        .home-grid { grid-template-columns: 1fr; padding: 10px 12px 20px; }
+        .home-col { gap: 12px; }
+        .home-section { flex: none; }
+        .sec-marks, .sec-results, .sec-academic, .sec-system { flex: none; }
+        .btn-list { flex: none; }
+        .row-btn, .row-btn-sm { flex: none; min-height: 52px; }
+        .notice-panel { min-height: 280px; }
+        .notice-list { max-height: 240px; }
+        .clock-widget { display: none; }
+    }
+    @media (max-width: 600px) {
+        .header-subtitle { display: none; }
+        .header-session-pill { display: none; }
+        .info-bar-progress { display: none; }
+    }
+</style>
+{% endblock %}
+{% block body %}
+    <div class="app-shell">
+    <header class="site-header">
+        <div class="header-inner">
+            <div class="header-logo-circle">
+                {% if school_logo_url %}
+                    <img src="{{ school_logo_url }}" alt="Logo">
+                {% else %}
+                    <div class="header-logo-initials">{{ school_shortcode }}</div>
+                {% endif %}
+            </div>
+            <div class="header-name-block">
+                <div class="header-school-name">{{ school_name }}</div>
+                <div class="header-subtitle">Examination Record Management System</div>
+            </div>
+            <div class="header-right">
+                <span class="header-session-pill">{{ academic_session }}{% if portal_locked %} &nbsp;<i class="fas fa-lock" style="font-size:0.65rem"></i>{% endif %}</span>
+                <span class="header-divider ms-2">|</span>
+                <a href="{{ url_for('admin_dashboard' if admin_unlocked else 'admin_lock') }}" class="header-nav-link">Admin</a>
+                <span class="header-divider">|</span>
+                <a href="{{ url_for('view_logs') }}" class="header-nav-link">Activity Logs</a>
+            </div>
+        </div>
+    </header>
+
+    {%- set total_students = class_summary | sum(attribute='student_count') -%}
+    {%- set total_entered  = class_summary | sum(attribute='marks_entered') -%}
+    {%- set total_expected = class_summary | sum(attribute='marks_expected') -%}
+    {%- set overall_pct = ((total_entered / total_expected * 100) | round(0) | int) if total_expected > 0 else 0 -%}
+    {%- set ns = namespace(all_subs=[]) -%}
+    {%- for subs in subjects_dict.values() %}{% for s in subs %}{% if s not in ns.all_subs %}{% set ns.all_subs = ns.all_subs + [s] %}{% endif %}{% endfor %}{% endfor -%}
+
+    <!-- ── INFO BAR ── -->
+    <div class="info-bar">
+        <div class="info-stat">
+            <span class="info-num">{{ total_students }}</span>
+            <span class="info-lbl">Students</span>
+        </div>
+        <div class="info-stat">
+            <span class="info-num">{{ class_summary | length }}</span>
+            <span class="info-lbl">Classes</span>
+        </div>
+        <div class="info-stat">
+            <span class="info-num">{{ ns.all_subs | length }}</span>
+            <span class="info-lbl">Subjects</span>
+        </div>
+        <div class="info-bar-progress">
+            <span class="info-prog-label">Marks Entry</span>
+            <div class="info-prog-bar"><div class="info-prog-fill{% if overall_pct == 100 %} complete{% endif %}" style="width:{{ overall_pct }}%"></div></div>
+            <span class="info-prog-pct{% if overall_pct == 100 %} complete{% endif %}">{{ overall_pct }}%</span>
+        </div>
+    </div>
+
+    <main class="main-scroll">
+    <div class="home-content">
+
+        <!-- flash messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-wrap">
+                    {% for category, message in messages %}
+                        <div class="alert flash-msg alert-{{ category if category in ['success', 'danger', 'warning', 'info'] else 'secondary' }} alert-dismissible fade show">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- ── TWO-COLUMN GRID ── -->
+        <div class="home-grid">
+
+        <!-- LEFT COL: Enter Marks + Results + Academic -->
+        <div class="home-col">
+        {% if 'enter_marks' not in hidden_panels or 'marks_table' not in hidden_panels or 'class_register' not in hidden_panels %}
+        <div class="home-section sec-marks">
+        <div class="section-block">
+            <div class="section-heading"><i class="fas fa-pen-to-square" style="color:var(--gold)"></i> Enter Marks</div>
+            <div class="btn-list">
+            {% if 'enter_marks' not in hidden_panels or 'marks_table' not in hidden_panels %}
+            <div class="btn-pair">
+            {% if 'enter_marks' not in hidden_panels %}
+            <a href="{{ url_for('subject_entry') }}" class="row-btn">
+                <div class="row-btn-icon"><i class="fas fa-pen-nib"></i></div>
+                <div class="row-btn-body">
+                    <div class="row-btn-title">Enter marks for one subject</div>
+                    <div class="row-btn-desc">Record marks for one subject at a time</div>
+                </div>
+                <i class="fas fa-chevron-right row-btn-chevron"></i>
+            </a>
+            {% endif %}
+            {% if 'marks_table' not in hidden_panels %}
+            <a href="{{ url_for('grid_entry') }}" class="row-btn">
+                <div class="row-btn-icon"><i class="fas fa-table-cells"></i></div>
+                <div class="row-btn-body">
+                    <div class="row-btn-title">Enter marks for all subjects</div>
+                    <div class="row-btn-desc">Fill all subjects at once using a table</div>
+                </div>
+                <i class="fas fa-chevron-right row-btn-chevron"></i>
+            </a>
+            {% endif %}
+            </div>
+            {% endif %}
+            {% if 'class_register' not in hidden_panels %}
+            <a href="{{ url_for('view_marks') }}" class="row-btn">
+                <div class="row-btn-icon"><i class="fas fa-list-check"></i></div>
+                <div class="row-btn-body">
+                    <div class="row-btn-title">View already entered marks</div>
+                    <div class="row-btn-desc">Browse the class register by class and exam</div>
+                </div>
+                <i class="fas fa-chevron-right row-btn-chevron"></i>
+            </a>
+            {% endif %}
+            </div>
+        </div>
+        </div>
+        {% endif %}
+
+        {% if 'result_centre' not in hidden_panels %}
+        <div class="home-section sec-results">
+        <div class="section-block">
+            <div class="section-heading"><i class="fas fa-award" style="color:var(--gold)"></i> Results</div>
+            <div class="btn-list">
+            <a href="{{ url_for('results_center') }}" class="row-btn">
+                <div class="row-btn-icon"><i class="fas fa-award"></i></div>
+                <div class="row-btn-body">
+                    <div class="row-btn-title">Generate results &amp; report cards</div>
+                    <div class="row-btn-desc">Class results, individual report cards and mark ledgers</div>
+                </div>
+                <i class="fas fa-chevron-right row-btn-chevron"></i>
+            </a>
+            </div>
+        </div>
+        </div>
+        {% endif %}
+
+        {% if 'academic_setup' not in hidden_panels or 'marks_progress' not in hidden_panels %}
+        <div class="home-section sec-academic">
+        <div class="section-block">
+            <div class="section-heading-sm"><i class="fas fa-graduation-cap" style="color:var(--muted)"></i> Academic Management</div>
+            <div class="btn-list">
+            {% if 'academic_setup' not in hidden_panels or 'marks_progress' not in hidden_panels %}
+            <div class="btn-pair">
+            {% if 'academic_setup' not in hidden_panels %}
+            <a href="{{ url_for('manage_students') }}" class="row-btn-sm">
+                <div class="row-btn-sm-icon"><i class="fas fa-graduation-cap"></i></div>
+                <div class="row-btn-sm-body">
+                    <div class="row-btn-sm-title">Students, Classes &amp; Subjects</div>
+                    <div class="row-btn-sm-desc">Manage academic setup and exam sessions</div>
+                </div>
+                <i class="fas fa-chevron-right row-btn-sm-chevron"></i>
+            </a>
+            {% endif %}
+            {% if 'marks_progress' not in hidden_panels %}
+            <a href="{{ url_for('marks_progress') }}" class="row-btn-sm">
+                <div class="row-btn-sm-icon"><i class="fas fa-chart-line"></i></div>
+                <div class="row-btn-sm-body">
+                    <div class="row-btn-sm-title">Marks Entry Progress</div>
+                    <div class="row-btn-sm-desc">Progress by class across all exams</div>
+                </div>
+                <i class="fas fa-chevron-right row-btn-sm-chevron"></i>
+            </a>
+            {% endif %}
+            </div>
+            {% endif %}
+            </div>
+        </div>
+        </div>
+        {% endif %}
+        </div><!-- /left col -->
+
+        <!-- RIGHT COL: Notice Board + System -->
+        <div class="home-col">
+        <div class="home-section sec-marks" style="flex:3;">
+            <div class="notice-panel">
+                <div class="notice-header"><i class="fas fa-thumbtack"></i> Notice Board</div>
+                <form class="notice-form" method="POST" action="{{ url_for('notice_add') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="notice-form-row">
+                        <input type="text" class="notice-name-input" name="author" placeholder="Your name" maxlength="64" required>
+                        <textarea class="notice-msg-input" name="message" placeholder="Write a notice or update…" maxlength="500" required></textarea>
+                        <button type="submit" class="notice-post-btn">Post</button>
+                    </div>
+                </form>
+                <div class="notice-list">
+                    {% if notices %}
+                        {% for n in notices %}
+                        <div class="notice-item">
+                            <div class="notice-dot">{{ n.author[0].upper() }}</div>
+                            <div class="notice-body">
+                                <div class="notice-bubble">
+                                    <div class="notice-meta"><strong>{{ n.author }}</strong> · {{ n.created_at }}</div>
+                                    <div class="notice-text">{{ n.message }}</div>
+                                </div>
+                            </div>
+                            {% if admin_unlocked %}
+                            <form method="POST" action="{{ url_for('notice_delete', notice_id=n.id) }}" style="display:inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="notice-del-btn" title="Delete" onclick="return confirm('Delete this notice?')">✕</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="notice-empty"><div class="notice-empty-icon">📭</div>No notices yet.<br>Be the first to post one.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {% if 'admin_panel' not in hidden_panels or 'activity_logs' not in hidden_panels %}
+        <div class="home-section sec-system">
+        <div class="section-block">
+            <div class="section-heading-sm"><i class="fas fa-shield-halved" style="color:var(--muted)"></i> System</div>
+            <div class="btn-list">
+            {% if 'admin_panel' not in hidden_panels %}
+            <a href="{{ url_for('admin_dashboard' if admin_unlocked else 'admin_lock') }}" class="row-btn-sm">
+                <div class="row-btn-sm-icon"><i class="fas fa-shield-halved"></i></div>
+                <div class="row-btn-sm-body">
+                    <div class="row-btn-sm-title">System Settings</div>
+                    <div class="row-btn-sm-desc">Portal configuration, lock control and admin tools</div>
+                </div>
+                <i class="fas fa-chevron-right row-btn-sm-chevron"></i>
+            </a>
+            {% endif %}
+            {% if 'activity_logs' not in hidden_panels %}
+            <a href="{{ url_for('view_logs') }}" class="row-btn-sm">
+                <div class="row-btn-sm-icon"><i class="fas fa-clock-rotate-left"></i></div>
+                <div class="row-btn-sm-body">
+                    <div class="row-btn-sm-title">Activity Logs</div>
+                    <div class="row-btn-sm-desc">Track all changes and actions</div>
+                </div>
+                <i class="fas fa-chevron-right row-btn-sm-chevron"></i>
+            </a>
+            {% endif %}
+            </div>
+        </div>
+        </div>
+        {% endif %}
+
+        <!-- Clock widget -->
+        <div class="clock-widget" style="flex-shrink:0;">
+            <div class="clock-time" id="clock-time">--:--:--<span class="clock-ampm" id="clock-ampm"></span></div>
+            <div class="clock-date" id="clock-date"></div>
+            <div class="clock-day"  id="clock-day"></div>
+            <div class="clock-footer">
+                <span class="clock-footer-lbl">Total Visitors</span>
+                <span class="clock-footer-val">{{ total_students_count }}</span>
+            </div>
+        </div>
+
+        </div><!-- /right col -->
+
+        </div><!-- /home-grid -->
+
+    </div>
+    </main>
+    </div>
+{% endblock %}
+{% block extra_js %}
+<script>
+(function(){
+    var DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    function pad(n){ return n < 10 ? '0'+n : n; }
+    function tick(){
+        var d = new Date();
+        var h = d.getHours(), m = d.getMinutes(), s = d.getSeconds();
+        var ampm = h >= 12 ? 'PM' : 'AM';
+        var h12 = h % 12 || 12;
+        var tEl = document.getElementById('clock-time');
+        var aEl = document.getElementById('clock-ampm');
+        if(tEl){
+            tEl.childNodes[0].nodeValue = pad(h12)+':'+pad(m)+':'+pad(s);
+            if(aEl) aEl.textContent = ampm;
+        }
+        var dateEl = document.getElementById('clock-date');
+        if(dateEl) dateEl.textContent = pad(d.getDate())+' '+MONTHS[d.getMonth()]+' '+d.getFullYear();
+        var dayEl = document.getElementById('clock-day');
+        if(dayEl) dayEl.textContent = DAYS[d.getDay()];
+    }
+    tick();
+    setInterval(tick, 1000);
+})();
+</script>
+{% endblock %}

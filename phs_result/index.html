@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phulani High School - Student Result Portal</title>
+    <script src="data.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Manrope:wght@400;500;600;700;800&family=Libre+Baskerville:wght@400;700&display=swap');
+
+        :root {
+            --navy-900: #071c3a;
+            --navy-800: #0a2349;
+            --gold-500: #cfa23a;
+            --green-700: #16653a;
+            --paper: #f2f0ed;
+            --card: #f8f7f5;
+            --ink: #1d2a36;
+            --danger: #b33131;
+            --success: #0f6f3f;
+            --shadow: 0 8px 22px rgba(15, 30, 58, 0.14);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: 'Manrope', 'Segoe UI', sans-serif;
+            color: var(--ink);
+            background: radial-gradient(circle at 20% 10%, #ffffff 0%, #f2f0ed 42%, #ece9e6 100%);
+            min-height: 100vh;
+        }
+
+        /* =========================================
+           SCREEN UI: DASHBOARD & SEARCH
+           ========================================= */
+        .masthead {
+            background: repeating-linear-gradient(90deg, var(--navy-900) 0, var(--navy-900) 70px, var(--navy-800) 70px, var(--navy-800) 72px);
+            color: #fff;
+            border-bottom: 5px solid var(--gold-500);
+            box-shadow: 0 7px 20px rgba(4, 15, 30, 0.32);
+        }
+
+        .masthead-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 12px 20px 16px;
+            display: grid;
+            grid-template-columns: 98px 1fr;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .logo-wrap {
+            width: 90px;
+            height: 90px;
+            background: #fff;
+            border-radius: 14px;
+            border: 3px solid #d9d9d9;
+            box-shadow: 0 5px 14px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+        }
+
+        .logo-wrap img { width: 100%; height: 100%; object-fit: cover; }
+
+        .top-small { text-transform: uppercase; letter-spacing: 2.4px; font-size: 12px; margin: 0 0 7px; opacity: 0.86; }
+
+        .school-line {
+            margin: 0; text-transform: uppercase; letter-spacing: 2.2px;
+            font-size: clamp(24px, 3.3vw, 36px); font-family: 'Cinzel', Georgia, serif; font-weight: 700; line-height: 1.1;
+        }
+
+        .layout { max-width: 1100px; margin: 20px auto; padding: 0 20px 20px; }
+
+        .search-panel { max-width: 1100px; margin: 8px auto 2px; display: flex; justify-content: center; }
+
+        .search-card {
+            width: min(560px, 100%); border: 1px solid #d2dae2; border-radius: 16px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            box-shadow: 0 14px 32px rgba(7, 28, 58, 0.12); padding: 18px;
+            display: grid; grid-template-columns: 1fr; gap: 10px; align-items: stretch;
+        }
+
+        select, input[type="text"] {
+            width: 100%; height: 44px; border-radius: 10px; border: 1px solid #c2c9ce;
+            background: #fff; color: #1a2a3a; font-size: 16px; padding: 0 12px;
+        }
+
+        .btn { height: 44px; border-radius: 10px; border: none; font-size: 15px; font-weight: 800; cursor: pointer; padding: 0 18px; }
+        .btn-get { background: linear-gradient(160deg, var(--navy-900), #08264f); color: #fff; width: 100%; }
+        .btn-print { background: linear-gradient(160deg, #8c6622, var(--gold-500)); color: #fff; width: auto; min-width: 128px; }
+        .btn-another { background: #ffffff; color: #122e4f; border: 1px solid #aac0d8; width: auto; min-width: 168px; }
+
+        .error { display: none; color: var(--danger); font-weight: 700; font-size: 14px; margin-top: 8px; }
+
+        /* =========================================
+           SCREEN UI: FULL-PAGE RESULT CARD (FLEX)
+           ========================================= */
+        .report-wrapper { display: none; }
+        .result-actions { display: none; }
+
+        .screen-report {
+            width: 100%;
+            max-width: 1000px; /* Widened to fill screen nicely */
+            margin: 0 auto;
+            background: linear-gradient(180deg, #ffffff 0%, #f6f9fd 100%);
+            padding: 2vh 3vw; /* Scales with screen height and width */
+            border: 1px solid #c7d4e3;
+            border-radius: 14px;
+            box-shadow: 0 14px 30px rgba(8, 36, 79, 0.12);
+            display: flex;
+            flex-direction: column;
+            height: 100%; /* Stretches to fill available space */
+        }
+
+        .result-title { margin: 0 0 1.2vh; text-align: center; font-size: clamp(18px, 2.5vh, 24px); font-weight: 800; letter-spacing: .6px; color: #12345f; }
+
+        .student-ribbon { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 1.2vh; }
+        .student-pill { border: 1px solid #cbd9e7; border-radius: 8px; background: #f5f8fc; padding: 1vh 1.5vw; display: flex; flex-direction: column; justify-content: center; }
+        .student-pill .label { font-size: 11px; text-transform: uppercase; color: #39516d; font-weight: 700; margin-bottom: 3px; letter-spacing: .5px; }
+        .student-pill .value { font-size: clamp(16px, 2vh, 20px); font-weight: 800; color: #102e51; line-height: 1.1; }
+
+        .marks-panel { flex: 1; display: flex; flex-direction: column; margin-bottom: 1.2vh; min-height: 0; }
+        table { width: 100%; height: 100%; /* Table takes all remaining height */ border-collapse: collapse; margin-bottom: 0; }
+        th, td { border: 1px solid #b8c8d9; padding: 1vh 1vw; text-align: center; font-size: clamp(13px, 1.8vh, 16px); }
+        th { background-color: #12345f; color: #fff; text-transform: uppercase; letter-spacing: 0.5px; }
+        td.subject-name { text-align: left; font-weight: 600; }
+        tbody tr:nth-child(even) { background-color: #edf3f9; }
+
+        .result-snapshot {
+            border: 1px solid #b8c8d9; border-radius: 10px;
+            background: linear-gradient(180deg, #edf3fa 0%, #e3edf8 100%);
+            padding: 1vh; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; align-items: stretch;
+        }
+        .snapshot-item { background: #fff; border: 1px solid #c3d1df; border-radius: 8px; padding: 1vh 1vw; display: flex; flex-direction: column; justify-content: center; text-align: center; }
+        .snapshot-item .label { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: #415972; margin-bottom: 3px; font-weight: 700; }
+        .snapshot-item .value { font-size: clamp(16px, 2.5vh, 22px); font-weight: 800; color: #0d2c50; line-height: 1.1; }
+
+        .status-badge { display: inline-flex; align-items: center; justify-content: center; min-height: 34px; border-radius: 999px; font-size: 14px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; border: 1px solid transparent; padding: 0 12px; }
+        .status-pass { background: #dbf2e5; color: #0d683c; border-color: #88c6a0; }
+        .status-fail { background: #f8e1e1; color: #9e2c2c; border-color: #d59b9b; }
+
+        /* =========================================
+           BODY CLASSES FOR RESULT DISPLAY (NO SCROLL)
+           ========================================= */
+        body.result-mode { background: #f5f7fb; height: 100vh; overflow: hidden; } /* Prevents scrolling */
+        body.result-mode .search-panel { display: none !important; }
+        body.result-mode .layout { 
+            margin: 0 auto; 
+            height: calc(100vh - 125px); /* Perfectly fits under the masthead */
+            padding-top: 12px; 
+            padding-bottom: 12px; 
+            max-width: 1200px; 
+            width: 100%; 
+            display: flex; 
+            flex-direction: column; 
+        }
+        body.result-mode .report-wrapper { flex: 1; display: flex; justify-content: center; align-items: stretch; width: 100%; min-height: 0; }
+        body.result-mode .result-actions { display: flex; justify-content: center; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #d3dde8; width: 100%; max-width: 1000px; margin-left: auto; margin-right: auto; }
+        
+        /* The print layout is strictly hidden on screen */
+        .print-report { display: none; }
+
+        @media (max-width: 780px) {
+            .masthead-inner { grid-template-columns: 1fr; text-align: center; }
+            .logo-wrap { margin: 0 auto; }
+            .result-actions { justify-content: center; flex-wrap: wrap; }
+            .student-ribbon { grid-template-columns: 1fr 1fr; }
+            .result-snapshot { grid-template-columns: 1fr 1fr; }
+        }
+
+        /* =========================================
+           PRINT UI: FORMAL DOCUMENT STYLES
+           (CSS mirrors report_card.html exactly)
+           ========================================= */
+
+        /* ── A4 page wrapper ── */
+        .print-report {
+            position: relative;
+            width: 210mm;
+            min-height: 297mm;
+            padding: 14mm 16mm;
+            background: #ffffff;
+            border: 6px double #071c3a;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        /* ── Watermark ── */
+        .print-watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 380px;
+            opacity: 0.07;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── Header ── */
+        .print-header {
+            text-align: center;
+            border-bottom: 2.5px solid #071c3a;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .print-header img.logo {
+            width: 72px;
+            height: 72px;
+            object-fit: contain;
+            margin-bottom: 6px;
+        }
+
+        .print-header h1 {
+            font-family: 'Cinzel', serif;
+            font-size: 24px;
+            color: #071c3a;
+            margin: 0 0 4px;
+            letter-spacing: 1px;
+        }
+
+        .print-header .school-meta {
+            font-size: 12.5px;
+            font-weight: 700;
+            margin: 2px 0 0;
+            color: #333;
+            letter-spacing: 0.3px;
+        }
+
+        .print-header .school-address {
+            font-size: 11.5px;
+            font-weight: 500;
+            margin: 2px 0 10px;
+            color: #555;
+        }
+
+        .print-header .session-badge {
+            background: #071c3a;
+            color: #fff;
+            display: inline-block;
+            padding: 4px 18px;
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-radius: 3px;
+        }
+
+        /* ── Student info grid ── */
+        .print-student-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px 20px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .print-info-row {
+            border-bottom: 1px dashed #ccc;
+            padding-bottom: 5px;
+        }
+
+        .print-info-row strong {
+            color: #333;
+            display: inline-block;
+            width: 120px;
+            font-weight: 700;
+        }
+
+        /* ── Marks table ── */
+        .print-report table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .print-report th {
+            background-color: #071c3a !important;
+            color: #fff !important;
+            border: 1px solid #000;
+            padding: 9px 12px;
+            font-weight: 700;
+            font-size: 12.5px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .print-report td {
+            border: 1px solid #000;
+            padding: 9px 12px;
+            text-align: center;
+            font-size: 13.5px;
+        }
+
+        .print-report td.subject-name {
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .print-report tbody tr:nth-child(even) td {
+            background-color: #f7f7f7;
+        }
+
+        /* ── Summary strip ── */
+        .print-summary {
+            display: flex;
+            justify-content: space-evenly;
+            border: 2px solid #071c3a;
+            padding: 14px 20px;
+            margin-bottom: 30px;
+            background-color: #f5f7fa !important;
+            border-radius: 4px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .print-summary div { text-align: center; }
+
+        .print-summary span.lbl {
+            display: block;
+            font-size: 10.5px;
+            text-transform: uppercase;
+            font-weight: 800;
+            color: #555;
+            letter-spacing: 0.5px;
+        }
+
+        .print-summary span.val {
+            display: block;
+            font-size: 22px;
+            font-weight: 800;
+            color: #071c3a;
+            margin-top: 4px;
+        }
+
+        /* ── Signature ── */
+        .print-signatures {
+            display: flex;
+            justify-content: flex-end;
+            align-items: flex-end;
+            padding: 0 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .print-sig-block {
+            text-align: center;
+            width: 180px;
+        }
+
+        .print-sig-block img {
+            width: 130px;
+            height: auto;
+            margin-bottom: -6px;
+            mix-blend-mode: multiply;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .print-sig-line {
+            border-top: 1.5px solid #000;
+            padding-top: 5px;
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        .print-sig-name {
+            font-size: 12px;
+            font-weight: 700;
+            color: #071c3a;
+            margin-top: 2px;
+        }
+
+        @media print {
+            @page { size: A4; margin: 0; }
+            body { background: #fff; }
+            .masthead, .search-panel, .result-actions, .screen-report { display: none !important; }
+            .report-wrapper { display: block !important; overflow: visible !important; height: auto !important; padding: 0; margin: 0; }
+            .print-report {
+                display: block !important;
+                width: 210mm;
+                min-height: 297mm;
+                border: none;
+                padding: 14mm 16mm;
+                margin: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="masthead">
+        <div class="masthead-inner">
+            <div class="logo-wrap">
+                <img src="logo.png" alt="School Logo" onerror="this.style.display='none'">
+            </div>
+            <div>
+                <p class="top-small">Phulani High School, Majuli</p>
+                <h1 class="school-line">Student Result Portal</h1>
+            </div>
+        </div>
+    </header>
+
+    <main class="layout">
+        <section class="search-panel">
+            <div class="search-card" id="searchUI">
+                <select id="classSelect">
+                    <option value="" disabled selected>Select Class...</option>
+                    <option value="Class6">Class 6</option>
+                    <option value="Class7">Class 7</option>
+                    <option value="Class8A">Class 8 - Section A</option>
+                    <option value="Class8B">Class 8 - Section B</option>
+                    <option value="Class9A">Class 9 - Section A</option>
+                    <option value="Class9B">Class 9 - Section B</option>
+                </select>
+                <input type="text" id="rollNo" placeholder="Enter Roll Number...">
+                <input type="text" id="dobInput" placeholder="Date of Birth (DD/MM/YYYY)" maxlength="10" oninput="formatDobInput(this)" inputmode="numeric">
+                <button class="btn btn-get" onclick="generateReport()">Get Result</button>
+            </div>
+            <div id="errorMsg" class="error"></div>
+        </section>
+
+        <section id="masterReportContainer" class="report-wrapper"></section>
+
+        <div class="result-actions" id="resultActions">
+            <button class="btn btn-print" id="printBtn" onclick="printReport()">Print Result</button>
+            <button class="btn btn-another" id="anotherBtn" onclick="getAnotherResult()">Get Another Result</button>
+        </div>
+    </main>
+
+    <script>
+        const DEFAULT_PAGE_TITLE = document.title;
+        let currentPrintTitle = 'student_phs';
+
+        function toFileSafeName(name) {
+            return String(name || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'student';
+        }
+
+        function printReport() {
+            document.title = currentPrintTitle;
+            window.print();
+        }
+
+        function getAnotherResult() {
+            document.body.classList.remove('result-mode');
+            const masterContainer = document.getElementById('masterReportContainer');
+            masterContainer.innerHTML = '';
+            masterContainer.style.display = 'none';
+            document.getElementById('resultActions').style.display = 'none';
+            document.getElementById('errorMsg').style.display = 'none';
+            document.getElementById('classSelect').selectedIndex = 0;
+            const rollInput = document.getElementById('rollNo');
+            rollInput.value = '';
+            document.getElementById('dobInput').value = '';
+            rollInput.focus();
+        }
+
+        window.addEventListener('afterprint', () => { document.title = DEFAULT_PAGE_TITLE; });
+
+        function formatDobInput(el) {
+            let v = el.value.replace(/\D/g, '');
+            if (v.length > 8) v = v.slice(0, 8);
+            if (v.length > 4) v = v.slice(0,2) + '/' + v.slice(2,4) + '/' + v.slice(4);
+            else if (v.length > 2) v = v.slice(0,2) + '/' + v.slice(2);
+            el.value = v;
+        }
+
+        // Compares stored DOB (DD/MM/YYYY or YYYY-MM-DD) with entered value (DD/MM/YYYY)
+        function dobMatches(stored, entered) {
+            if (!stored || !entered || stored === 'AB' || stored === 'nan') return false;
+            const ep = entered.split('/').map(Number);
+            if (ep.length !== 3 || ep.some(isNaN)) return false;
+            const sp = stored.split(/[\/\-\.]/);
+            if (sp.length !== 3) return false;
+            let d, m, y;
+            if (sp[0].length === 4) { [y, m, d] = sp.map(Number); }
+            else                     { [d, m, y] = sp.map(Number); }
+            return d === ep[0] && m === ep[1] && y === ep[2];
+        }
+
+        function generateReport() {
+            const className = document.getElementById('classSelect').value;
+            const roll = document.getElementById('rollNo').value.trim();
+            const dob = document.getElementById('dobInput').value.trim();
+            const errorDiv = document.getElementById('errorMsg');
+            const masterContainer = document.getElementById('masterReportContainer');
+
+            errorDiv.style.display = 'none';
+            masterContainer.innerHTML = '';
+
+            if (!className || !roll || !dob || typeof schoolData === 'undefined') {
+                errorDiv.innerText = 'Please fill in all fields.';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            const classData = schoolData[className];
+            const selectEl = document.getElementById('classSelect');
+            const classLabel = selectEl.options[selectEl.selectedIndex].text;
+
+            if (!(classData && classData[roll])) {
+                errorDiv.innerText = 'Record not found. Please verify class and roll number.';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            const s = classData[roll];
+
+            if (!dobMatches(s.dob, dob)) {
+                errorDiv.innerText = 'Date of Birth does not match our records.';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            currentPrintTitle = `${toFileSafeName(s.name)}_phs`;
+
+            const statusUpper = String(s.status || '').toUpperCase();
+            const statusClass = statusUpper === 'PASS' ? 'status-pass' : statusUpper === 'FAIL' ? 'status-fail' : 'status-absent';
+
+            const exams = s.exams || [];
+            const subjects = s.subjects || [];
+            const perExam = s.per_exam || {};
+            const isMultiExam = exams.length > 1;
+            const totalPossible = subjects.length * (exams.length || 1) * 100;
+
+            // Resolve marks for single/flat exam display
+            const singleKey = exams.length === 1 ? exams[0] : '';
+            const singleMarks = perExam[singleKey] || {};
+
+            // Helpers to build table rows for both screen and print
+            function marksRows(forPrint) {
+                if (isMultiExam) {
+                    return subjects.map(sub => {
+                        const examCells = exams.map(e =>
+                            `<td>${(perExam[e] || {})[sub] || 'AB'}</td>`
+                        ).join('');
+                        const nums = exams.map(e => parseInt((perExam[e] || {})[sub]) || 0);
+                        const allAbs = exams.every(e => !(perExam[e] || {})[sub] || (perExam[e]||{})[sub] === 'AB');
+                        const rowTotal = allAbs ? 'AB' : nums.reduce((a, b) => a + b, 0);
+                        return `<tr><td class="subject-name">${sub}</td>${examCells}<td>${forPrint ? rowTotal : `<strong>${rowTotal}</strong>`}</td></tr>`;
+                    }).join('');
+                } else {
+                    return subjects.map(sub =>
+                        `<tr><td class="subject-name">${sub}</td><td>100</td><td>${singleMarks[sub] || 'AB'}</td></tr>`
+                    ).join('');
+                }
+            }
+
+            function marksHeader(forPrint) {
+                if (isMultiExam) {
+                    const subjectColStyle = forPrint ? 'style="text-align:left; width:35%;"' : 'style="text-align:left;"';
+                    return `<tr><th ${subjectColStyle}>Subject</th>${exams.map(e => `<th>${e}</th>`).join('')}<th>Total</th></tr>`;
+                } else {
+                    if (forPrint) {
+                        return `<tr><th style="text-align:left;">Scholastic Areas</th><th>Maximum Marks</th><th>Marks Obtained</th></tr>`;
+                    }
+                    return `<tr><th style="text-align: left;">Subject</th><th>Maximum Marks</th><th>Marks Obtained</th></tr>`;
+                }
+            }
+
+            // 1. GENERATE SCREEN HTML
+            const screenHTML = `
+                <div class="screen-report">
+                    <h3 class="result-title">Result Summary</h3>
+                    <div class="student-ribbon">
+                        <div class="student-pill"><span class="label">Student Name</span><span class="value">${s.name}</span></div>
+                        <div class="student-pill"><span class="label">Class</span><span class="value">${classLabel}</span></div>
+                        <div class="student-pill"><span class="label">Roll Number</span><span class="value">${roll}</span></div>
+                    </div>
+                    <div class="marks-panel">
+                        <table>
+                            <thead>${marksHeader(false)}</thead>
+                            <tbody>${marksRows(false)}</tbody>
+                        </table>
+                    </div>
+                    <div class="result-snapshot">
+                        <div class="snapshot-item"><div class="label">Grand Total</div><div class="value">${s.total} / ${totalPossible}</div></div>
+                        <div class="snapshot-item"><div class="label">Percentage</div><div class="value">${s.percentage}%</div></div>
+                        <div class="snapshot-item"><div class="label">Rank</div><div class="value">${s.rank}</div></div>
+                        <div class="snapshot-item"><div class="label">Final Result</div><div class="value"><span class="status-badge ${statusClass}">${s.status}</span></div></div>
+                    </div>
+                </div>
+            `;
+
+            // 2. GENERATE PRINT HTML
+            const printHTML = `
+                <div class="print-report">
+                    <img src="logo.png" class="print-watermark" alt="" onerror="this.style.display='none'">
+
+                    <div class="print-header">
+                        <img src="logo.png" class="logo" alt="School Logo" onerror="this.style.display='none'">
+                        <h1>Phulani High School</h1>
+                        <p class="school-meta">Estd. 1972 &nbsp;|&nbsp; UDISE Code: 18310409706</p>
+                        <p class="school-address">Karki Chuk, Lahon Gaon, Majuli, Assam. PIN: 785105</p>
+                        <div class="session-badge">ANNUAL EXAMINATION &middot; 2025 - 2026</div>
+                    </div>
+
+                    <div class="print-student-info">
+                        <div class="print-info-row"><strong>Student Name:</strong> ${s.name}</div>
+                        <div class="print-info-row"><strong>Roll Number:</strong> ${roll}</div>
+                        <div class="print-info-row"><strong>Class:</strong> ${classLabel}</div>
+                        <div class="print-info-row"><strong>Final Status:</strong> ${s.status}</div>
+                    </div>
+
+                    <table>
+                        <thead>${marksHeader(true)}</thead>
+                        <tbody>${marksRows(true)}</tbody>
+                    </table>
+
+                    <div class="print-summary">
+                        <div><span class="lbl">Grand Total</span><span class="val">${s.total} / ${totalPossible}</span></div>
+                        <div><span class="lbl">Percentage</span><span class="val">${s.percentage}%</span></div>
+                        <div><span class="lbl">Class Rank</span><span class="val">${s.rank}</span></div>
+                    </div>
+
+                    <div class="print-signatures">
+                        <div class="print-sig-block">
+                            <img src="sign.jpg" alt="HM Signature" onerror="this.style.display='none'">
+                            <div class="print-sig-name">(Atul Ch. Nath)</div>
+                            <div class="print-sig-line">Headmaster, Phulani High School</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // INJECT BOTH
+            masterContainer.innerHTML = screenHTML + printHTML;
+            masterContainer.style.display = 'flex';
+            document.getElementById('resultActions').style.display = 'flex';
+            document.body.classList.add('result-mode');
+        }
+    </script>
+</body>
+</html>

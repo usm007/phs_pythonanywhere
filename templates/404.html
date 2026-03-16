@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Page Not Found — PHS Portal{% endblock %}
+{% block body %}
+<style>
+.err-page { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:80vh; text-align:center; padding:40px 20px; font-family:'Inter',system-ui,sans-serif; }
+.err-code { font-size:5rem; font-weight:800; color:#1f2f44; line-height:1; }
+.err-gold  { color:#c9a34a; }
+.err-title { font-size:1.25rem; font-weight:700; color:#1c1c1c; margin:12px 0 6px; }
+.err-desc  { font-size:0.88rem; color:#6b7683; margin-bottom:28px; }
+.err-btn   { background:#1f2f44; color:#fff; border:none; border-radius:4px; padding:10px 22px; font-size:0.85rem; font-weight:600; text-decoration:none; letter-spacing:0.2px; }
+.err-btn:hover { background:#2d4460; color:#fff; }
+</style>
+<div class="err-page">
+    <div class="err-code">4<span class="err-gold">0</span>4</div>
+    <div class="err-title">Page Not Found</div>
+    <div class="err-desc">The page you are looking for does not exist or has been moved.</div>
+    <a href="{{ url_for('index') }}" class="err-btn">← Back to Dashboard</a>
+</div>
+{% endblock %}
