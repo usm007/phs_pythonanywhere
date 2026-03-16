@@ -346,11 +346,11 @@
 {% block body %}
 <div class="app-shell">
     <header class="site-header">
-        <div class="header-title">🏫 Academic Setup</div>
+        <div class="header-title"><i class="fas fa-school"></i> Academic Setup</div>
         <nav class="phs-breadcrumb no-print">
-            <a href="{{ url_for('index') }}">🏠 Home</a>
+            <a href="{{ url_for('index') }}"><i class="fas fa-home"></i> Home</a>
             <span class="bc-sep">›</span>
-            <span class="bc-current">🏫 Academic Setup</span>
+            <span class="bc-current"><i class="fas fa-school"></i> Academic Setup</span>
             {% if setup_tab and setup_tab != 'students' %}<span class="bc-sep">›</span><span class="bc-current bc-cat">{{ setup_tab|capitalize }}</span>{% endif %}
             {% if class_name and setup_tab == 'students' %}<span class="bc-sep">›</span><span class="bc-current bc-cat">{{ class_label(class_name) }}</span>{% endif %}
         </nav>
@@ -375,10 +375,10 @@
                 <section class="panel-shell">
                     <div class="panel-title">Step 1 | Choose Setup Category</div>
                     <div class="category-grid">
-                        <a class="category-item {{ 'active' if setup_tab == 'classes' else '' }}" href="{{ url_for('manage_students', class_name=class_name, setup_tab='classes') }}">🏫 Class</a>
+                        <a class="category-item {{ 'active' if setup_tab == 'classes' else '' }}" href="{{ url_for('manage_students', class_name=class_name, setup_tab='classes') }}"><i class="fas fa-school"></i> Class</a>
                         <a class="category-item {{ 'active' if setup_tab == 'subjects' else '' }}" href="{{ url_for('manage_students', class_name=class_name, setup_tab='subjects') }}">📚 Subjects</a>
-                        <a class="category-item {{ 'active' if setup_tab == 'students' else '' }}" href="{{ url_for('manage_students', class_name=class_name, setup_tab='students') }}">👥 Students</a>
-                        <a class="category-item {{ 'active' if setup_tab == 'exams' else '' }}" href="{{ url_for('manage_students', class_name=class_name, setup_tab='exams') }}">📝 Exams</a>
+                        <a class="category-item {{ 'active' if setup_tab == 'students' else '' }}" href="{{ url_for('manage_students', class_name=class_name, setup_tab='students') }}"><i class="fas fa-users"></i> Students</a>
+                        <a class="category-item {{ 'active' if setup_tab == 'exams' else '' }}" href="{{ url_for('manage_students', class_name=class_name, setup_tab='exams') }}"><i class="fas fa-pen"></i> Exams</a>
                     </div>
                 </section>
 

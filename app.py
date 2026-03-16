@@ -615,6 +615,16 @@ def increment_visitor_count(conn):
     return next_count
 
 
+def log_visitor(conn, ip_address, user_agent):
+    """Log a visitor's IP address and user agent"""
+    execute_stmt(
+        conn,
+        "INSERT INTO visitor_logs (ip_address, user_agent, visited_at) VALUES (%s, %s, %s)",
+        (ip_address, user_agent, datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+    )
+    conn.commit()
+
+
 def require_admin_view():
     if session.get("admin_unlocked"):
         return None
@@ -725,6 +735,17 @@ def init_db():
             execute_stmt(
                 conn,
                 """
+                CREATE TABLE IF NOT EXISTS visitor_logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ip_address TEXT NOT NULL,
+                    user_agent TEXT NOT NULL DEFAULT '',
+                    visited_at TEXT NOT NULL
+                )
+                """,
+            )
+            execute_stmt(
+                conn,
+                """
                 CREATE TABLE IF NOT EXISTS class_subjects (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     class_name TEXT NOT NULL,
@@ -809,6 +830,17 @@ def init_db():
                 CREATE TABLE IF NOT EXISTS portal_settings (
                     setting_key VARCHAR(64) PRIMARY KEY,
                     setting_value VARCHAR(1000) NOT NULL
+                )
+                """,
+            )
+            execute_stmt(
+                conn,
+                """
+                CREATE TABLE IF NOT EXISTS visitor_logs (
+                    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                    ip_address VARCHAR(64) NOT NULL,
+                    user_agent VARCHAR(500) NOT NULL DEFAULT '',
+                    visited_at VARCHAR(32) NOT NULL
                 )
                 """,
             )
@@ -1249,6 +1281,13 @@ def index():
     # F4+F7: build per-class completion summary for homepage
     conn = get_db_connection()
     try:
+        # Log visitor IP and user agent
+        ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)
+        if ip_address and ',' in ip_address:
+            ip_address = ip_address.split(',')[0].strip()
+        user_agent = request.headers.get('User-Agent', '')[:500]  # Limit length
+        log_visitor(conn, ip_address, user_agent)
+        
         visitor_count = increment_visitor_count(conn)
         conn.commit()
 
@@ -3006,6 +3045,12 @@ def admin_dashboard():
             conn,
             "SELECT action, entity_type, details, created_at FROM change_logs ORDER BY id DESC LIMIT 8",
         )
+        
+        # Visitor logs (last 50)
+        visitor_logs = fetch_all(
+            conn,
+            "SELECT ip_address, user_agent, visited_at FROM visitor_logs ORDER BY id DESC LIMIT 50",
+        )
 
         # DB size
         db_size_kb = 0
@@ -3023,6 +3068,7 @@ def admin_dashboard():
         total_marks=total_marks,
         class_stats=class_stats,
         recent_logs=recent_logs,
+        visitor_logs=visitor_logs,
         db_size_kb=db_size_kb,
         homepage_panels=HOMEPAGE_PANELS,
     )

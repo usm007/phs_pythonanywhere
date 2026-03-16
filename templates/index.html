@@ -188,6 +188,22 @@ html, body {
 .tile:hover { border-color: #d1d9e4; border-left-color: #c9a34a; box-shadow: 0 10px 22px rgba(20,30,45,0.2); background: #fffdf6; transform: translateY(-3px); }
 .tile:hover .tile-arrow { opacity: 1; transform: translateY(-50%) translateX(9px); }
 .tile:active { transform: scale(0.99); }
+.tile.locked {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+    background: #f5f5f5;
+}
+.tile.locked .tile-icon-wrap { background: #888; }
+.tile.locked::after {
+    content: '\f023';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 0.9rem;
+}
 .tile-icon-wrap {
     width: 56px;
     flex-shrink: 0;
@@ -227,6 +243,22 @@ html, body {
     border: 1px solid #c4cdd8;
 }
 .sec-item:hover { background: #f7fbff; border-color: #c9a34a; color: #1c1c1c; box-shadow: 0 8px 18px rgba(18,30,44,0.16); transform: translateY(-2px); }
+.sec-item.locked {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+    background: #f5f5f5;
+    position: relative;
+}
+.sec-item.locked::after {
+    content: '\f023';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    font-size: 0.75rem;
+}
 .sec-item-icon {
     width: 26px; height: 26px; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
@@ -587,7 +619,7 @@ html, body {
         <!-- Quick start (first time) -->
         {% if total_entered == 0 %}
         <div class="qs-banner" id="qsBanner">
-            <div class="qs-icon">💡</div>
+            <div class="qs-icon"><i class="fas fa-lightbulb"></i></div>
             <div class="qs-content">
                 <div class="qs-title">Welcome! Here's how to get started:</div>
                 <ol class="qs-steps">
@@ -603,8 +635,7 @@ html, body {
         <div class="primary-panel">
             <div class="primary-tiles-label">PRIMARY ACTIONS</div>
             <div class="tiles-grid">
-            {% if 'enter_marks' not in hidden_panels %}
-            <a href="{{ url_for('subject_entry') }}" class="tile tile-green">
+            <a href="{{ url_for('subject_entry') }}" class="tile tile-green {{ 'locked' if 'enter_marks' in hidden_panels else '' }}">
                 <div class="tile-icon-wrap"><i class="fas fa-pen-nib"></i></div>
                 <div class="tile-body">
                     <div class="tile-title">Enter Marks for One Subject</div>
@@ -612,9 +643,7 @@ html, body {
                 </div>
                 <span class="tile-arrow">›</span>
             </a>
-            {% endif %}
-            {% if 'marks_table' not in hidden_panels %}
-            <a href="{{ url_for('grid_entry') }}" class="tile tile-blue">
+            <a href="{{ url_for('grid_entry') }}" class="tile tile-blue {{ 'locked' if 'marks_table' in hidden_panels else '' }}">
                 <div class="tile-icon-wrap"><i class="fas fa-table-cells"></i></div>
                 <div class="tile-body">
                     <div class="tile-title">Enter Marks for All Subjects</div>
@@ -622,9 +651,7 @@ html, body {
                 </div>
                 <span class="tile-arrow">›</span>
             </a>
-            {% endif %}
-            {% if 'class_register' not in hidden_panels %}
-            <a href="{{ url_for('view_marks') }}" class="tile tile-amber">
+            <a href="{{ url_for('view_marks') }}" class="tile tile-amber {{ 'locked' if 'class_register' in hidden_panels else '' }}">
                 <div class="tile-icon-wrap"><i class="fas fa-list-check"></i></div>
                 <div class="tile-body">
                     <div class="tile-title">Review Entered Marks</div>
@@ -632,9 +659,7 @@ html, body {
                 </div>
                 <span class="tile-arrow">›</span>
             </a>
-            {% endif %}
-            {% if 'result_centre' not in hidden_panels %}
-            <a href="{{ url_for('results_center') }}" class="tile tile-red">
+            <a href="{{ url_for('results_center') }}" class="tile tile-red {{ 'locked' if 'result_centre' in hidden_panels else '' }}">
                 <div class="tile-icon-wrap"><i class="fas fa-award"></i></div>
                 <div class="tile-body">
                     <div class="tile-title">View Results &amp; Report Cards</div>
@@ -642,14 +667,12 @@ html, body {
                 </div>
                 <span class="tile-arrow">›</span>
             </a>
-            {% endif %}
             </div><!-- /tiles-grid -->
         </div><!-- /primary-panel -->
 
         <!-- Secondary tools + admin (2x2 grid) -->
         <div class="sec-list">
-            {% if 'academic_setup' not in hidden_panels %}
-            <a href="{{ url_for('manage_students') }}" class="sec-item">
+            <a href="{{ url_for('manage_students') }}" class="sec-item {{ 'locked' if 'academic_setup' in hidden_panels else '' }}">
                 <div class="sec-item-icon si-purple"><i class="fas fa-graduation-cap"></i></div>
                 <div class="sec-item-text">
                     <div class="si-title">Academic Setup</div>
@@ -657,9 +680,7 @@ html, body {
                 </div>
                 <span class="sec-item-chev">›</span>
             </a>
-            {% endif %}
-            {% if 'marks_progress' not in hidden_panels %}
-            <a href="{{ url_for('marks_progress') }}" class="sec-item">
+            <a href="{{ url_for('marks_progress') }}" class="sec-item {{ 'locked' if 'marks_progress' in hidden_panels else '' }}">
                 <div class="sec-item-icon si-teal"><i class="fas fa-chart-line"></i></div>
                 <div class="sec-item-text">
                     <div class="si-title">Entry Progress</div>
@@ -667,9 +688,7 @@ html, body {
                 </div>
                 <span class="sec-item-chev">›</span>
             </a>
-            {% endif %}
-            {% if 'activity_logs' not in hidden_panels %}
-            <a href="{{ url_for('view_logs') }}" class="sec-item">
+            <a href="{{ url_for('view_logs') }}" class="sec-item {{ 'locked' if 'activity_logs' in hidden_panels else '' }}">
                 <div class="sec-item-icon si-slate"><i class="fas fa-clock-rotate-left"></i></div>
                 <div class="sec-item-text">
                     <div class="si-title">Activity Logs</div>
@@ -677,9 +696,7 @@ html, body {
                 </div>
                 <span class="sec-item-chev">›</span>
             </a>
-            {% endif %}
-            {% if 'admin_panel' not in hidden_panels %}
-            <a href="{{ url_for('admin_dashboard' if admin_unlocked else 'admin_lock') }}" class="sec-item">
+            <a href="{{ url_for('admin_dashboard' if admin_unlocked else 'admin_lock') }}" class="sec-item {{ 'locked' if 'admin_panel' in hidden_panels else '' }}">
                 <div class="sec-item-icon"><i class="fas fa-shield-halved"></i></div>
                 <div class="sec-item-text">
                     <div class="si-title">System Settings &amp; Admin Panel</div>
@@ -687,7 +704,6 @@ html, body {
                 </div>
                 <span class="sec-item-chev">›</span>
             </a>
-            {% endif %}
         </div>
 
     </div><!-- /main-col -->

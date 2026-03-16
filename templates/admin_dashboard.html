@@ -319,7 +319,7 @@
     {# ── Sidebar ── #}
     <aside class="admin-sidebar">
         <div class="sidebar-logo">
-            ⚙️
+            <i class="fas fa-cog"></i>
             <div>
                 Admin
                 <span class="sidebar-logo-sub">{{ school_shortcode }}</span>
@@ -328,32 +328,32 @@
 
         <div class="nav-section-label">Dashboard</div>
         <button class="nav-item active" onclick="switchTab('overview', this)">
-            <span class="nav-icon">📊</span> Overview
+            <span class="nav-icon"><i class="fas fa-chart-line"></i></span> Overview
         </button>
 
         <div class="nav-divider"></div>
         <div class="nav-section-label">Configure</div>
         <button class="nav-item" onclick="switchTab('settings', this)">
-            <span class="nav-icon">🏫</span> School Info
+            <span class="nav-icon"><i class="fas fa-school"></i></span> School Info
         </button>
         <button class="nav-item" onclick="switchTab('control', this)">
-            <span class="nav-icon">🔒</span> Control
+            <span class="nav-icon"><i class="fas fa-lock"></i></span> Control
         </button>
 
         <div class="nav-divider"></div>
         <div class="nav-section-label">Data</div>
         <button class="nav-item" onclick="switchTab('data', this)">
-            <span class="nav-icon">💾</span> Backup & Import
+            <span class="nav-icon"><i class="fas fa-database"></i></span> Backup & Import
         </button>
         <button class="nav-item" onclick="switchTab('danger', this)" style="color:rgba(220,80,80,0.75);">
-            <span class="nav-icon">⚠️</span> Danger Zone
+            <span class="nav-icon"><i class="fas fa-exclamation-triangle"></i></span> Danger Zone
         </button>
 
         <div class="sidebar-footer">
             <a href="{{ url_for('index') }}">← Back to Home</a>
             <form method="POST" action="{{ url_for('admin_logout') }}" style="padding:0;border:none;background:transparent;">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit">🔒 Lock Dashboard</button>
+                <button type="submit"><i class="fas fa-lock"></i> Lock Dashboard</button>
             </form>
         </div>
     </aside>
@@ -399,7 +399,7 @@
 
             {# Class progress #}
             <div class="section-card" style="margin-bottom:16px;">
-                <div class="section-card-title"><span class="sct-icon">📋</span> Class Progress</div>
+                <div class="section-card-title"><span class="sct-icon"><i class="fas fa-list-check"></i></span> Class Progress</div>
                 <table class="cls-table">
                     <thead>
                         <tr>
@@ -430,7 +430,7 @@
             {# Recent Activity #}
             <div class="section-card">
                 <div class="section-card-title" style="justify-content:space-between;">
-                    <span><span class="sct-icon">🕐</span> Recent Activity</span>
+                    <span><span class="sct-icon"><i class="fas fa-clock"></i></span> Recent Activity</span>
                     <a href="{{ url_for('view_logs') }}" style="font-size:0.72rem;color:var(--navy);font-weight:600;text-decoration:none;">View All →</a>
                 </div>
                 {% if recent_logs %}
@@ -438,16 +438,16 @@
                     {% for log in recent_logs %}
                     <div class="activity-item">
                         <div class="activity-icon">
-                            {% if 'reset' in log.action %}⚠️
-                            {% elif 'import' in log.action %}📥
-                            {% elif 'export' in log.action or 'backup' in log.action %}📤
-                            {% elif 'lock' in log.action or 'unlock' in log.action %}🔒
-                            {% elif 'pin' in log.action %}🔑
-                            {% elif 'logo' in log.action %}🖼️
-                            {% elif 'settings' in log.action %}⚙️
-                            {% elif 'student' in log.action %}👤
-                            {% elif 'mark' in log.action %}📝
-                            {% else %}📋{% endif %}
+                            {% if 'reset' in log.action %}<i class="fas fa-exclamation-triangle"></i>
+                            {% elif 'import' in log.action %}<i class="fas fa-file-import"></i>
+                            {% elif 'export' in log.action or 'backup' in log.action %}<i class="fas fa-file-export"></i>
+                            {% elif 'lock' in log.action or 'unlock' in log.action %}<i class="fas fa-lock"></i>
+                            {% elif 'pin' in log.action %}<i class="fas fa-key"></i>
+                            {% elif 'logo' in log.action %}<i class="fas fa-image"></i>
+                            {% elif 'settings' in log.action %}<i class="fas fa-cog"></i>
+                            {% elif 'student' in log.action %}<i class="fas fa-user"></i>
+                            {% elif 'mark' in log.action %}<i class="fas fa-pen"></i>
+                            {% else %}<i class="fas fa-clipboard"></i>{% endif %}
                         </div>
                         <div class="activity-body">
                             <div class="activity-action">{{ log.action.replace('_', ' ') }}</div>
@@ -461,6 +461,37 @@
                 <p style="color:var(--muted);font-size:0.8rem;">No activity recorded yet.</p>
                 {% endif %}
             </div>
+            
+            {# Visitor Logs #}
+            <div class="section-card" style="margin-top:20px;">
+                <div class="section-card-title">
+                    <span><span class="sct-icon"><i class="fas fa-users"></i></span> Recent Visitors (Last 50)</span>
+                </div>
+                {% if visitor_logs %}
+                <div style="overflow-x:auto;">
+                    <table style="width:100%;border-collapse:collapse;font-size:0.8rem;">
+                        <thead>
+                            <tr style="border-bottom:2px solid #e0e6ef;">
+                                <th style="padding:8px;text-align:left;font-weight:600;color:var(--navy);">IP Address</th>
+                                <th style="padding:8px;text-align:left;font-weight:600;color:var(--navy);">User Agent</th>
+                                <th style="padding:8px;text-align:left;font-weight:600;color:var(--navy);">Visited At</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in visitor_logs %}
+                            <tr style="border-bottom:1px solid #f0f4f8;">
+                                <td style="padding:8px;color:var(--text);">{{ log.ip_address }}</td>
+                                <td style="padding:8px;color:var(--muted);font-size:0.72rem;max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ log.user_agent }}">{{ log.user_agent }}</td>
+                                <td style="padding:8px;color:var(--muted);white-space:nowrap;">{{ log.visited_at }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p style="color:var(--muted);font-size:0.8rem;">No visitor logs recorded yet.</p>
+                {% endif %}
+            </div>
         </div>
 
         {# ══════════════ SETTINGS ══════════════ #}
@@ -469,7 +500,7 @@
             <div class="panel-sub">Portal title, headers, and printout labels all use these values.</div>
 
             <div class="section-card">
-                <div class="section-card-title"><span class="sct-icon">🏫</span> School Details</div>
+                <div class="section-card-title"><span class="sct-icon"><i class="fas fa-school"></i></span> School Details</div>
                 <form method="POST" action="{{ url_for('admin_save_settings') }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="row g-3">
@@ -501,7 +532,7 @@
             </div>
 
             <div class="section-card">
-                <div class="section-card-title"><span class="sct-icon">🖼️</span> School Logo</div>
+                <div class="section-card-title"><span class="sct-icon"><i class="fas fa-image"></i></span> School Logo</div>
                 {% if school_logo_url %}
                     <img src="{{ school_logo_url }}" alt="School logo" class="logo-preview">
                 {% else %}
@@ -525,18 +556,18 @@
 
             {# Portal lock #}
             <div class="section-card">
-                <div class="section-card-title"><span class="sct-icon">🔒</span> Portal Lock</div>
+                <div class="section-card-title"><span class="sct-icon"><i class="fas fa-lock"></i></span> Portal Lock</div>
                 <div class="d-flex align-items-center gap-12 mb-3" style="gap:12px;">
                     <span>Current state:</span>
                     <span class="lock-pill {{ 'locked' if portal_locked else 'unlocked' }}">
-                        {{ '🔒 Locked' if portal_locked else '🟢 Unlocked' }}
+                        {{ '<i class="fas fa-lock"></i> Locked' if portal_locked else '<i class="fas fa-unlock"></i> Unlocked' }}
                     </span>
                 </div>
                 <form method="POST" action="{{ url_for('admin_toggle_portal_lock') }}" class="mb-2">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="portal_locked" value="{{ '0' if portal_locked else '1' }}">
                     <button type="submit" class="btn-primary-phs">
-                        {{ '🔓 Unlock Portal' if portal_locked else '🔒 Lock Portal' }}
+                        {{ '<i class="fas fa-unlock"></i> Unlock Portal' if portal_locked else '<i class="fas fa-lock"></i> Lock Portal' }}
                     </button>
                 </form>
                 <p style="font-size:0.76rem;color:var(--muted);">When locked, mark entry and student editing are disabled for all users.</p>
@@ -544,7 +575,7 @@
 
             {# Change PIN #}
             <div class="section-card">
-                <div class="section-card-title"><span class="sct-icon">🔑</span> Change Admin PIN</div>
+                <div class="section-card-title"><span class="sct-icon"><i class="fas fa-key"></i></span> Change Admin PIN</div>
                 <form method="POST" action="{{ url_for('admin_change_pin') }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="row g-3">
@@ -578,8 +609,8 @@
 
             {# Homepage Panel Visibility #}
             <div class="section-card">
-                <div class="section-card-title"><span class="sct-icon">🏠</span> Homepage Panel Visibility</div>
-                <p style="font-size:0.76rem;color:var(--muted);margin-bottom:12px;">Check a panel to <strong>hide</strong> it from the homepage. Hidden panels are invisible to all users (admin still sees them when unlocked).</p>
+                <div class="section-card-title"><span class="sct-icon"><i class="fas fa-home"></i></span> Homepage Panel Visibility</div>
+                <p style="font-size:0.76rem;color:var(--muted);margin-bottom:12px;">Check a panel to <strong>lock</strong> it on the homepage. Locked panels are visible but disabled with a lock icon.</p>
                 <form method="POST" action="{{ url_for('admin_save_panel_visibility') }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="row g-2 mb-3">
@@ -589,7 +620,7 @@
                             <label style="display:flex;align-items:flex-start;gap:10px;padding:9px 12px;border:1.5px solid {{ 'var(--danger)' if is_hidden else 'var(--border)' }};border-radius:8px;cursor:pointer;background:{{ '#fff0f0' if is_hidden else '#fff' }};transition:all 0.15s;width:100%;">
                                 <input type="checkbox" name="hide_{{ pid }}" value="1" {{ 'checked' if is_hidden else '' }} style="margin-top:2px;accent-color:var(--danger);width:15px;height:15px;flex-shrink:0;">
                                 <div>
-                                    <div style="font-size:0.82rem;font-weight:700;color:{{ 'var(--danger)' if is_hidden else 'var(--navy)' }};">{{ '🚫 ' if is_hidden else '' }}{{ plabel }}</div>
+                                    <div style="font-size:0.82rem;font-weight:700;color:{{ 'var(--danger)' if is_hidden else 'var(--navy)' }};">{{ '<i class="fas fa-lock"></i> ' if is_hidden else '' }}{{ plabel }}</div>
                                     <div style="font-size:0.71rem;color:var(--muted);margin-top:1px;">{{ pdesc }}</div>
                                 </div>
                             </label>
@@ -602,7 +633,7 @@
 
             {# Promotion Map #}
             <div class="section-card">
-                <div class="section-card-title"><span class="sct-icon">🎓</span> Promotion Map</div>
+                <div class="section-card-title"><span class="sct-icon"><i class="fas fa-graduation-cap"></i></span> Promotion Map</div>
                 <p style="font-size:0.76rem;color:var(--muted);margin-bottom:12px;">Set which class each class is promoted to. Leave blank to hide the promotion column on report cards.</p>
                 <form method="POST" action="{{ url_for('admin_save_promotion_map') }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -630,16 +661,16 @@
             <div class="panel-sub">Export all data, download a raw database backup, or restore from a previous Excel export.</div>
 
             <div class="section-card">
-                <div class="section-card-title"><span class="sct-icon">📤</span> Export</div>
+                <div class="section-card-title"><span class="sct-icon"><i class="fas fa-file-export"></i></span> Export</div>
                 <div class="d-flex flex-wrap gap-2 mb-2">
-                    <a class="btn-green-phs" href="{{ url_for('admin_export_master_xlsx') }}" style="text-decoration:none;color:#fff;">📊 Download Master Excel</a>
+                    <a class="btn-green-phs" href="{{ url_for('admin_export_master_xlsx') }}" style="text-decoration:none;color:#fff;"><i class="fas fa-file-excel"></i> Download Master Excel</a>
                     <a class="btn-outline-phs" href="{{ url_for('admin_backup_database') }}">🗄 Download Raw DB (.db)</a>
                 </div>
                 <p style="font-size:0.74rem;color:var(--muted);">Master Excel includes all students, marks, and a class summary sheet. Raw DB backup is the full SQLite file.</p>
             </div>
 
             <div class="section-card">
-                <div class="section-card-title"><span class="sct-icon">📥</span> Import from Excel</div>
+                <div class="section-card-title"><span class="sct-icon"><i class="fas fa-file-import"></i></span> Import from Excel</div>
                 <p style="font-size:0.76rem;color:var(--muted);margin-bottom:10px;">Upload a previously exported Master Excel to restore or update data. Existing records are updated; new ones are added. No records are deleted.</p>
                 <form method="POST" action="{{ url_for('admin_import_master_excel') }}" enctype="multipart/form-data">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -653,12 +684,12 @@
 
         {# ══════════════ DANGER ZONE ══════════════ #}
         <div class="tab-panel" id="panel-danger">
-            <div class="panel-title" style="color:var(--danger);">⚠️ Danger Zone</div>
+            <div class="panel-title" style="color:var(--danger);"><i class="fas fa-exclamation-triangle"></i> Danger Zone</div>
             <div class="panel-sub">Irreversible operations. All actions require explicit confirmation.</div>
 
             {# Per-class marks wipe #}
             <div class="danger-box">
-                <div class="danger-box-title">⚠️ Wipe Marks for One Class</div>
+                <div class="danger-box-title"><i class="fas fa-exclamation-triangle"></i> Wipe Marks for One Class</div>
                 <p class="danger-note">Deletes all marks for a single class only. Student records are kept. Cannot be undone.</p>
                 <form method="POST" action="{{ url_for('admin_wipe_class_marks') }}" onsubmit="return confirmClassWipe(this);">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -681,7 +712,7 @@
 
             {# Selective Reset #}
             <div class="danger-box">
-                <div class="danger-box-title">⚠️ Selective Reset</div>
+                <div class="danger-box-title"><i class="fas fa-exclamation-triangle"></i> Selective Reset</div>
                 <p class="danger-note">Choose exactly what to delete. Deleting Students also removes all their marks.</p>
                 <form method="POST" action="{{ url_for('admin_selective_reset') }}" onsubmit="return confirmSelectiveReset(this);">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -709,9 +740,9 @@
 
             {# Factory Reset #}
             <div class="danger-box">
-                <div class="danger-box-title">☠️ Factory Reset</div>
+                <div class="danger-box-title"><i class="fas fa-skull-crossbones"></i> Factory Reset</div>
                 <p class="danger-note">Wipes <strong>all</strong> students, marks, and related logs. This cannot be undone under any circumstances.</p>
-                <form method="POST" action="{{ url_for('admin_factory_reset') }}" onsubmit="return confirm('⚠️ FACTORY RESET will permanently delete all students and marks.\n\nThis CANNOT be undone.\n\nContinue?');">
+                <form method="POST" action="{{ url_for('admin_factory_reset') }}" onsubmit="return confirm('⚠ FACTORY RESET will permanently delete all students and marks.\n\nThis CANNOT be undone.\n\nContinue?');">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="input-group input-group-sm mb-2" style="max-width:360px;">
                         <span class="input-group-text">Type</span>

@@ -192,7 +192,7 @@
 <header class="site-header">
     <div class="header-title"><i class="fas fa-table-cells"></i> Master Grid Entry</div>
     <nav class="phs-breadcrumb no-print">
-        <a href="{{ url_for('index') }}">🏠 Home</a>
+        <a href="{{ url_for('index') }}"><i class="fas fa-home"></i> Home</a>
         <span class="bc-sep">›</span>
         <span class="bc-current"><i class="fas fa-table-cells"></i> Grid Entry</span>
         {% if class_name %}<span class="bc-sep">›</span><span class="bc-current bc-cat">{{ class_label(class_name) }}</span>{% endif %}
@@ -219,7 +219,7 @@
                 Choose a <strong>class</strong> to open the full marks entry grid — all subjects in one table.
             </p>
             <div style="background:#f0f7ff;border:1px solid #bcd4f0;border-radius:8px;padding:10px 14px;margin-bottom:18px;font-size:0.8rem;color:#1a4a7a;line-height:1.6;">
-                <strong>💡 Tip:</strong> Use this when you want to enter marks for <em>all subjects</em> at once. For entering one subject at a time, use "Enter Marks" from the home page.
+                <strong><i class="fas fa-lightbulb"></i> Tip:</strong> Use this when you want to enter marks for <em>all subjects</em> at once. For entering one subject at a time, use "Enter Marks" from the home page.
             </div>
             <form method="GET" action="{{ url_for('grid_entry') }}" id="gridPickerForm">
                 <div style="margin-bottom:14px;">
@@ -377,7 +377,7 @@
         {# U7: sticky save footer #}
         <div class="d-flex gap-2 align-items-center" style="position:sticky;bottom:0;background:var(--bg);padding:8px 0 2px;border-top:1px solid var(--border);margin-top:auto;">
             <div class="last-saved-strip" id="lastSavedStrip" style="display:none;">
-                ✓ Last saved: <span class="saved-time" id="lastSavedTime"></span>
+                <i class="fas fa-check-circle"></i> Last saved: <span class="saved-time" id="lastSavedTime"></span>
             </div>
             <span style="font-size:0.75rem;color:var(--muted);">Last cell submits</span>
             <a href="{{ url_for('index') }}" class="btn-cancel ms-auto" id="cancelBtn">Cancel</a>

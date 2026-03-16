@@ -198,7 +198,7 @@
 <header class="site-header">
     <div class="header-title"><i class="fas fa-pen-to-square"></i> Subject-wise Entry</div>
     <nav class="phs-breadcrumb no-print">
-        <a href="{{ url_for('index') }}">🏠 Home</a>
+        <a href="{{ url_for('index') }}"><i class="fas fa-home"></i> Home</a>
         <span class="bc-sep">›</span>
         <span class="bc-current"><i class="fas fa-pen-to-square"></i> Subject Entry</span>
         {% if class_name %}<span class="bc-sep">›</span><span class="bc-current bc-cat">{{ class_label(class_name) }}{% if subject %} · {{ subject }}{% endif %}</span>{% endif %}
@@ -226,7 +226,7 @@
                 Choose your <strong>class</strong> and <strong>subject</strong>, then tap <em>Continue</em> to see the list of students and enter their marks.
             </p>
             <div style="background:#f0f7ff;border:1px solid #bcd4f0;border-radius:8px;padding:10px 14px;margin-bottom:18px;font-size:0.8rem;color:#1a4a7a;line-height:1.6;">
-                <strong>💡 Tip:</strong> You can type <strong>A</strong> for Absent or leave the box empty for students who haven't appeared yet.
+                <strong><i class="fas fa-lightbulb"></i> Tip:</strong> You can type <strong>A</strong> for Absent or leave the box empty for students who haven't appeared yet.
             </div>
             <form method="GET" action="{{ url_for('subject_entry') }}" id="pickerForm">
                 <div style="margin-bottom:14px;">
@@ -453,7 +453,7 @@
 
         <div class="d-flex gap-2 align-items-center">
             <div class="last-saved-strip" id="lastSavedStrip" style="display:none;">
-                ✓ Last saved: <span class="saved-time" id="lastSavedTime"></span>
+                <i class="fas fa-check-circle"></i> Last saved: <span class="saved-time" id="lastSavedTime"></span>
             </div>
             <a href="{{ url_for('index') }}" class="btn-cancel ms-auto" id="cancelBtn">Cancel</a>
             {% if not portal_locked %}
