@@ -48,7 +48,7 @@
             appearance: none; -webkit-appearance: none;
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,0.5)'/%3E%3C/svg%3E");
             background-repeat: no-repeat; background-position: right 8px center;
-            cursor: pointer; outline: none; max-width: 180px;
+            cursor: pointer; outline: none; max-width: 240px;
         }
         .ctx-select:focus { border-color: var(--gold); background: rgba(255,255,255,0.18); }
         .ctx-select option { background: var(--navy); color: #fff; }
@@ -81,8 +81,16 @@
             height: 100%;
             overflow: auto;
             overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: smooth;
         }
-        .grid-table { margin: 0; }
+        .grid-table { 
+            margin: 0; 
+            table-layout: fixed; 
+            width: 100%;
+        }
+        .grid-table thead th:nth-child(1) { width: 70px; }
+        .grid-table thead th:nth-child(2) { width: 180px; }
         .grid-table thead th {
             background: var(--navy); color: rgba(255,255,255,0.85);
             font-size: 0.6rem; font-weight: 600; letter-spacing: 0.07em;
@@ -90,12 +98,54 @@
             white-space: nowrap;
             position: sticky;
             top: 0;
+            z-index: 2;
+            text-align: center;
+        }
+        /* Sticky first two columns */
+        .grid-table thead th:nth-child(1),
+        .grid-table thead th:nth-child(2) {
+            position: sticky;
+            z-index: 3;
+            left: 0;
+        }
+        .grid-table thead th:nth-child(2) {
+            left: 70px;
+        }
+        .grid-table tbody td:nth-child(1),
+        .grid-table tbody td:nth-child(2) {
+            position: sticky;
+            background: white;
             z-index: 1;
+        }
+        .grid-table tbody td:nth-child(1) {
+            left: 0;
+        }
+        .grid-table tbody td:nth-child(2) {
+            left: 70px;
+        }
+        .grid-table tbody tr:hover td:nth-child(1),
+        .grid-table tbody tr:hover td:nth-child(2) {
+            background: #f7f4ef;
+        }
+        .grid-wrap .table-responsive::-webkit-scrollbar-track { background: var(--navy); }
+        .grid-wrap .table-responsive { scrollbar-color: #c7bfb5 var(--navy); }
+        .grid-table thead th:first-child { border-top-left-radius: 9px; }
+        .grid-table thead th:last-child { border-top-right-radius: 0; }
+        .grid-table thead th:nth-child(1),
+        .grid-table thead th:nth-child(2) {
+            text-align: left;
+        }
+        .grid-table thead th:nth-child(n+3) {
+            width: auto;
         }
         .grid-table tbody tr { border-bottom: 1px solid var(--border); }
         .grid-table tbody tr:last-child { border-bottom: none; }
         .grid-table tbody tr:hover { background: #f7f4ef; }
-        .grid-table td { padding: var(--dense-cell); vertical-align: middle; font-size: 0.76rem; border: none; }
+        .grid-table td { padding: var(--dense-cell); vertical-align: middle; font-size: 0.76rem; border: none; text-align: center; }
+        .grid-table td:nth-child(1),
+        .grid-table td:nth-child(2) {
+            text-align: left;
+        }
         .roll-cell { color: var(--muted); font-size: 0.66rem; font-weight: 600; white-space: nowrap; }
         .name-cell { font-weight: 500; min-width: 112px; }
 
@@ -164,40 +214,72 @@
             .grid-wrap {
                 min-height: 300px;
             }
+            .keyboard-hint { display: none !important; }
+            .max-badge { display: none !important; }
+            .container-fluid { padding-left: 8px !important; padding-right: 8px !important; }
         }
         /* ── Mobile touch targets for mark inputs ── */
         @media (max-width: 768px) {
             :root {
-                --dense-head: 8px 8px;
-                --dense-cell: 8px 6px;
+                --dense-head: 10px 8px;
+                --dense-cell: 10px 6px;
+            }
+            /* Make table wider than viewport for better mobile UX */
+            .grid-table {
+                min-width: 800px;
             }
             .grid-input {
-                padding: 8px 4px !important;
-                min-height: 42px !important;
-                font-size: 0.9rem !important;
-                width: 56px !important;
+                padding: 10px 6px !important;
+                min-height: 44px !important;
+                font-size: 1rem !important;
+                width: 64px !important;
+                touch-action: manipulation;
             }
-            .grid-table td { font-size: 0.82rem; }
-            .name-cell { min-width: 100px; font-size: 0.82rem; }
-            .btn-save { padding: 10px 18px !important; font-size: 0.88rem !important; min-height: 44px; }
-            .btn-cancel { padding: 9px 14px !important; font-size: 0.88rem !important; min-height: 44px; }
-            .ctx-select { padding: 9px 26px 9px 10px !important; font-size: 0.9rem !important; min-height: 42px; max-width: 100%; }
-            .ctx-go { padding: 9px 16px !important; font-size: 0.88rem !important; min-height: 42px; }
-            .context-strip { gap: 8px; padding: 8px 10px; flex-wrap: wrap; }
+            .grid-table td { font-size: 0.88rem; padding: 10px 8px !important; }
+            .grid-table thead th { font-size: 0.68rem; padding: 12px 8px !important; }
+            .name-cell { min-width: 140px; font-size: 0.88rem; }
+            .roll-cell { font-size: 0.72rem; }
+            .btn-save { padding: 12px 20px !important; font-size: 0.95rem !important; min-height: 48px; }
+            .btn-cancel { padding: 11px 16px !important; font-size: 0.95rem !important; min-height: 48px; }
+            .ctx-select { padding: 11px 30px 11px 12px !important; font-size: 0.95rem !important; min-height: 46px; max-width: 100%; }
+            .ctx-go { padding: 11px 18px !important; font-size: 0.95rem !important; min-height: 46px; }
+            .context-strip { gap: 10px; padding: 10px 12px; flex-wrap: wrap; }
+            /* Add scroll hint shadow */
+            .grid-wrap .table-responsive {
+                background: linear-gradient(to right, white 30%, rgba(255,255,255,0)),
+                            linear-gradient(to right, rgba(255,255,255,0), white 70%) 0 100%,
+                            radial-gradient(farthest-side at 0% 50%, rgba(0,0,0,.15), rgba(0,0,0,0)),
+                            radial-gradient(farthest-side at 100% 50%, rgba(0,0,0,.15), rgba(0,0,0,0)) 0 100%;
+                background-repeat: no-repeat;
+                background-color: white;
+                background-size: 40px 100%, 40px 100%, 14px 100%, 14px 100%;
+                background-position: 0 0, 100% 0, 0 0, 100% 0;
+                background-attachment: local, local, scroll, scroll;
+            }
+            /* Enhance sticky column shadows on mobile */
+            .grid-table thead th:nth-child(2)::after,
+            .grid-table tbody td:nth-child(2)::after {
+                content: '';
+                position: absolute;
+                right: -8px;
+                top: 0;
+                bottom: 0;
+                width: 8px;
+                background: linear-gradient(to right, rgba(0,0,0,0.08), transparent);
+                pointer-events: none;
+            }
         }
     </style>
 {% endblock %}
 {% block body %}
 <div class="app-shell">
 <header class="site-header">
-    <div class="header-title"><i class="fas fa-table-cells"></i> Master Grid Entry</div>
-    <nav class="phs-breadcrumb no-print">
-        <a href="{{ url_for('index') }}"><i class="fas fa-home"></i> Home</a>
-        <span class="bc-sep">›</span>
-        <span class="bc-current"><i class="fas fa-table-cells"></i> Grid Entry</span>
-        {% if class_name %}<span class="bc-sep">›</span><span class="bc-current bc-cat">{{ class_label(class_name) }}</span>{% endif %}
-    </nav>
-    <a href="{{ url_for('index') }}" class="btn-back">← Dashboard</a>
+    <div class="header-title">
+        <a href="{{ url_for('index') }}">Home</a>
+        <span style="margin: 0 8px; opacity: 0.5;">/</span>
+        <span><i class="fas fa-table-cells"></i> Master Grid Entry</span>
+    </div>
+    <a href="{{ url_for('index') }}" class="btn-back">← Back</a>
 </header>
 
 <main class="main-scroll">
@@ -218,7 +300,7 @@
             <p style="font-size:0.88rem;color:var(--muted);margin:0 0 18px;line-height:1.6;">
                 Choose a <strong>class</strong> to open the full marks entry grid — all subjects in one table.
             </p>
-            <div style="background:#f0f7ff;border:1px solid #bcd4f0;border-radius:8px;padding:10px 14px;margin-bottom:18px;font-size:0.8rem;color:#1a4a7a;line-height:1.6;">
+            <div class="tip-box" style="background:#f0f7ff;border:1px solid #bcd4f0;border-radius:8px;padding:10px 14px;margin-bottom:18px;font-size:0.8rem;color:#1a4a7a;line-height:1.6;">
                 <strong><i class="fas fa-lightbulb"></i> Tip:</strong> Use this when you want to enter marks for <em>all subjects</em> at once. For entering one subject at a time, use "Enter Marks" from the home page.
             </div>
             <form method="GET" action="{{ url_for('grid_entry') }}" id="gridPickerForm">

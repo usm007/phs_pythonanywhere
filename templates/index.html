@@ -7,10 +7,12 @@ html, body {
     height: 100%; overflow: hidden;
     background: #cdd5e0;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    display: flex;
+    flex-direction: column;
 }
 
 /* Full-page shell */
-.pg-page { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+.pg-page { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
 
 /* ── Header ── */
 .pg-header {
@@ -95,7 +97,7 @@ html, body {
     flex: 1; min-height: 0;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr auto;
+    grid-template-rows: 1fr;
     gap: 6px;
     padding: 6px 8px;
     overflow: hidden;
@@ -138,7 +140,7 @@ html, body {
     flex-direction: column; 
     gap: 6px; 
     min-height: 0; 
-    overflow: hidden; 
+    overflow: hidden;
 }
 
 /* ── Primary panel ── */
@@ -217,8 +219,25 @@ html, body {
     display: flex; flex-direction: column; justify-content: center;
     padding: 8px 34px 8px 12px;
 }
-.tile-title { font-size: 1rem; font-weight: 700; line-height: 1.2; margin-bottom: 3px; letter-spacing: -0.1px; color: #1c1c1c; }
+.tile-title { font-size: 1rem; font-weight: 700; line-height: 1.2; margin-bottom: 3px; letter-spacing: -0.1px; color: #1c1c1c; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .tile-desc  { font-size: 0.75rem; line-height: 1.45; color: #6b7683; font-weight: 400; }
+.tile-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    background: rgba(31, 47, 68, 0.08);
+    color: #1f2f44;
+    font-size: 0.62rem;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+.tile-badge i {
+    font-size: 0.7rem;
+    opacity: 0.8;
+}
 .tile-arrow { position: absolute; top: 50%; right: 18px; transform: translateY(-50%); opacity: 0.62; font-size: 1.22rem; color: #1f2f44; transition: opacity 0.15s, transform 0.15s; }
 
 /* All tiles uniform */
@@ -276,7 +295,7 @@ html, body {
     flex-direction: column; 
     gap: 6px; 
     min-height: 0; 
-    overflow: hidden; 
+    overflow: hidden;
 }
 
 /* ── System Overview card ── */
@@ -289,6 +308,8 @@ html, body {
     flex: 1;
     min-height: 0;
 }
+
+
 .overview-hdr {
     background: #1f2f44;
     color: #fff;
@@ -304,6 +325,9 @@ html, body {
     display: grid;
     grid-template-columns: 0.85fr 2.15fr;
     gap: 8px;
+    overflow-x: auto;
+    flex: 1;
+    min-height: 0;
 }
 .ov-left-panel { min-width: 0; display: flex; flex-direction: column; }
 .ov-right-panel {
@@ -312,6 +336,8 @@ html, body {
     padding-left: 12px;
     display: flex;
     flex-direction: column;
+    flex: 1;
+    min-height: 0;
 }
 .ov-section-label {
     font-size: 0.6rem; font-weight: 700;
@@ -362,7 +388,7 @@ html, body {
 .ov-stat-lbl { font-size: 0.58rem; color: #6b7683; text-transform: uppercase; letter-spacing: 0.3px; margin-top: 2px; }
 /* Activity */
 .ov-divider { border: none; border-top: 2px solid #c9a34a44; margin: 10px 0 8px; flex-shrink: 0; }
-.ov-activity-list { display: flex; flex-direction: column; overflow: auto; }
+.ov-activity-list { display: flex; flex-direction: column; overflow: auto; flex: 1; min-height: 0; }
 .ov-activity-item {
     font-size: 0.71rem; color: #1c1c1c; line-height: 1.4;
     padding: 4px 0 4px 12px;
@@ -409,7 +435,7 @@ html, body {
     flex-shrink: 0;
 }
 .notice-hdr-title { display: inline-flex; align-items: center; gap: 7px; }
-.notice-hdr i { color: #c9a34a; font-size: 0.75rem; }
+.notice-hdr-title i { color: #c9a34a; font-size: 0.75rem; }
 .notice-body-inner {
     padding: 8px;
     display: flex; flex-direction: column;
@@ -453,9 +479,19 @@ html, body {
     background: rgba(255,255,255,0.08);
     border: 1px solid rgba(255,255,255,0.18);
     color: rgba(255,255,255,0.9);
-    font-size: 0.6rem;
-    min-height: 26px;
-    padding: 3px 8px;
+    font-size: 0.5rem;
+    min-height: auto;
+    padding: 4px 8px;
+    gap: 4px;
+}
+.notice-post-btn.notice-post-btn-hdr i {
+    font-size: 0.65rem;
+}
+.notice-post-btn.notice-post-btn-hdr .btn-subtitle {
+    font-size: 0.52rem;
+    text-transform: capitalize;
+    font-weight: 500;
+    opacity: 0.85;
 }
 .notice-post-btn.notice-post-btn-hdr:hover { background: rgba(255,255,255,0.18); }
 .notice-list { overflow-y: auto; display: flex; flex-direction: column; gap: 0; flex: 1; min-height: 0; }
@@ -493,12 +529,6 @@ html, body {
         gap: 4px;
     }
     .main-col, .right-col { gap: 4px; }
-    .right-col {
-        display: flex;
-        flex-direction: column;
-        align-items: stretch;
-        overflow: visible;
-    }
     .tiles-grid { grid-auto-rows: auto; gap: 3px; padding: 4px; }
     .tile-body { padding: 6px 30px 6px 10px; }
     .sec-list { gap: 3px; }
@@ -534,36 +564,122 @@ html, body {
 
 /* ── Responsive ── */
 @media (max-width: 860px) {
-    html, body { overflow-y: auto; }
-    .pg-page { height: auto; }
+    html, body { overflow-y: auto; height: auto; }
+    .pg-page { height: auto; min-height: 100vh; overflow: visible; }
     .pg-header { gap: 10px; padding: 0 14px; }
-    .pg-body { grid-template-columns: 1fr; overflow-y: auto; height: auto; }
-    .main-col { overflow: visible; min-height: 0; }
+    .pg-body { grid-template-columns: 1fr; grid-template-rows: auto; overflow-y: visible; height: auto; align-items: start; min-height: 0; }
+    .main-col { overflow: visible; min-height: 0; height: auto; }
     .tiles-grid { grid-template-columns: 1fr; grid-auto-rows: 1fr; flex: none; }
     .sec-list { grid-template-columns: 1fr; }
     .right-col { overflow: visible; flex-direction: row; flex-wrap: wrap; gap: 8px; }
-    .overview-body { display: flex; flex-direction: column; }
+    .overview-body { display: flex; flex-direction: column; overflow: visible; height: auto; }
     .ov-right-panel {
         border-left: none;
         padding-left: 0;
         border-top: 2px solid #c9a34a44;
         padding-top: 8px;
+        min-height: auto;
+        overflow: visible;
     }
-    .overview-card { flex: 1; min-width: 240px; }
+    .ov-activity-list {
+        max-height: none;
+        overflow: visible;
+    }
+    .overview-card { flex: 1; min-width: 240px; width: 100%; height: auto; overflow: visible; }
     .notice-card { flex: 1; min-width: 240px; }
 }
 @media (max-width: 600px) {
-    html, body { overflow-y: auto; }
-    .pg-page { height: auto; }
-    .pg-header { min-height: 50px; padding: 6px 12px; }
-    .pg-school-name { font-size: 0.88rem; }
-    .pg-school-title { font-size: 0.9rem; }
+    html, body { overflow-y: auto; height: auto; }
+    .pg-page { height: auto; min-height: 100vh; overflow: visible; }
+    .pg-header { 
+        min-height: auto; 
+        padding: 12px; 
+        flex-direction: column; 
+        align-items: center; 
+        gap: 8px;
+        text-align: center;
+    }
+    .pg-logo {
+        width: 50px;
+        height: 50px;
+        margin: 0;
+    }
+    .pg-school-name { 
+        font-size: 0.88rem; 
+        margin: 0;
+        max-width: 100%;
+    }
+    .pg-school-title { 
+        font-size: 1rem;
+        white-space: normal;
+        line-height: 1.3;
+    }
+    .pg-school-subtitle {
+        font-size: 0.7rem;
+        margin-top: 4px;
+        white-space: normal;
+        line-height: 1.4;
+    }
+    .pg-header-right {
+        margin-left: 0;
+        width: 100%;
+        justify-content: center;
+    }
     .pg-session-pill { display: none; }
     .pg-visitor-counter { font-size: 0.66rem; min-height: 30px; padding: 4px 10px; }
     .pg-body { padding: 8px; gap: 8px; overflow: visible; }
-    .right-col { flex-direction: column; }
-    .overview-card, .notice-card { /* natural height */ }
+    .right-col { flex-direction: column; width: 100%; }
+    .overview-card, .notice-card { width: 100%; min-width: 0; height: auto; }
+    .overview-body { padding: 8px; height: auto; min-height: auto; }
 }
+
+/* ── Footer ── */
+.pg-footer {
+    background: transparent;
+    border-top: 1px solid var(--border);
+    padding: 8px 16px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    font-size: 0.68rem;
+    color: var(--muted);
+    flex-shrink: 0;
+    text-align: center;
+}
+.pg-footer-left,
+.pg-footer-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.pg-footer-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+}
+.pg-footer-item i {
+    font-size: 0.65rem;
+    opacity: 0.6;
+}
+@media (max-width: 600px) {
+    .pg-footer {
+        font-size: 0.62rem;
+        padding: 6px 12px;
+        gap: 12px;
+    }
+    .pg-footer-left,
+    .pg-footer-right {
+        gap: 12px;
+    }
+    .pg-footer-item i {
+        font-size: 0.6rem;
+    }
+}
+
+
 </style>
 {% endblock %}
 
@@ -593,7 +709,6 @@ html, body {
             <i class="fas fa-calendar-alt" style="font-size:0.58rem"></i>
             Session : {{ academic_session }}{% if portal_locked %}&nbsp;<i class="fas fa-lock"></i>{% endif %}
         </span>
-        <div class="pg-visitor-counter"><i class="fas fa-users"></i> Visitors : {{ visitor_count }}</div>
     </div>
 </header>
 
@@ -638,7 +753,10 @@ html, body {
             <a href="{{ url_for('subject_entry') }}" class="tile tile-green {{ 'locked' if 'enter_marks' in hidden_panels else '' }}">
                 <div class="tile-icon-wrap"><i class="fas fa-pen-nib"></i></div>
                 <div class="tile-body">
-                    <div class="tile-title">Enter Marks for One Subject</div>
+                    <div class="tile-title">
+                        Enter Marks for One Subject
+                        <span class="tile-badge"><i class="fas fa-mobile-screen"></i> Phone</span>
+                    </div>
                     <div class="tile-desc">Choose a class and subject, type in the marks, and save.</div>
                 </div>
                 <span class="tile-arrow">›</span>
@@ -646,7 +764,10 @@ html, body {
             <a href="{{ url_for('grid_entry') }}" class="tile tile-blue {{ 'locked' if 'marks_table' in hidden_panels else '' }}">
                 <div class="tile-icon-wrap"><i class="fas fa-table-cells"></i></div>
                 <div class="tile-body">
-                    <div class="tile-title">Enter Marks for All Subjects</div>
+                    <div class="tile-title">
+                        Enter Marks for All Subjects
+                        <span class="tile-badge"><i class="fas fa-desktop"></i> PC</span>
+                    </div>
                     <div class="tile-desc">See all subjects for a class in one table — fill marks quickly without switching pages.</div>
                 </div>
                 <span class="tile-arrow">›</span>
@@ -780,12 +901,13 @@ html, body {
             </div>
         </div>
 
-        <!-- Notice board -->
+        <!-- Notice Board -->
         <div class="notice-card">
             <div class="notice-hdr">
                 <span class="notice-hdr-title"><i class="fas fa-thumbtack"></i> Notice Board</span>
                 <button type="button" class="notice-post-btn notice-post-btn-hdr" id="noticeToggleBtn" onclick="toggleNoticeForm()">
-                    <i class="fas fa-plus"></i> Post a Notice
+                    <i class="fas fa-plus"></i>
+                    <span class="btn-subtitle">Post</span>
                 </button>
             </div>
             <div class="notice-body-inner">
@@ -832,6 +954,24 @@ html, body {
     </div><!-- /right-col -->
 
 </div><!-- /pg-body -->
+
+<!-- ═══ FOOTER ═══ -->
+<footer class="pg-footer">
+    <div class="pg-footer-left">
+        <div class="pg-footer-item">
+            <i class="fas fa-users"></i> Visitors: {{ visitor_count }}
+        </div>
+    </div>
+    <div class="pg-footer-right">
+        <div class="pg-footer-item">
+            <i class="fas fa-clock"></i> <span id="footerTime"></span>
+        </div>
+        <div class="pg-footer-item">
+            <i class="fas fa-calendar"></i> <span id="footerDate"></span>
+        </div>
+    </div>
+</footer>
+
 </div><!-- /pg-page -->
 {% endblock %}
 
@@ -880,5 +1020,31 @@ document.addEventListener('DOMContentLoaded', function () {
     syncHomepageHeights();
     setTimeout(syncHomepageHeights, 150);
 });
+
+// Update footer time and date
+function updateFooterDateTime() {
+    const now = new Date();
+    
+    // Format time as HH:MM am/pm
+    let hours = now.getHours();
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12;
+    const timeStr = `${hours}:${minutes} ${ampm}`;
+    
+    // Format date as DD MMM, YYYY
+    const day = now.getDate().toString().padStart(2, '0');
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const month = months[now.getMonth()];
+    const year = now.getFullYear();
+    const dateStr = `${day} ${month}, ${year}`;
+    
+    document.getElementById('footerTime').textContent = timeStr;
+    document.getElementById('footerDate').textContent = dateStr;
+}
+
+updateFooterDateTime();
+setInterval(updateFooterDateTime, 1000); // Update every second
+
 </script>
 {% endblock %}

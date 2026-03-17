@@ -307,12 +307,12 @@
 {% endblock %}
 {% block body %}
 <header class="site-header">
-    <div class="header-title">⚙️ Admin</div>
-    <nav class="phs-breadcrumb no-print">
-        <a href="{{ url_for('index') }}">🏠 Home</a>
-        <span class="bc-sep">›</span>
-        <span class="bc-current">⚙️ Admin Dashboard</span>
-    </nav>
+    <div class="header-title">
+        <a href="{{ url_for('index') }}">Home</a>
+        <span style="margin: 0 8px; opacity: 0.5;">/</span>
+        <span>⚙️ Admin</span>
+    </div>
+    <a href="{{ url_for('index') }}" class="btn-back">← Back</a>
 </header>
 
 <div class="admin-shell">
@@ -512,17 +512,18 @@
                             <label class="form-label">School Address</label>
                             <input class="form-control" name="school_address" value="{{ settings.school_address }}" required>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <label class="form-label">School Shortcode</label>
                             <input class="form-control" name="school_shortcode" value="{{ settings.school_shortcode }}" required>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Examination Name</label>
-                            <input class="form-control" name="exam_name" value="{{ settings.exam_name }}" required>
-                        </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <label class="form-label">Academic Session</label>
                             <input class="form-control" name="academic_session" value="{{ settings.academic_session }}" required>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">Principal/HM Name</label>
+                            <input class="form-control" name="principal_name" value="{{ settings.principal_name or '' }}" placeholder="e.g., Dr. John Doe (Optional)">
+                            <small class="text-muted" style="font-size: 0.75rem;">This name will appear on report cards and certificates</small>
                         </div>
                     </div>
                     <div class="mt-3">
@@ -545,6 +546,25 @@
                         <button class="btn-primary-phs" type="submit">Upload PNG</button>
                     </div>
                     <p style="font-size:0.74rem;color:var(--muted);margin-top:6px;">Transparent PNG recommended, square or near-square.</p>
+                </form>
+            </div>
+
+            <div class="section-card">
+                <div class="section-card-title"><span class="sct-icon"><i class="fas fa-signature"></i></span> Principal/HM Signature</div>
+                {% if principal_signature_url %}
+                    <div style="background:#f8f9fa;padding:16px;border-radius:8px;text-align:center;border:1px solid #dee2e6;">
+                        <img src="{{ principal_signature_url }}" alt="Principal signature" style="max-width:200px;max-height:80px;display:inline-block;">
+                    </div>
+                {% else %}
+                    <div class="logo-empty">No signature uploaded yet</div>
+                {% endif %}
+                <form method="POST" action="{{ url_for('admin_upload_signature') }}" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="input-group input-group-sm">
+                        <input class="form-control" type="file" name="principal_signature" accept="image/png" required>
+                        <button class="btn-primary-phs" type="submit">Upload PNG</button>
+                    </div>
+                    <p style="font-size:0.74rem;color:var(--muted);margin-top:6px;">Transparent PNG recommended. Will appear on report cards.</p>
                 </form>
             </div>
         </div>

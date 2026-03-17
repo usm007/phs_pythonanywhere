@@ -53,22 +53,22 @@
             background-position: right 8px center;
             cursor: pointer; outline: none;
             transition: border-color 0.15s, background 0.15s;
-            max-width: 180px;
+            max-width: 240px;
         }
         .ctx-select:focus { border-color: var(--gold); background: rgba(255,255,255,0.18); }
         .ctx-select option { background: var(--navy); color: #fff; }
         .ctx-sep { color: rgba(255,255,255,0.3); font-size: 0.8rem; }
         .ctx-go {
-            background: rgba(255,255,255,0.15);
+            background: transparent;
             color: #fff;
             border: 1px solid rgba(255,255,255,0.3);
             border-radius: 7px;
             font-size: 0.78rem; font-weight: 700;
-            padding: 4px 12px; cursor: pointer;
+            padding: 5px 14px; cursor: pointer;
             transition: background 0.15s, border-color 0.15s;
             white-space: nowrap;
         }
-        .ctx-go:hover { background: var(--gold); border-color: var(--gold); color: #1a1200; }
+        .ctx-go:hover { background: var(--gold); border-color: var(--gold); color: var(--navy); }
         .context-banner .max-badge {
             margin-left: auto;
             background: rgba(255,255,255,0.1);
@@ -88,6 +88,15 @@
             min-height: 0;
             max-height: none;
             overflow-y: auto;
+            width: 70%;
+            margin: 0 auto;
+        }
+        .phs-table table {
+            width: 100%;
+        }
+        .phs-table thead th:nth-child(3) { 
+            text-align: center;
+            width: 160px;
         }
         .phs-table thead th {
             background: var(--navy); color: rgba(255,255,255,0.85);
@@ -96,18 +105,40 @@
             position: sticky;
             top: 0;
             z-index: 1;
+            text-align: center;
+        }
+        .phs-table::-webkit-scrollbar-track { background: var(--navy); }
+        .phs-table { scrollbar-color: #c7bfb5 var(--navy); }
+        .phs-table thead th:first-child {
+            border-top-left-radius: 9px;
+        }
+        .phs-table thead th:last-child {
+            border-top-right-radius: 0;
+        }
+        .phs-table thead th:nth-child(1),
+        .phs-table thead th:nth-child(2) {
+            text-align: left;
         }
         .phs-table tbody tr { border-bottom: 1px solid var(--border); }
         .phs-table tbody tr:last-child { border-bottom: none; }
         .phs-table tbody tr:hover { background: #f4f1ec; }
-        .phs-table td { padding: var(--dense-cell); vertical-align: middle; font-size: 0.78rem; border: none; }
+        .phs-table td { padding: var(--dense-cell); vertical-align: middle; font-size: 0.78rem; border: none; text-align: center; }
+        .phs-table td:nth-child(1),
+        .phs-table td:nth-child(2) {
+            text-align: left;
+        }
         .roll-cell { color: var(--muted); font-size: 0.68rem; font-weight: 600; width: 58px; }
         .name-cell { font-weight: 500; }
 
         .mark-input {
-            width: 88px; border: 1.5px solid var(--border); border-radius: 6px;
-            padding: var(--dense-input-pad); font-size: var(--dense-input-size); text-align: center;
-            transition: border-color 0.15s, box-shadow 0.15s; background: #fff;
+            width: 90px;
+            border: 1.5px solid var(--border);
+            border-radius: 6px;
+            padding: var(--dense-input-pad);
+            font-size: var(--dense-input-size);
+            text-align: center;
+            transition: border-color 0.15s, box-shadow 0.15s;
+            background: #fff;
             min-height: 36px;
         }
         .mark-input:focus {
@@ -169,7 +200,12 @@
             .phs-table {
                 max-height: none;
                 min-height: 260px;
+                width: 100%;
+                margin: 0;
             }
+            .keyboard-hint { display: none !important; }
+            .tip-box { display: none !important; }
+            .container-fluid { padding-left: 8px !important; padding-right: 8px !important; }
         }
         /* ── Mobile touch targets for mark inputs ── */
         @media (max-width: 768px) {
@@ -196,14 +232,12 @@
 {% block body %}
 <div class="app-shell">
 <header class="site-header">
-    <div class="header-title"><i class="fas fa-pen-to-square"></i> Subject-wise Entry</div>
-    <nav class="phs-breadcrumb no-print">
-        <a href="{{ url_for('index') }}"><i class="fas fa-home"></i> Home</a>
-        <span class="bc-sep">›</span>
-        <span class="bc-current"><i class="fas fa-pen-to-square"></i> Subject Entry</span>
-        {% if class_name %}<span class="bc-sep">›</span><span class="bc-current bc-cat">{{ class_label(class_name) }}{% if subject %} · {{ subject }}{% endif %}</span>{% endif %}
-    </nav>
-    <a href="{{ url_for('index') }}" class="btn-back">← Dashboard</a>
+    <div class="header-title">
+        <a href="{{ url_for('index') }}">Home</a>
+        <span style="margin: 0 8px; opacity: 0.5;">/</span>
+        <span><i class="fas fa-pen-to-square"></i> Subject-wise Entry</span>
+    </div>
+    <a href="{{ url_for('index') }}" class="btn-back">← Back</a>
 </header>
 
 <main class="main-scroll">
@@ -225,7 +259,7 @@
             <p style="font-size:0.88rem;color:var(--muted);margin:0 0 18px;line-height:1.6;">
                 Choose your <strong>class</strong> and <strong>subject</strong>, then tap <em>Continue</em> to see the list of students and enter their marks.
             </p>
-            <div style="background:#f0f7ff;border:1px solid #bcd4f0;border-radius:8px;padding:10px 14px;margin-bottom:18px;font-size:0.8rem;color:#1a4a7a;line-height:1.6;">
+            <div class="tip-box" style="background:#f0f7ff;border:1px solid #bcd4f0;border-radius:8px;padding:10px 14px;margin-bottom:18px;font-size:0.8rem;color:#1a4a7a;line-height:1.6;">
                 <strong><i class="fas fa-lightbulb"></i> Tip:</strong> You can type <strong>A</strong> for Absent or leave the box empty for students who haven't appeared yet.
             </div>
             <form method="GET" action="{{ url_for('subject_entry') }}" id="pickerForm">
@@ -316,7 +350,16 @@
         <input type="hidden" id="ctxExam" value="{{ exam_name }}">
         {% endif %}
         <button class="ctx-go" id="ctxGoBtn" type="button">Go →</button>
-        <span class="max-badge">Max: {{ max_per_subject }}</span>
+        {# Slim progress bar with percentage #}
+        {% set filled_count = students | selectattr('marks_obtained', 'ne', none) | list | length %}
+        {% set total_count = students | length %}
+        {% set progress_pct = ((filled_count / total_count * 100) | round | int) if total_count > 0 else 0 %}
+        <div style="flex:1;min-width:140px;max-width:200px;display:flex;align-items:center;gap:6px;">
+            <div style="flex:1;height:6px;background:rgba(255,255,255,0.2);border-radius:3px;overflow:hidden;position:relative;">
+                <div id="progressFill" style="height:100%;width:{{ progress_pct }}%;background:linear-gradient(90deg,#ffd700,#ffed4e);border-radius:3px;transition:width 0.3s ease;"></div>
+            </div>
+            <span id="progressPercent" style="font-size:0.72rem;color:rgba(255,255,255,0.95);font-weight:600;min-width:32px;text-align:right;">{{ progress_pct }}%</span>
+        </div>
     </div>
     <script>
     (function() {
@@ -371,35 +414,18 @@
     }());
     </script>
 
-    {# Completion progress bar + keyboard tip — same row #}
-    {% set filled_count = students | selectattr('marks_obtained', 'ne', none) | list | length %}
-    {% set total_count = students | length %}
-    <div style="display:flex;gap:10px;align-items:stretch;">
-        <div class="progress-strip" id="progressStrip" style="flex:1;min-width:0;">
-            <span class="progress-label">Progress</span>
-            <div class="progress-bar-wrap">
-                <div class="progress-bar-fill" id="progressFill"></div>
-            </div>
-            <span class="progress-count" id="progressCount">
-                <span id="progFilled">{{ filled_count }}</span> / {{ total_count }}
-            </span>
-        </div>
-        <div class="keyboard-hint no-print" style="flex:1;min-width:0;margin:0;">
-            <i class="fas fa-keyboard"></i> Tip: Press <kbd>Enter</kbd> or <kbd>Tab</kbd> to move to the next mark
-        </div>
-    </div>
+    {# Progress bar now in context-banner above #}
     <script>
         (function () {
             var total = {{ total_count }};
             var fill = document.getElementById('progressFill');
-            var countSpan = document.getElementById('progFilled');
+            var percentSpan = document.getElementById('progressPercent');
             function updateProgress() {
                 var filled = Array.from(document.querySelectorAll('.mark-input'))
                     .filter(function(inp) { return inp.value.trim() !== ''; }).length;
                 var pct = total > 0 ? Math.round((filled / total) * 100) : 0;
                 fill.style.width = pct + '%';
-                fill.classList.toggle('complete', pct === 100);
-                countSpan.textContent = filled;
+                percentSpan.textContent = pct + '%';
             }
             document.querySelectorAll('.mark-input').forEach(function(inp) {
                 inp.addEventListener('input', updateProgress);
@@ -422,9 +448,9 @@
             <table class="table mb-0">
                 <thead>
                     <tr>
-                        <th class="roll-cell" style="width:80px;">Roll</th>
+                        <th class="roll-cell">Roll</th>
                         <th>Student Name</th>
-                        <th style="width:130px;">Marks &nbsp;<span style="background:var(--navy);color:#fff;border-radius:5px;padding:1px 7px;font-size:0.68rem;font-weight:700;white-space:nowrap;">/{{ max_per_subject }}</span></th>
+                        <th>Marks</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -452,6 +478,9 @@
         </div>
 
         <div class="d-flex gap-2 align-items-center">
+            <div class="keyboard-hint no-print" style="flex:0 0 auto;margin:0;">
+                <i class="fas fa-keyboard"></i> Tip: Press <kbd>Enter</kbd> or <kbd>Tab</kbd> to move to the next mark
+            </div>
             <div class="last-saved-strip" id="lastSavedStrip" style="display:none;">
                 <i class="fas fa-check-circle"></i> Last saved: <span class="saved-time" id="lastSavedTime"></span>
             </div>

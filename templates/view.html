@@ -9,75 +9,93 @@
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: 12px;
-            padding: 12px;
+            padding: 14px 14px 12px;
             margin-top: 12px;
         }
-        .mini-help {
+
+        /* ── Controls bar: class tabs + exam dropdown ── */
+        .controls-bar {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        .ctrl-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 0;
+        }
+        .ctrl-group.exam-group {
+            flex-shrink: 0;
+        }
+        .ctrl-group.search-group {
+            flex: 1;
+            min-width: 160px;
+        }
+        .ctrl-label {
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+        .class-select,
+        .exam-select {
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            padding: 5px 28px 5px 10px;
             font-size: .8rem;
-            color: var(--muted);
-            margin-bottom: 10px;
-        }
-
-        .class-tabs {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-bottom: 10px;
-        }
-        .class-tab {
-            display: inline-block;
-            text-decoration: none;
-            border: 1px solid var(--border);
-            border-radius: 999px;
-            background: #fff;
+            font-weight: 600;
             color: var(--navy);
-            padding: 6px 12px;
-            font-size: .78rem;
-            font-weight: 600;
+            background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E") no-repeat right 9px center;
+            appearance: none; -webkit-appearance: none;
+            cursor: pointer;
+            outline: none;
         }
-        .class-tab.active {
-            background: var(--navy);
-            color: #fff;
-            border-color: var(--navy);
-        }
+        .class-select:focus,
+        .exam-select:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,151,42,0.15); }
 
-        .stat-row {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-bottom: 10px;
-        }
-        .stat-chip {
-            border: 1px solid var(--border);
-            background: #fff;
-            color: var(--muted);
-            border-radius: 20px;
-            padding: 4px 10px;
-            font-size: .74rem;
-            font-weight: 600;
-        }
-        .stat-chip.good { border-color: #a8d5ba; background: #edf7f1; color: #14633a; }
-        .stat-chip.warn { border-color: #f4a0a0; background: #fdf0f0; color: #a02020; }
-
-        .tools-row {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-bottom: 10px;
-        }
         #searchInput {
             border: 1.5px solid var(--border);
             border-radius: 8px;
-            padding: 9px 12px;
-            font-size: .86rem;
-            width: min(420px, 100%);
+            padding: 5px 10px;
+            font-size: .8rem;
+            width: 100%;
             background: #fff;
+            outline: none;
         }
         #searchInput:focus {
             border-color: var(--gold);
             box-shadow: 0 0 0 3px rgba(201,151,42,0.15);
-            outline: none;
         }
+
+        .tools-row { display: none; }
+        .stat-bar {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+            background: #f7f5f1;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .stat-item {
+            padding: 6px 14px;
+            font-size: .74rem;
+            color: var(--muted);
+            border-right: 1px solid var(--border);
+            white-space: nowrap;
+        }
+        .stat-item:last-child { border-right: none; }
+        .stat-item strong { color: var(--text); font-weight: 700; }
+        .stat-item.good strong { color: #14633a; }
+        .stat-item.warn strong { color: #a02020; }
 
         .phs-table {
             background: #fff;
@@ -94,7 +112,14 @@
             text-transform: uppercase;
             padding: 10px 10px;
             border: none;
-            white-space: nowrap;
+            white-space: normal;
+            text-align: center;
+            min-width: 80px;
+        }
+        /* Equal width for all subject columns (not Roll, Name, or Action) */
+        .phs-table thead th:not(:nth-child(1)):not(:nth-child(2)):not(:last-child) {
+            width: 120px;
+            max-width: 120px;
         }
         .phs-table td {
             padding: 8px 10px;
@@ -102,6 +127,18 @@
             border-bottom: 1px solid var(--border);
             font-size: .82rem;
             vertical-align: middle;
+            text-align: center;
+        }
+        /* Equal width for all subject cells */
+        .phs-table td.subject-cell {
+            width: 120px;
+            max-width: 120px;
+        }
+        .phs-table td:nth-child(1),
+        .phs-table td:nth-child(2),
+        .phs-table th:nth-child(1),
+        .phs-table th:nth-child(2) {
+            text-align: left;
         }
         .phs-table tbody tr:last-child td { border-bottom: none; }
         .phs-table tbody tr:hover { background: #f6f2ec; }
@@ -120,6 +157,39 @@
         }
         .btn-clear:hover { background: #c0392b; color: #fff; }
 
+        /* Subject cell with delete button */
+        .subject-cell {
+            position: relative;
+            padding-right: 24px !important;
+            text-align: center;
+        }
+        .subject-cell .mark-value {
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .btn-delete-mark {
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 4px;
+            background: transparent;
+            border: none;
+            color: #c0392b;
+            font-size: 1rem;
+            font-weight: 700;
+            padding: 0;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.15s;
+            line-height: 1;
+        }
+        .subject-cell:hover .btn-delete-mark {
+            opacity: 0.75;
+        }
+        .btn-delete-mark:hover {
+            opacity: 1 !important;
+            color: #a02020;
+        }
+
         .flash-msg { border-radius: 8px; border: none; font-size: .85rem; }
 
         @media (max-width: 900px) {
@@ -135,24 +205,23 @@
         }
 
         @media print {
-            .no-print, .class-tabs, .tools-row, .stat-row, .btn-clear, form[method="POST"] { display: none !important; }
+            .no-print, .btn-clear, form[method="POST"] { display: none !important; }
             .page-card { border: none; padding: 0; box-shadow: none; }
             .main-scroll { overflow: visible; padding: 0; }
             .phs-table { page-break-inside: avoid; }
+            .stat-bar { border: none; background: none; }
         }
     </style>
 {% endblock %}
 {% block body %}
 <div class="app-shell">
     <header class="site-header">
-        <div class="header-title">📚 Class-wise Marks Register</div>
-        <nav class="phs-breadcrumb no-print">
-            <a href="{{ url_for('index') }}"><i class="fas fa-home"></i> Home</a>
-            <span class="bc-sep">›</span>
-            <span class="bc-current">📚 Marks Register</span>
-            {% if selected_class %}<span class="bc-sep">›</span><span class="bc-current bc-cat">{{ class_label(selected_class) }}</span>{% endif %}
-        </nav>
-        <a href="{{ url_for('index') }}" class="btn-back no-print">← Home</a>
+        <div class="header-title">
+            <a href="{{ url_for('index') }}">Home</a>
+            <span style="margin: 0 8px; opacity: 0.5;">/</span>
+            <span>📚 Class-wise Marks Register</span>
+        </div>
+        <a href="{{ url_for('index') }}" class="btn-back no-print">← Back</a>
     </header>
 
     <main class="main-scroll">
@@ -170,44 +239,60 @@
             {% endif %}
 
             <div class="page-card">
-                <div class="mini-help">Choose a class tab. You will then see that class student marks list below.</div>
+                <!-- Controls bar: class selector + exam filter -->
+                <div class="controls-bar no-print">
+                    <div class="ctrl-group">
+                        <span class="ctrl-label">Class</span>
+                        <select class="class-select" id="classSelect">
+                            {% for cname in classes %}
+                                <option value="{{ url_for('view_marks', class_name=cname, exam_name=selected_exam) if selected_exam else url_for('view_marks', class_name=cname) }}"
+                                    {{ 'selected' if cname == selected_class else '' }}>
+                                    {{ class_label(cname) }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
 
-                {% if class_exams_map %}
-                <div style="margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                    <span style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;">Filter by Exam:</span>
-                    <a href="{{ url_for('view_marks', class_name=selected_class) }}"
-                       class="class-tab {{ 'active' if not selected_exam else '' }}" style="border-radius:6px;font-size:0.72rem;padding:4px 10px;">All Exams</a>
+                    {% if class_exams_map %}
                     {% set all_exams = [] %}
                     {% for cname, exams in class_exams_map.items() %}{% for e in exams %}{% if e not in all_exams %}{% set _ = all_exams.append(e) %}{% endif %}{% endfor %}{% endfor %}
-                    {% for exam in all_exams %}
-                        <a href="{{ url_for('view_marks', class_name=selected_class, exam_name=exam) }}"
-                           class="class-tab {{ 'active' if selected_exam == exam else '' }}" style="border-radius:6px;font-size:0.72rem;padding:4px 10px;">{{ exam }}</a>
-                    {% endfor %}
-                </div>
-                {% endif %}
-
-                <div class="class-tabs">
-                    {% for cname in classes %}
-                        <a class="class-tab {{ 'active' if cname == selected_class else '' }}" href="{{ url_for('view_marks', class_name=cname, exam_name=selected_exam) if selected_exam else url_for('view_marks', class_name=cname) }}">
-                            {{ class_label(cname) }}
-                        </a>
-                    {% endfor %}
-                </div>
-
-                <div class="stat-row">
-                    <span class="stat-chip">Students: {{ selected_data.stats.total_students }}</span>
-                    <span class="stat-chip">Students with marks: {{ selected_data.students_with_marks }}</span>
-                    <span class="stat-chip">Marks entered: {{ selected_data.marks_entered }} / {{ selected_data.marks_expected }}</span>
-                    <span class="stat-chip good">Pass: {{ selected_data.stats.pass_count }}</span>
-                    <span class="stat-chip warn">Fail: {{ selected_data.stats.fail_count }}</span>
-                    {% if selected_data.stats.absent_count > 0 %}
-                        <span class="stat-chip">Absent: {{ selected_data.stats.absent_count }}</span>
+                    <div class="ctrl-group exam-group">
+                        <span class="ctrl-label">Exam</span>
+                        <select class="exam-select" id="examSelect">
+                            <option value="{{ url_for('view_marks', class_name=selected_class) }}" {{ 'selected' if not selected_exam else '' }}>All Exams</option>
+                            {% for exam in all_exams %}
+                                <option value="{{ url_for('view_marks', class_name=selected_class, exam_name=exam) }}" {{ 'selected' if selected_exam == exam else '' }}>{{ exam }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                     {% endif %}
+                    
+                    <!-- Subject filter for mobile -->
+                    <div class="ctrl-group subject-group no-print">
+                        <span class="ctrl-label">Subject (Mobile)</span>
+                        <select class="exam-select" id="subjectFilter">
+                            <option value="all">All Subjects</option>
+                            {% for sub in selected_data.subjects %}
+                                <option value="{{ loop.index0 }}">{{ sub }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="ctrl-group search-group no-print">
+                        <span class="ctrl-label">Search</span>
+                        <input id="searchInput" type="text" placeholder="Name or roll number…">
+                    </div>
                 </div>
 
-                <div class="tools-row no-print">
-                    <input id="searchInput" type="text" placeholder="Search student by name or roll number…">
-                    <button onclick="window.print()" style="background:var(--navy);color:#fff;border:none;border-radius:7px;padding:7px 16px;font-size:0.82rem;font-weight:600;cursor:pointer;">🖨 Print This View</button>
+                <!-- Stats bar -->
+                <div class="stat-bar">
+                    <div class="stat-item">Students <strong>{{ selected_data.stats.total_students }}</strong></div>
+                    <div class="stat-item">Marks <strong>{{ selected_data.marks_entered }}/{{ selected_data.marks_expected }}</strong></div>
+                    <div class="stat-item good">Pass <strong>{{ selected_data.stats.pass_count }}</strong></div>
+                    <div class="stat-item warn">Fail <strong>{{ selected_data.stats.fail_count }}</strong></div>
+                    {% if selected_data.stats.absent_count > 0 %}
+                        <div class="stat-item">Absent <strong>{{ selected_data.stats.absent_count }}</strong></div>
+                    {% endif %}
                 </div>
 
                 <div class="phs-table">
@@ -218,17 +303,8 @@
                                     <th>Roll</th>
                                     <th>Student Name</th>
                                     {% for sub in selected_data.subjects %}
-                                        <th title="{{ sub }}">{{ sub[:6] }}{% if sub|length > 6 %}…{% endif %}</th>
+                                        <th>{{ sub }}</th>
                                     {% endfor %}
-                                    <th>Total</th>
-                                    <th>%</th>
-                                    {# F6: per-exam % columns when multiple exams, no filter #}
-                                    {% if per_exam_data %}
-                                        {% for ex in selected_exams %}
-                                            <th title="{{ ex }}" style="white-space:nowrap;font-size:0.68rem;">{{ ex[:10] }}{% if ex|length > 10 %}…{% endif %} %</th>
-                                        {% endfor %}
-                                    {% endif %}
-                                    <th>Result</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -238,26 +314,19 @@
                                         <td class="student-roll">{{ row.roll_no }}</td>
                                         <td class="student-name" style="font-weight: 600;">{{ row.name }}</td>
                                         {% for sub in selected_data.subjects %}
-                                            <td>{{ row.marks.get(sub, '—') }}</td>
+                                            <td class="subject-cell" data-subject="{{ sub }}">
+                                                {% set mark_val = row.marks.get(sub, '—') %}
+                                                <span class="mark-value">{{ mark_val }}</span>
+                                                {% if not portal_locked and mark_val != '—' %}
+                                                    <button type="button" class="btn-delete-mark" 
+                                                            data-student-id="{{ row.id }}" 
+                                                            data-subject="{{ sub }}"
+                                                            data-exam="{{ selected_exam }}"
+                                                            data-student-name="{{ row.name }}"
+                                                            title="Delete {{ sub }} mark">×</button>
+                                                {% endif %}
+                                            </td>
                                         {% endfor %}
-                                        <td>{{ row.total }}</td>
-                                        <td>{{ row.percentage }}</td>
-                                        {# F6: per-exam % values #}
-                                        {% if per_exam_data %}
-                                            {% for ex in selected_exams %}
-                                                {% set ex_row = per_exam_data.get(ex, {}).get(row.id) %}
-                                                <td style="font-size:0.76rem;color:var(--muted);">{{ ex_row.percentage if ex_row else '—' }}</td>
-                                            {% endfor %}
-                                        {% endif %}
-                                        <td>
-                                            {% if row.status == 'PASS' %}
-                                                <span class="status-pass">PASS</span>
-                                            {% elif row.status == 'FAIL' %}
-                                                <span class="status-fail">FAIL</span>
-                                            {% else %}
-                                                <span class="status-absent">ABSENT</span>
-                                            {% endif %}
-                                        </td>
                                         <td>
                                             {% if not portal_locked %}
                                                 <form method="POST" action="{{ url_for('clear_student_marks', student_id=row.id) }}" style="display:inline;" onsubmit="return confirm('Clear all marks for {{ row.name }}?');">
@@ -292,5 +361,111 @@
         });
     });
 
+    const classSelect = document.getElementById('classSelect');
+    if (classSelect) {
+        classSelect.addEventListener('change', function () {
+            window.location.href = this.value;
+        });
+    }
+
+    const examSelect = document.getElementById('examSelect');
+    if (examSelect) {
+        examSelect.addEventListener('change', function () {
+            window.location.href = this.value;
+        });
+    }
+
+    // Subject filter for mobile view
+    const subjectFilter = document.getElementById('subjectFilter');
+    const table = document.getElementById('marksTable');
+    const subjectHeaders = table.querySelectorAll('thead th');
+    
+    if (subjectFilter) {
+        subjectFilter.addEventListener('change', function () {
+            const selectedIndex = parseInt(this.value);
+            
+            // Roll (0), Name (1), then subjects start at index 2
+            // After subjects: Action (only column after subjects now)
+            const subjectCount = {{ selected_data.subjects|length }};
+            const actionColIndex = 2 + subjectCount;
+            
+            if (this.value === 'all') {
+                // Show all columns
+                subjectHeaders.forEach((th, idx) => {
+                    th.style.display = '';
+                });
+                table.querySelectorAll('tbody tr').forEach(row => {
+                    row.querySelectorAll('td').forEach(td => {
+                        td.style.display = '';
+                    });
+                });
+            } else {
+                // Hide all subject columns except the selected one
+                subjectHeaders.forEach((th, idx) => {
+                    if (idx >= 2 && idx < actionColIndex) {
+                        // This is a subject column
+                        th.style.display = (idx === 2 + selectedIndex) ? '' : 'none';
+                    }
+                });
+                
+                table.querySelectorAll('tbody tr').forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    cells.forEach((td, idx) => {
+                        if (idx >= 2 && idx < actionColIndex) {
+                            // This is a subject cell
+                            td.style.display = (idx === 2 + selectedIndex) ? '' : 'none';
+                        }
+                    });
+                });
+            }
+        });
+    }
+
+    // Handle individual subject mark deletion
+    document.querySelectorAll('.btn-delete-mark').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const studentName = this.dataset.studentName;
+            const subject = this.dataset.subject;
+            const studentId = this.dataset.studentId;
+            const examName = this.dataset.exam || '';
+            
+            if (!confirm(`Delete ${subject} mark for ${studentName}?`)) {
+                return;
+            }
+            
+            // Create and submit form
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{{ url_for("delete_subject_mark") }}';
+            
+            const csrfToken = document.createElement('input');
+            csrfToken.type = 'hidden';
+            csrfToken.name = 'csrf_token';
+            csrfToken.value = '{{ csrf_token() }}';
+            
+            const studentIdInput = document.createElement('input');
+            studentIdInput.type = 'hidden';
+            studentIdInput.name = 'student_id';
+            studentIdInput.value = studentId;
+            
+            const subjectInput = document.createElement('input');
+            subjectInput.type = 'hidden';
+            subjectInput.name = 'subject';
+            subjectInput.value = subject;
+            
+            const examInput = document.createElement('input');
+            examInput.type = 'hidden';
+            examInput.name = 'exam_name';
+            examInput.value = examName;
+            
+            form.appendChild(csrfToken);
+            form.appendChild(studentIdInput);
+            form.appendChild(subjectInput);
+            form.appendChild(examInput);
+            
+            document.body.appendChild(form);
+            form.submit();
+        });
+    });
 </script>
 {% endblock %}

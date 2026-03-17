@@ -62,14 +62,17 @@ body {
     font-family: 'Fraunces', serif;
     font-size: 0.92rem;
     font-weight: 700;
-    color: var(--gold);
-    background: rgba(201,151,42,0.18);
-    border: 1px solid rgba(201,151,42,0.45);
-    border-radius: 20px;
-    padding: 3px 14px;
+    color: rgba(255,255,255,0.9);
     margin: 0;
-    white-space: nowrap;
-    flex-shrink: 0;
+    flex: 1;
+}
+.header-title a {
+    color: rgba(255,255,255,0.7);
+    text-decoration: none;
+    transition: color 0.15s;
+}
+.header-title a:hover {
+    color: var(--gold);
 }
 
 .btn-back {
@@ -82,6 +85,7 @@ body {
     text-decoration: none;
     white-space: nowrap;
     flex-shrink: 0;
+    margin-left: auto;
 }
 .btn-back:hover { background: rgba(255,255,255,0.1); color: #fff; }
 
@@ -95,6 +99,50 @@ input.invalid,
     box-shadow: 0 0 0 3px rgba(169,50,38,0.15) !important;
 }
 
+/* Loading Spinner */
+.spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255,255,255,.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 0.6s ease-in-out infinite;
+}
+.spinner-dark {
+    border-color: rgba(0,0,0,.1);
+    border-top-color: var(--navy);
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Loading overlay for forms */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(10, 25, 49, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    flex-direction: column;
+    gap: 16px;
+}
+.loading-overlay .spinner {
+    width: 48px;
+    height: 48px;
+    border-width: 4px;
+}
+.loading-text {
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
 /* Progress bar components (U5/U6) */
 .progress-strip {
     background: var(--surface);
@@ -104,6 +152,13 @@ input.invalid,
     display: flex;
     align-items: center;
     gap: 10px;
+}
+.progress-strip-inline {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 3px;
+    border-radius: 6px;
 }
 .progress-label {
     font-size: 0.75rem;
@@ -140,7 +195,46 @@ input.invalid,
 .progress-count .prog-complete { color: var(--green); }
 
 /* Flash message */
-.flash-msg { border-radius: 8px; border: none; font-size: 0.875rem; }
+.flash-msg { 
+    border-radius: 8px; 
+    border: none; 
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.flash-msg .btn-close {
+    margin: 0;
+    padding: 0;
+    opacity: 0.5;
+}
+.flash-msg .btn-close:hover {
+    opacity: 1;
+}
+
+/* ── Toast overlay container ── */
+#toast-container {
+    position: fixed;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: min(440px, 92vw);
+    pointer-events: none;
+}
+#toast-container .flash-msg {
+    pointer-events: auto;
+    margin: 0 !important;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+    animation: toastIn 0.22s ease;
+}
+@keyframes toastIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
 
 /* ── Bigger global form labels ── */
 .form-label { font-size: 0.88rem !important; font-weight: 600; }
@@ -361,6 +455,58 @@ td, th { font-size: 0.9rem; }
     .header-title { font-size: 0.9rem; }
 }
 
+/* ── Extra small phones (320px-480px) ── */
+@media (max-width: 480px) {
+    /* Prevent text overflow */
+    .header-title, .phs-breadcrumb, h1, h2, h3, h4, h5 {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 100%;
+    }
+    /* Stack buttons vertically */
+    .btn-group {
+        flex-direction: column !important;
+        width: 100%;
+    }
+    .btn-group .btn {
+        width: 100%;
+        margin-bottom: 8px;
+    }
+    /* Full-width cards */
+    .card, .alert {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+    /* Smaller padding on containers */
+    .container, .container-fluid {
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+    /* Compact header */
+    .site-header {
+        padding: 8px 10px !important;
+    }
+    .header-title {
+        font-size: 0.85rem !important;
+    }
+    /* Tables scroll hint */
+    .table-responsive::after {
+        content: '← Scroll →';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0,0,0,0.6);
+        color: white;
+        padding: 4px 12px;
+        border-radius: 12px 12px 0 0;
+        font-size: 0.7rem;
+        pointer-events: none;
+        opacity: 0.8;
+    }
+}
+
 /* ── Touch target minimums on mobile ── */
 @media (max-width: 900px) {
     /* Ensure all interactive controls meet 44px minimum height */
@@ -394,4 +540,6 @@ td, th { font-size: 0.9rem; }
     .flash-msg { font-size: 0.9rem !important; padding: 10px 14px !important; }
     /* Table cells — comfortable reading */
     td, th { font-size: 0.88rem; }
+    /* Keyboard / tip hints not useful on touch */
+    .keyboard-hint, .tip-box { display: none !important; }
 }

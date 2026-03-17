@@ -24,18 +24,32 @@
 <div class="phs-lock-banner"><i class="fas fa-lock" title="Portal is locked — mark entry disabled"></i> Portal is currently locked — Mark entry and editing are disabled for all classes.</div>
 {% endif %}
 {% block body %}{% endblock %}
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script></script>
 <script>
-    // Auto-dismiss flash alerts after 5 seconds
+    // Toast overlay for flash messages
     document.addEventListener('DOMContentLoaded', function () {
+        var flashMsgs = document.querySelectorAll('.flash-msg');
+        if (flashMsgs.length) {
+            var container = document.createElement('div');
+            container.id = 'toast-container';
+            document.body.appendChild(container);
+            flashMsgs.forEach(function (el) {
+                container.appendChild(el);
+                setTimeout(function () {
+                    el.style.transition = 'opacity 0.4s ease';
+                    el.style.opacity = '0';
+                    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 400);
+                }, 5000);
+            });
+        }
+        // Auto-dismiss any other dismissible alerts
         document.querySelectorAll('.alert-dismissible').forEach(function (el) {
             setTimeout(function () {
-                el.style.transition = 'opacity 0.5s ease, margin 0.5s ease, padding 0.5s ease';
+                el.style.transition = 'opacity 0.4s ease, margin 0.4s ease, padding 0.4s ease';
                 el.style.opacity = '0';
-                setTimeout(function() {
-                    var bsAlert = bootstrap.Alert.getOrCreateInstance(el);
-                    if (bsAlert) bsAlert.close();
-                }, 500);
+                setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 400);
             }, 5000);
         });
     });

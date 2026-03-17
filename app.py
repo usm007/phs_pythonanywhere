@@ -94,6 +94,7 @@ LOCAL_DB_FILE = os.path.join(THIS_FOLDER, "school_marks.db")
 STATIC_FOLDER = os.path.join(THIS_FOLDER, "static")
 UPLOADS_FOLDER = os.path.join(STATIC_FOLDER, "uploads")
 SCHOOL_LOGO_FILENAME = "school_logo.png"
+PRINCIPAL_SIGNATURE_FILENAME = "principal_signature.png"
 EMPTY_CLASS_SUBJECT = "__PHS_EMPTY_CLASS__"
 
 SETTINGS_DEFAULTS = {
@@ -104,6 +105,8 @@ SETTINGS_DEFAULTS = {
     "academic_session": "2025-26",
     "portal_locked": "0",
     "school_logo_updated_at": "",
+    "principal_name": "",
+    "principal_signature_updated_at": "",
     "hidden_panels": "[]",
     "visitor_count": "0",
 }
@@ -228,21 +231,27 @@ def log_change(
     )
 
 
-def get_recent_logs(limit=20, conn=None):
+def get_recent_logs(limit=20, conn=None, exclude_actions=None):
     _close = conn is None
     if _close:
         conn = get_db_connection()
     try:
-        rows = fetch_all(
-            conn,
-            """
+        query = """
             SELECT id, action, entity_type, class_name, subject, details, affected_count, created_at
             FROM change_logs
-            ORDER BY id DESC
-            LIMIT %s
-            """,
-            (limit,),
-        )
+        """
+        params = []
+        
+        # Filter out specific actions if provided
+        if exclude_actions:
+            placeholders = ', '.join(['%s'] * len(exclude_actions))
+            query += f" WHERE action NOT IN ({placeholders})"
+            params.extend(exclude_actions)
+        
+        query += " ORDER BY id DESC LIMIT %s"
+        params.append(limit)
+        
+        rows = fetch_all(conn, query, tuple(params) if params else None)
         return rows
     finally:
         if _close:
@@ -500,6 +509,9 @@ def inject_class_label_helper():
         "school_logo_url": get_school_logo_url(
             portal_settings.get("school_logo_updated_at", "")
         ),
+        "principal_signature_url": get_principal_signature_url(
+            portal_settings.get("principal_signature_updated_at", "")
+        ),
         "portal_locked": setting_bool(portal_settings.get("portal_locked", "0")),
         "admin_unlocked": bool(session.get("admin_unlocked")),
         "hidden_panels": hidden_panels,
@@ -510,12 +522,24 @@ def get_school_logo_path():
     return os.path.join(UPLOADS_FOLDER, SCHOOL_LOGO_FILENAME)
 
 
+def get_principal_signature_path():
+    return os.path.join(UPLOADS_FOLDER, PRINCIPAL_SIGNATURE_FILENAME)
+
+
 def get_school_logo_url(updated_marker=""):
     logo_path = get_school_logo_path()
     if not os.path.exists(logo_path):
         return None
     version = updated_marker or str(int(os.path.getmtime(logo_path)))
     return url_for("static", filename=f"uploads/{SCHOOL_LOGO_FILENAME}", v=version)
+
+
+def get_principal_signature_url(updated_marker=""):
+    signature_path = get_principal_signature_path()
+    if not os.path.exists(signature_path):
+        return None
+    version = updated_marker or str(int(os.path.getmtime(signature_path)))
+    return url_for("static", filename=f"uploads/{PRINCIPAL_SIGNATURE_FILENAME}", v=version)
 
 
 def get_portal_settings(conn=None):
@@ -1358,7 +1382,7 @@ def index():
         # ───────────────────────────────────────────────────────────────────
 
         notices = fetch_all(conn, "SELECT id, author, message, created_at FROM notice_board ORDER BY id DESC LIMIT 30")
-        recent_activity = get_recent_logs(5, conn=conn)
+        recent_activity = get_recent_logs(5, conn=conn, exclude_actions=['admin_unlock'])
     finally:
         conn.close()
 
@@ -1515,9 +1539,9 @@ def subject_entry():
                 if key.startswith("mark_") and value.strip() != "":
                     student_id = key.split("_")[1]
                     try:
-                        mark = int(value)
+                        mark = float(value)
                     except ValueError:
-                        flash("Marks must be whole numbers only.", "danger")
+                        flash("Marks must be valid numbers.", "danger")
                         return redirect(
                             url_for("subject_entry", class_name=class_name, subject=subject, exam_name=exam_name)
                         )
@@ -1680,9 +1704,9 @@ def grid_entry():
                     parts = key.split("_", 2)
                     student_id, subject = parts[1], parts[2]
                     try:
-                        mark = int(value)
+                        mark = float(value)
                     except ValueError:
-                        flash("Marks must be whole numbers only.", "danger")
+                        flash("Marks must be valid numbers.", "danger")
                         return redirect(url_for("grid_entry", class_name=class_name, exam_name=exam_name))
 
                     if subject not in subjects:
@@ -2925,39 +2949,112 @@ def clear_student_marks(student_id):
         return redirect(url_for("view_marks"))
 
     conn = get_db_connection()
-    mark_count_row = fetch_one(
-        conn,
-        "SELECT COUNT(*) AS c FROM marks WHERE student_id = %s",
-        (student_id,),
-    )
-    mark_count = mark_count_row["c"] if mark_count_row else 0
-    student = fetch_one(
-        conn,
-        "SELECT roll_no, name, class_name FROM students WHERE id = %s",
-        (student_id,),
-    )
-    execute_stmt(conn, "DELETE FROM marks WHERE student_id = %s", (student_id,))
-    if mark_count:
+    try:
+        mark_count_row = fetch_one(
+            conn,
+            "SELECT COUNT(*) AS c FROM marks WHERE student_id = %s",
+            (student_id,),
+        )
+        mark_count = mark_count_row["c"] if mark_count_row else 0
+        student = fetch_one(
+            conn,
+            "SELECT roll_no, name, class_name FROM students WHERE id = %s",
+            (student_id,),
+        )
+        execute_stmt(conn, "DELETE FROM marks WHERE student_id = %s", (student_id,))
+        if mark_count:
+            if student:
+                details = (
+                    f"Cleared {mark_count} marks entries for {student['name']} "
+                    f"(roll {student['roll_no']}, {student['class_name']})."
+                )
+                class_name = student["class_name"]
+            else:
+                details = f"Cleared {mark_count} marks entries for student_id={student_id}."
+                class_name = None
+            log_change(
+                conn,
+                action="clear_student_marks",
+                entity_type="marks",
+                class_name=class_name,
+                details=details,
+                affected_count=mark_count,
+            )
+        conn.commit()
+    except Exception as exc:
+        conn.rollback()
+        flash(f"Clear marks failed: {exc}", "danger")
+        return redirect(url_for("view_marks"))
+    finally:
+        conn.close()
+    flash("Marks cleared.", "success")
+    return redirect(url_for("view_marks"))
+
+
+@app.route("/delete_subject_mark", methods=["POST"])
+def delete_subject_mark():
+    if block_if_locked():
+        return redirect(url_for("view_marks"))
+    
+    student_id = request.form.get("student_id")
+    subject = request.form.get("subject")
+    exam_name = request.form.get("exam_name", "").strip()
+    
+    if not student_id or not subject:
+        flash("Invalid request.", "danger")
+        return redirect(url_for("view_marks"))
+    
+    conn = get_db_connection()
+    try:
+        student = fetch_one(
+            conn,
+            "SELECT roll_no, name, class_name FROM students WHERE id = %s",
+            (student_id,),
+        )
+        
+        # Delete the specific mark
+        if exam_name:
+            execute_stmt(
+                conn,
+                "DELETE FROM marks WHERE student_id = %s AND subject = %s AND exam_name = %s",
+                (student_id, subject, exam_name),
+            )
+            exam_info = f" ({exam_name})"
+        else:
+            execute_stmt(
+                conn,
+                "DELETE FROM marks WHERE student_id = %s AND subject = %s",
+                (student_id, subject),
+            )
+            exam_info = ""
+        
         if student:
             details = (
-                f"Cleared {mark_count} marks entries for {student['name']} "
+                f"Deleted {subject}{exam_info} mark for {student['name']} "
                 f"(roll {student['roll_no']}, {student['class_name']})."
             )
             class_name = student["class_name"]
         else:
-            details = f"Cleared {mark_count} marks entries for student_id={student_id}."
+            details = f"Deleted {subject}{exam_info} mark for student_id={student_id}."
             class_name = None
+        
         log_change(
             conn,
-            action="clear_student_marks",
+            action="delete_subject_mark",
             entity_type="marks",
             class_name=class_name,
             details=details,
-            affected_count=mark_count,
+            affected_count=1,
         )
-    conn.commit()
-    conn.close()
-    flash("Marks cleared.", "success")
+        
+        conn.commit()
+    except Exception as exc:
+        conn.rollback()
+        flash(f"Delete mark failed: {exc}", "danger")
+        return redirect(url_for("view_marks"))
+    finally:
+        conn.close()
+    flash(f"{subject} mark deleted.", "success")
     return redirect(url_for("view_marks"))
 
 
@@ -3059,7 +3156,9 @@ def admin_dashboard():
     finally:
         conn.close()
 
-    return render_template(
+    # Auto-lock admin after rendering
+    from flask import make_response
+    response = make_response(render_template(
         "admin_dashboard.html",
         settings=settings,
         all_classes=list(subjects_dict.keys()),
@@ -3071,7 +3170,10 @@ def admin_dashboard():
         visitor_logs=visitor_logs,
         db_size_kb=db_size_kb,
         homepage_panels=HOMEPAGE_PANELS,
-    )
+        principal_signature_url=get_principal_signature_url(settings.get("principal_signature_updated_at", "")),
+    ))
+    session.pop("admin_unlocked", None)
+    return response
 
 
 @app.route("/admin/promotion_map", methods=["POST"])
@@ -3105,11 +3207,13 @@ def admin_save_settings():
         "school_shortcode": "School Shortcode",
         "exam_name": "Examination Name",
         "academic_session": "Academic Session",
+        "principal_name": "Principal/HM Name",
     }
     updates = {}
     for key in field_map:
         value = (request.form.get(key) or "").strip()
-        if not value:
+        # Allow principal_name to be empty
+        if key != "principal_name" and not value:
             flash(f"{field_map[key]} cannot be empty.", "warning")
             return redirect(url_for("admin_dashboard"))
         updates[key] = value
@@ -3177,6 +3281,51 @@ def admin_upload_logo():
         conn.close()
 
     flash("School logo uploaded successfully.", "success")
+    return redirect(url_for("admin_dashboard"))
+
+
+@app.route("/admin/signature", methods=["POST"])
+@admin_required
+def admin_upload_signature():
+    signature_file = request.files.get("principal_signature")
+    if not signature_file or not signature_file.filename:
+        flash("Select a PNG signature file first.", "warning")
+        return redirect(url_for("admin_dashboard"))
+
+    raw_name = secure_filename(signature_file.filename)
+    if not raw_name.lower().endswith(".png"):
+        flash("Only PNG signature files are allowed.", "danger")
+        return redirect(url_for("admin_dashboard"))
+
+    os.makedirs(UPLOADS_FOLDER, exist_ok=True)
+    signature_path = get_principal_signature_path()
+    signature_file.save(signature_path)
+
+    # Resize to max 200×80px (suitable for signature on report cards)
+    try:
+        from PIL import Image as PilImage
+        img = PilImage.open(signature_path)
+        img.thumbnail((200, 80), PilImage.LANCZOS)
+        img.save(signature_path, optimize=True)
+    except Exception:
+        pass  # Pillow unavailable or corrupt image — keep original
+
+    updated_at = datetime.now().strftime("%Y%m%d%H%M%S")
+    conn = get_db_connection()
+    try:
+        set_setting_sqlite_safe(conn, "principal_signature_updated_at", updated_at)
+        log_change(
+            conn,
+            action="admin_upload_signature",
+            entity_type="admin",
+            details=f"Uploaded principal signature PNG ({raw_name}).",
+            affected_count=1,
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    flash("Principal signature uploaded successfully.", "success")
     return redirect(url_for("admin_dashboard"))
 
 

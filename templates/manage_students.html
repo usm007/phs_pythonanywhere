@@ -346,15 +346,12 @@
 {% block body %}
 <div class="app-shell">
     <header class="site-header">
-        <div class="header-title"><i class="fas fa-school"></i> Academic Setup</div>
-        <nav class="phs-breadcrumb no-print">
-            <a href="{{ url_for('index') }}"><i class="fas fa-home"></i> Home</a>
-            <span class="bc-sep">›</span>
-            <span class="bc-current"><i class="fas fa-school"></i> Academic Setup</span>
-            {% if setup_tab and setup_tab != 'students' %}<span class="bc-sep">›</span><span class="bc-current bc-cat">{{ setup_tab|capitalize }}</span>{% endif %}
-            {% if class_name and setup_tab == 'students' %}<span class="bc-sep">›</span><span class="bc-current bc-cat">{{ class_label(class_name) }}</span>{% endif %}
-        </nav>
-        <a href="{{ url_for('index') }}" class="btn-back">← Dashboard</a>
+        <div class="header-title">
+            <a href="{{ url_for('index') }}">Home</a>
+            <span style="margin: 0 8px; opacity: 0.5;">/</span>
+            <span><i class="fas fa-school"></i> Academic Setup</span>
+        </div>
+        <a href="{{ url_for('index') }}" class="btn-back">← Back</a>
     </header>
 
     <main class="main-scroll">

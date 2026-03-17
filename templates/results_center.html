@@ -221,13 +221,12 @@
 {% block body %}
 <div class="app-shell">
 <header class="site-header">
-    <div class="header-title"><i class="fas fa-chart-line"></i> Result Centre</div>
-    <nav class="phs-breadcrumb no-print">
-        <a href="{{ url_for('index') }}"><i class="fas fa-home"></i> Home</a>
-        <span class="bc-sep">›</span>
-        <span class="bc-current"><i class="fas fa-chart-line"></i> Result Centre</span>
-    </nav>
-    <a href="{{ url_for('index') }}" class="btn-back">← Dashboard</a>
+    <div class="header-title">
+        <a href="{{ url_for('index') }}">Home</a>
+        <span style="margin: 0 8px; opacity: 0.5;">/</span>
+        <span><i class="fas fa-chart-line"></i> Result Centre</span>
+    </div>
+    <a href="{{ url_for('index') }}" class="btn-back">← Back</a>
 </header>
 
 <main class="main-scroll">
