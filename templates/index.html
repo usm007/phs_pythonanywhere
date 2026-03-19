@@ -336,7 +336,7 @@ html, body {
     display: grid;
     grid-template-columns: 0.85fr 2.15fr;
     gap: 8px;
-    overflow-x: auto;
+    overflow: hidden;
     flex: 1;
     min-height: 0;
 }
@@ -399,7 +399,7 @@ html, body {
 .ov-stat-lbl { font-size: 0.58rem; color: #6b7683; text-transform: uppercase; letter-spacing: 0.3px; margin-top: 2px; }
 /* Activity */
 .ov-divider { border: none; border-top: 2px solid #c9a34a44; margin: 10px 0 8px; flex-shrink: 0; }
-.ov-activity-list { display: flex; flex-direction: column; overflow: auto; flex: 1; min-height: 0; }
+.ov-activity-list { display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; flex: 1; min-height: 0; }
 .ov-activity-item {
     font-size: 0.71rem; color: #1c1c1c; line-height: 1.4;
     padding: 4px 0 4px 12px;

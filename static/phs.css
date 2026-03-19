@@ -490,21 +490,6 @@ td, th { font-size: 0.9rem; }
     .header-title {
         font-size: 0.85rem !important;
     }
-    /* Tables scroll hint */
-    .table-responsive::after {
-        content: '← Scroll →';
-        position: absolute;
-        bottom: 0;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(0,0,0,0.6);
-        color: white;
-        padding: 4px 12px;
-        border-radius: 12px 12px 0 0;
-        font-size: 0.7rem;
-        pointer-events: none;
-        opacity: 0.8;
-    }
 }
 
 /* ── Touch target minimums on mobile ── */
