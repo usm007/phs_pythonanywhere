@@ -167,27 +167,45 @@
             display: inline-block;
             vertical-align: middle;
         }
-        .btn-delete-mark {
-            display: inline-block;
-            vertical-align: middle;
-            margin-left: 4px;
-            background: transparent;
-            border: none;
-            color: #c0392b;
-            font-size: 1rem;
+        .batch-toolbar {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            padding: 8px 10px;
+            border: 1px dashed #d9c9aa;
+            background: #fffbf2;
+            border-radius: 8px;
+            font-size: 0.76rem;
+        }
+        .batch-toolbar.show { display: flex; }
+        .batch-count { font-weight: 700; color: #6b4b13; }
+        .btn-batch-delete {
+            border: 1px solid #e1a1a1;
+            background: #fff;
+            color: #b02a1a;
+            border-radius: 6px;
+            font-size: 0.74rem;
+            padding: 5px 10px;
             font-weight: 700;
-            padding: 0;
             cursor: pointer;
-            opacity: 0;
-            transition: opacity 0.15s;
-            line-height: 1;
         }
-        .subject-cell:hover .btn-delete-mark {
-            opacity: 0.75;
+        .btn-batch-delete:hover { background: #b02a1a; color: #fff; }
+        .btn-batch-clear {
+            border: 1px solid var(--border);
+            background: #fff;
+            color: var(--muted);
+            border-radius: 6px;
+            font-size: 0.72rem;
+            padding: 5px 9px;
+            cursor: pointer;
         }
-        .btn-delete-mark:hover {
-            opacity: 1 !important;
-            color: #a02020;
+        .btn-batch-clear:hover { background: #f7f7f7; }
+        .mark-check {
+            margin-right: 6px;
+            transform: translateY(1px);
+            cursor: pointer;
+            accent-color: #b02a1a;
         }
 
         .flash-msg { border-radius: 8px; border: none; font-size: .85rem; }
@@ -295,6 +313,17 @@
                     {% endif %}
                 </div>
 
+                {% if not portal_locked %}
+                <form method="POST" action="{{ url_for('delete_subject_marks_batch') }}" id="batchDeleteForm" class="batch-toolbar no-print">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="return_class_name" value="{{ selected_class }}">
+                    <input type="hidden" name="return_exam_name" value="{{ selected_exam }}">
+                    <span class="batch-count"><span id="batchSelectedCount">0</span> mark(s) selected</span>
+                    <button type="submit" class="btn-batch-delete" id="btnBatchDelete">Delete Selected</button>
+                    <button type="button" class="btn-batch-clear" id="btnBatchClear">Clear Selection</button>
+                </form>
+                {% endif %}
+
                 <div class="phs-table">
                     <div class="table-responsive">
                         <table class="table mb-0" id="marksTable">
@@ -318,12 +347,10 @@
                                                 {% set mark_val = row.marks.get(sub, '—') %}
                                                 <span class="mark-value">{{ mark_val }}</span>
                                                 {% if not portal_locked and mark_val != '—' %}
-                                                    <button type="button" class="btn-delete-mark" 
-                                                            data-student-id="{{ row.id }}" 
-                                                            data-subject="{{ sub }}"
-                                                            data-exam="{{ selected_exam }}"
-                                                            data-student-name="{{ row.name }}"
-                                                            title="Delete {{ sub }} mark">×</button>
+                                                    <input type="checkbox"
+                                                           class="mark-check"
+                                                           data-key="{{ row.id }}|||{{ sub }}"
+                                                           title="Select for batch delete">
                                                 {% endif %}
                                             </td>
                                         {% endfor %}
@@ -331,6 +358,8 @@
                                             {% if not portal_locked %}
                                                 <form method="POST" action="{{ url_for('clear_student_marks', student_id=row.id) }}" style="display:inline;" onsubmit="return confirm('Clear all marks for {{ row.name }}?');">
                                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                    <input type="hidden" name="return_class_name" value="{{ selected_class }}">
+                                                    <input type="hidden" name="return_exam_name" value="{{ selected_exam }}">
                                                     <button type="submit" class="btn-clear">Clear Marks</button>
                                                 </form>
                                             {% else %}
@@ -421,51 +450,55 @@
         });
     }
 
-    // Handle individual subject mark deletion
-    document.querySelectorAll('.btn-delete-mark').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const studentName = this.dataset.studentName;
-            const subject = this.dataset.subject;
-            const studentId = this.dataset.studentId;
-            const examName = this.dataset.exam || '';
-            
-            if (!confirm(`Delete ${subject} mark for ${studentName}?`)) {
-                return;
-            }
-            
-            // Create and submit form
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = '{{ url_for("delete_subject_mark") }}';
-            
-            const csrfToken = document.createElement('input');
-            csrfToken.type = 'hidden';
-            csrfToken.name = 'csrf_token';
-            csrfToken.value = '{{ csrf_token() }}';
-            
-            const studentIdInput = document.createElement('input');
-            studentIdInput.type = 'hidden';
-            studentIdInput.name = 'student_id';
-            studentIdInput.value = studentId;
-            
-            const subjectInput = document.createElement('input');
-            subjectInput.type = 'hidden';
-            subjectInput.name = 'subject';
-            subjectInput.value = subject;
-            
-            const examInput = document.createElement('input');
-            examInput.type = 'hidden';
-            examInput.name = 'exam_name';
-            examInput.value = examName;
-            
-            form.appendChild(csrfToken);
-            form.appendChild(studentIdInput);
-            form.appendChild(subjectInput);
-            form.appendChild(examInput);
-            
-            document.body.appendChild(form);
-            form.submit();
+    const batchForm = document.getElementById('batchDeleteForm');
+    const batchCountEl = document.getElementById('batchSelectedCount');
+    const batchClearBtn = document.getElementById('btnBatchClear');
+    const markChecks = Array.from(document.querySelectorAll('.mark-check'));
+    const selectedKeys = new Set();
+
+    function syncBatchToolbar() {
+        if (!batchForm || !batchCountEl) return;
+        batchForm.querySelectorAll('input[name="mark_keys"]').forEach(el => el.remove());
+        selectedKeys.forEach(key => {
+            const hidden = document.createElement('input');
+            hidden.type = 'hidden';
+            hidden.name = 'mark_keys';
+            hidden.value = key;
+            batchForm.appendChild(hidden);
+        });
+        batchCountEl.textContent = String(selectedKeys.size);
+        batchForm.classList.toggle('show', selectedKeys.size > 0);
+    }
+
+    markChecks.forEach(chk => {
+        chk.addEventListener('change', function() {
+            const key = this.dataset.key;
+            if (!key) return;
+            if (this.checked) selectedKeys.add(key);
+            else selectedKeys.delete(key);
+            syncBatchToolbar();
         });
     });
+
+    if (batchClearBtn) {
+        batchClearBtn.addEventListener('click', function() {
+            selectedKeys.clear();
+            markChecks.forEach(chk => { chk.checked = false; });
+            syncBatchToolbar();
+        });
+    }
+
+    if (batchForm) {
+        batchForm.addEventListener('submit', function(e) {
+            if (selectedKeys.size === 0) {
+                e.preventDefault();
+                return;
+            }
+            if (!confirm(`Delete ${selectedKeys.size} selected mark(s)?`)) {
+                e.preventDefault();
+            }
+        });
+    }
+
 </script>
 {% endblock %}

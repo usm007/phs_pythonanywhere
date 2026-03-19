@@ -111,7 +111,6 @@ SETTINGS_DEFAULTS = {
     "visitor_count": "0",
 }
 
-
 def setting_bool(value):
     return str(value).strip().lower() in {"1", "true", "yes", "on"}
 
@@ -786,6 +785,7 @@ def init_db():
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     class_name TEXT NOT NULL,
                     exam_name TEXT NOT NULL,
+                    total_marks INTEGER NOT NULL DEFAULT 600,
                     sort_order INTEGER NOT NULL DEFAULT 0,
                     UNIQUE(class_name, exam_name)
                 )
@@ -887,6 +887,7 @@ def init_db():
                     id BIGINT PRIMARY KEY AUTO_INCREMENT,
                     class_name VARCHAR(64) NOT NULL,
                     exam_name VARCHAR(128) NOT NULL,
+                    total_marks INT NOT NULL DEFAULT 600,
                     sort_order INT NOT NULL DEFAULT 0,
                     UNIQUE KEY uq_class_exam (class_name, exam_name)
                 )
@@ -1003,6 +1004,24 @@ def init_db():
             except Exception:
                 pass
 
+        # Migrate: add total_marks to class_exams
+        if _is_sqlite_connection(conn):
+            try:
+                execute_stmt(
+                    conn,
+                    "ALTER TABLE class_exams ADD COLUMN total_marks INTEGER NOT NULL DEFAULT 600",
+                )
+            except Exception:
+                pass  # Already exists
+        else:
+            try:
+                execute_stmt(
+                    conn,
+                    "ALTER TABLE class_exams ADD COLUMN total_marks INT NOT NULL DEFAULT 600",
+                )
+            except Exception:
+                pass  # Already exists
+
         ensure_setting_defaults(conn)
         ensure_class_subject_seed(conn)
         _migrate_dob_to_4digit_year(conn)
@@ -1051,6 +1070,7 @@ def get_class_results(class_name, exam_name=None):
     subjects = subjects_dict.get(class_name, [])
 
     _num_exams = 1
+    _exam_totals = []
     _annual_rows = []
     conn = get_db_connection()
     try:
@@ -1070,6 +1090,12 @@ def get_class_results(class_name, exam_name=None):
                 """,
                 (class_name, exam_name),
             )
+            exam_total_row = fetch_one(
+                conn,
+                "SELECT total_marks FROM class_exams WHERE class_name = %s AND exam_name = %s",
+                (class_name, exam_name),
+            )
+            _exam_totals = [int(exam_total_row["total_marks"])] if exam_total_row else [600]
         else:
             marks = fetch_all(
                 conn,
@@ -1083,6 +1109,12 @@ def get_class_results(class_name, exam_name=None):
                 (class_name,),
             )
             _num_exams = len(get_class_exams(class_name, conn=conn)) or 1
+            exam_total_rows = fetch_all(
+                conn,
+                "SELECT total_marks FROM class_exams WHERE class_name = %s",
+                (class_name,),
+            )
+            _exam_totals = [int(r["total_marks"]) for r in exam_total_rows] if exam_total_rows else [600 * _num_exams]
             # Fetch Annual Exam marks for per-subject pass/fail (< 30/100 = FAIL)
             # Matches any exam whose name contains the word "Annual"
             _annual_rows = fetch_all(
@@ -1099,19 +1131,7 @@ def get_class_results(class_name, exam_name=None):
         conn.close()
 
     max_per_sub = 100 * _num_exams
-    grand_total_possible = len(subjects) * max_per_sub
-
-    # Use actual max marks from DB so percentage (and PASS/FAIL) is accurate
-    if exam_name is None:
-        _emm = get_exam_maxmarks(class_name)
-        _actual_total = sum(
-            mm
-            for exam_mm in _emm.values()
-            for sub, mm in exam_mm.items()
-            if sub in subjects
-        )
-        if _actual_total > 0:
-            grand_total_possible = _actual_total
+    grand_total_possible = sum(v for v in _exam_totals if isinstance(v, int) and v > 0) or 600
 
     m_dict = {}
     for mark_row in marks:
@@ -1129,17 +1149,14 @@ def get_class_results(class_name, exam_name=None):
         total = sum(student_marks.values())
         percentage = round((total / grand_total_possible) * 100, 2) if total > 0 and grand_total_possible > 0 else 0
 
-        if not student_marks:
-            status = "ABSENT"
-        elif _annual_by_student:
+        if _annual_by_student:
             student_annual = _annual_by_student.get(student["id"], {})
             if student_annual:
                 # FAIL if any subject scored < 30 out of 100 in Annual Examination
                 status = "PASS" if all(m >= 30 for m in student_annual.values()) else "FAIL"
             else:
-                status = "ABSENT"
+                status = "PASS" if percentage >= 30 else "FAIL"
         else:
-            # No annual exam data — fall back to overall percentage
             status = "PASS" if percentage >= 30 else "FAIL"
 
         results.append(
@@ -1176,8 +1193,8 @@ def calculate_class_stats(results):
     total_students = len(results)
     pass_count = sum(1 for row in results if row["status"] == "PASS")
     fail_count = sum(1 for row in results if row["status"] == "FAIL")
-    absent_count = sum(1 for row in results if row["status"] == "ABSENT")
-    appeared_count = total_students - absent_count
+    absent_count = 0
+    appeared_count = total_students
     pass_rate = round((pass_count / appeared_count) * 100, 2) if appeared_count else 0
 
     return {
@@ -2052,8 +2069,7 @@ def get_final_result_data(class_name, class_exams):
         row = dict(r)
         exam_pcts = {}
         all_pcts = []
-        if r["status"] != "ABSENT":
-            all_pcts.append(float(r["percentage"]))
+        all_pcts.append(float(r["percentage"]))
         for ex in other_exams:
             pct = other_exam_pcts[ex].get(r["id"])
             exam_pcts[ex] = pct
@@ -2502,6 +2518,12 @@ def manage_structure():
         if action == "add_exam":
             class_name = (request.form.get("class_name") or "").strip()
             new_exam_name = (request.form.get("new_exam_name") or "").strip()
+            try:
+                new_exam_total_marks = int(request.form.get("new_exam_total_marks", 600))
+            except (ValueError, TypeError):
+                new_exam_total_marks = 600
+            if new_exam_total_marks <= 0:
+                new_exam_total_marks = 600
             if not class_name or not new_exam_name:
                 flash("Select class and enter exam name.", "warning")
                 return redirect(url_for("manage_students", class_name=selected_class, setup_tab=setup_tab))
@@ -2524,8 +2546,8 @@ def manage_structure():
             next_order = (max_order_row["mx"] or 0) + 1 if max_order_row else 1
             execute_stmt(
                 conn,
-                "INSERT INTO class_exams (class_name, exam_name, sort_order) VALUES (%s, %s, %s)",
-                (class_name, new_exam_name, next_order),
+                "INSERT INTO class_exams (class_name, exam_name, total_marks, sort_order) VALUES (%s, %s, %s, %s)",
+                (class_name, new_exam_name, new_exam_total_marks, next_order),
             )
             # Insert per-subject max marks
             subjects_for_class = get_subjects_dict().get(class_name, [])
@@ -2945,8 +2967,18 @@ def batch_delete_students():
 
 @app.route("/clear_student_marks/<int:student_id>", methods=["POST"])
 def clear_student_marks(student_id):
-    if block_if_locked():
+    return_class_name = (request.form.get("return_class_name") or "").strip()
+    return_exam_name = (request.form.get("return_exam_name") or "").strip()
+
+    def _back_to_register():
+        if return_class_name:
+            if return_exam_name:
+                return redirect(url_for("view_marks", class_name=return_class_name, exam_name=return_exam_name))
+            return redirect(url_for("view_marks", class_name=return_class_name))
         return redirect(url_for("view_marks"))
+
+    if block_if_locked():
+        return _back_to_register()
 
     conn = get_db_connection()
     try:
@@ -2984,78 +3016,82 @@ def clear_student_marks(student_id):
     except Exception as exc:
         conn.rollback()
         flash(f"Clear marks failed: {exc}", "danger")
-        return redirect(url_for("view_marks"))
+        return _back_to_register()
     finally:
         conn.close()
     flash("Marks cleared.", "success")
-    return redirect(url_for("view_marks"))
+    return _back_to_register()
 
 
-@app.route("/delete_subject_mark", methods=["POST"])
-def delete_subject_mark():
+@app.route("/delete_subject_marks_batch", methods=["POST"])
+def delete_subject_marks_batch():
+    return_class_name = (request.form.get("return_class_name") or "").strip()
+    return_exam_name = (request.form.get("return_exam_name") or "").strip()
+
+    def _back_to_register():
+        if return_class_name:
+            if return_exam_name:
+                return redirect(url_for("view_marks", class_name=return_class_name, exam_name=return_exam_name))
+            return redirect(url_for("view_marks", class_name=return_class_name))
+        return redirect(url_for("view_marks"))
+
     if block_if_locked():
-        return redirect(url_for("view_marks"))
-    
-    student_id = request.form.get("student_id")
-    subject = request.form.get("subject")
-    exam_name = request.form.get("exam_name", "").strip()
-    
-    if not student_id or not subject:
-        flash("Invalid request.", "danger")
-        return redirect(url_for("view_marks"))
-    
+        return _back_to_register()
+
+    mark_keys = request.form.getlist("mark_keys")
+    if not mark_keys:
+        flash("No marks selected for deletion.", "warning")
+        return _back_to_register()
+
+    deleted = 0
+    sample_items = []
     conn = get_db_connection()
     try:
-        student = fetch_one(
-            conn,
-            "SELECT roll_no, name, class_name FROM students WHERE id = %s",
-            (student_id,),
-        )
-        
-        # Delete the specific mark
-        if exam_name:
-            execute_stmt(
+        for key in mark_keys:
+            if "|||" not in key:
+                continue
+            student_id, subject = key.split("|||", 1)
+            student_id = (student_id or "").strip()
+            subject = (subject or "").strip()
+            if not student_id or not subject:
+                continue
+            if return_exam_name:
+                execute_stmt(
+                    conn,
+                    "DELETE FROM marks WHERE student_id = %s AND subject = %s AND exam_name = %s",
+                    (student_id, subject, return_exam_name),
+                )
+            else:
+                execute_stmt(
+                    conn,
+                    "DELETE FROM marks WHERE student_id = %s AND subject = %s",
+                    (student_id, subject),
+                )
+            deleted += 1
+            if len(sample_items) < 5:
+                sample_items.append(f"{student_id}:{subject}")
+
+        if deleted:
+            exam_info = f" [{return_exam_name}]" if return_exam_name else " [all exams]"
+            target = return_class_name or "selected class"
+            log_change(
                 conn,
-                "DELETE FROM marks WHERE student_id = %s AND subject = %s AND exam_name = %s",
-                (student_id, subject, exam_name),
+                action="delete_subject_marks_batch",
+                entity_type="marks",
+                class_name=return_class_name or None,
+                details=f"Batch deleted {deleted} mark(s) in {target}{exam_info}. Samples: {', '.join(sample_items)}",
+                affected_count=deleted,
             )
-            exam_info = f" ({exam_name})"
-        else:
-            execute_stmt(
-                conn,
-                "DELETE FROM marks WHERE student_id = %s AND subject = %s",
-                (student_id, subject),
-            )
-            exam_info = ""
-        
-        if student:
-            details = (
-                f"Deleted {subject}{exam_info} mark for {student['name']} "
-                f"(roll {student['roll_no']}, {student['class_name']})."
-            )
-            class_name = student["class_name"]
-        else:
-            details = f"Deleted {subject}{exam_info} mark for student_id={student_id}."
-            class_name = None
-        
-        log_change(
-            conn,
-            action="delete_subject_mark",
-            entity_type="marks",
-            class_name=class_name,
-            details=details,
-            affected_count=1,
-        )
-        
         conn.commit()
     except Exception as exc:
         conn.rollback()
-        flash(f"Delete mark failed: {exc}", "danger")
-        return redirect(url_for("view_marks"))
+        flash(f"Batch mark delete failed: {exc}", "danger")
+        return _back_to_register()
     finally:
         conn.close()
-    flash(f"{subject} mark deleted.", "success")
-    return redirect(url_for("view_marks"))
+
+    flash(f"Deleted {deleted} mark(s).", "success")
+    return _back_to_register()
 
 
 @app.route("/signature_image")
@@ -3156,7 +3192,7 @@ def admin_dashboard():
     finally:
         conn.close()
 
-    # Auto-lock admin after rendering
+    # Keep admin session unlocked so dashboard actions can be used after opening the page.
     from flask import make_response
     response = make_response(render_template(
         "admin_dashboard.html",
@@ -3172,7 +3208,6 @@ def admin_dashboard():
         homepage_panels=HOMEPAGE_PANELS,
         principal_signature_url=get_principal_signature_url(settings.get("principal_signature_updated_at", "")),
     ))
-    session.pop("admin_unlocked", None)
     return response
 
 

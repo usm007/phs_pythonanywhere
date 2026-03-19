@@ -23,7 +23,7 @@ for class_name, filename in files.items():
         continue
 
     df = pd.read_csv(filename)
-    df = df.fillna("AB")
+    df = df.fillna("-")
 
     all_cols = list(df.columns)
 

@@ -507,6 +507,10 @@
                                         <div class="col-12">
                                             <input class="form-control" name="new_exam_name" placeholder="e.g. First Unit Test" {{ 'disabled' if portal_locked else '' }} required>
                                         </div>
+                                        <div class="col-12">
+                                            <label style="font-size:0.78rem;font-weight:600;color:var(--muted);margin-bottom:4px;display:block;">Total Marks</label>
+                                            <input class="form-control" type="number" name="new_exam_total_marks" value="600" min="1" max="6000" {{ 'disabled' if portal_locked else '' }} required>
+                                        </div>
                                         <div class="col-12" id="addExamMaxMarksContainer" style="display:none;">
                                             <div style="font-size:0.78rem;font-weight:600;color:var(--muted);margin-bottom:4px;">Max Marks per Subject (default 100)</div>
                                             <div id="addExamMaxMarksList"></div>

@@ -572,7 +572,7 @@
                         <td class="roll-col">{{ r['roll_no'] }}</td>
                         <td class="name-col">{{ r['name'] }}</td>
                         {% for sub in subjects %}
-                            <td class="subject-data-col">{{ r['marks'].get(sub, 'AB') }}</td>
+                            <td class="subject-data-col">{{ r['marks'].get(sub, '—') }}</td>
                         {% endfor %}
                         <td class="total-col total-hide-col">{{ r['total'] }}</td>
                         <td>{{ r['percentage'] }}%</td>
