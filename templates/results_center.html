@@ -236,25 +236,9 @@
     <aside class="filter-sidebar">
 
         <div class="fs-section-label">Filter by Exam</div>
-        <button class="fs-btn active" data-exam="">
-            <span class="fs-dot"></span>All Exams
-        </button>
-        {# Collect all unique exams across classes #}
-        {% set ns = namespace(all_exams=[]) %}
-        {% for card in class_cards %}
-            {% for ex in card.exams %}
-                {% if ex not in ns.all_exams %}
-                    {% set ns.all_exams = ns.all_exams + [ex] %}
-                {% endif %}
-            {% endfor %}
-        {% endfor %}
-        {% for exam in ns.all_exams %}
-        <button class="fs-btn" data-exam="{{ exam }}">
-            <span class="fs-dot"></span>{{ exam }}
-        </button>
-        {% endfor %}
-
+        <div id="examFilterList"></div>
         <div class="fs-divider"></div>
+
         <div class="fs-section-label">Select Class</div>
         {% for card in class_cards %}
         <button class="fs-btn{% if loop.first %} active{% endif %}" data-class="{{ card.class_name }}">
@@ -448,6 +432,30 @@
     // Default to first class
     const firstClassBtn = document.querySelector('.fs-btn[data-class]');
     if (firstClassBtn) { activeClass = firstClassBtn.dataset.class; }
+    const examFilterList = document.getElementById('examFilterList');
+
+    function rebuildExamFilters() {
+        if (!examFilterList) return;
+        examFilterList.innerHTML = '';
+        const sec = document.querySelector(`.class-section[data-class="${activeClass}"]`);
+        const exams = sec && sec.dataset.exams ? sec.dataset.exams.split(',').filter(Boolean) : [];
+        const mkBtn = (examValue, label, active) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'fs-btn' + (active ? ' active' : '');
+            btn.dataset.exam = examValue;
+            btn.innerHTML = `<span class="fs-dot"></span>${label}`;
+            btn.addEventListener('click', () => {
+                examFilterList.querySelectorAll('.fs-btn[data-exam]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                activeExam = examValue;
+                applyFilters();
+            });
+            examFilterList.appendChild(btn);
+        };
+        mkBtn('', 'All Exams', activeExam === '');
+        exams.forEach(ex => mkBtn(ex, ex, activeExam === ex));
+    }
 
     function applyFilters() {
         document.querySelectorAll('.class-section').forEach(sec => {
@@ -456,7 +464,7 @@
 
             // Class single-select filter
             const classVisible = !activeClass || cls === activeClass;
-            // Exam filter: class is visible if it has the selected exam (or All Exams)
+            // Exam filter applies only within selected class
             const examVisible = !activeExam || exams.includes(activeExam);
 
             if (!classVisible || !examVisible) {
@@ -465,10 +473,10 @@
             }
             sec.style.display = '';
 
-            // Show/hide exam sub-sections based on activeExam
+            // Show/hide exam sub-sections based on activeExam for the visible class
             sec.querySelectorAll('.exam-subsection').forEach(sub => {
                 const subExam = sub.dataset.exam || '';
-                const subVisible = !activeExam || subExam === activeExam || subExam === '';
+                const subVisible = !activeExam || subExam === activeExam;
                 sub.style.display = subVisible ? '' : 'none';
             });
 
@@ -495,22 +503,14 @@
         });
     }
 
-    // ── Exam filter ──
-    document.querySelectorAll('.fs-btn[data-exam]').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.fs-btn[data-exam]').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            activeExam = btn.dataset.exam;
-            applyFilters();
-        });
-    });
-
     // ── Class single-select ──
     document.querySelectorAll('.fs-btn[data-class]').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.fs-btn[data-class]').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             activeClass = btn.dataset.class;
+            activeExam = '';
+            rebuildExamFilters();
             applyFilters();
         });
     });
@@ -520,6 +520,7 @@
         input.addEventListener('input', applyFilters);
     });
 
+    rebuildExamFilters();
     // Apply on load to show only first class
     applyFilters();
 })();

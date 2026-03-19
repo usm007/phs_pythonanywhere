@@ -163,6 +163,17 @@
             padding-right: 24px !important;
             text-align: center;
         }
+        .subject-cell.selectable {
+            cursor: pointer;
+            transition: background 0.12s ease, box-shadow 0.12s ease;
+        }
+        .subject-cell.selectable:hover {
+            background: #fff5e8;
+        }
+        .subject-cell.selected {
+            background: #ffe9cc !important;
+            box-shadow: inset 0 0 0 1px #dba45e;
+        }
         .subject-cell .mark-value {
             display: inline-block;
             vertical-align: middle;
@@ -201,13 +212,6 @@
             cursor: pointer;
         }
         .btn-batch-clear:hover { background: #f7f7f7; }
-        .mark-check {
-            margin-right: 6px;
-            transform: translateY(1px);
-            cursor: pointer;
-            accent-color: #b02a1a;
-        }
-
         .flash-msg { border-radius: 8px; border: none; font-size: .85rem; }
 
         @media (max-width: 900px) {
@@ -263,7 +267,7 @@
                         <span class="ctrl-label">Class</span>
                         <select class="class-select" id="classSelect">
                             {% for cname in classes %}
-                                <option value="{{ url_for('view_marks', class_name=cname, exam_name=selected_exam) if selected_exam else url_for('view_marks', class_name=cname) }}"
+                                <option value="{{ url_for('view_marks', class_name=cname) }}"
                                     {{ 'selected' if cname == selected_class else '' }}>
                                     {{ class_label(cname) }}
                                 </option>
@@ -271,14 +275,11 @@
                         </select>
                     </div>
 
-                    {% if class_exams_map %}
-                    {% set all_exams = [] %}
-                    {% for cname, exams in class_exams_map.items() %}{% for e in exams %}{% if e not in all_exams %}{% set _ = all_exams.append(e) %}{% endif %}{% endfor %}{% endfor %}
+                    {% if selected_exams %}
                     <div class="ctrl-group exam-group">
                         <span class="ctrl-label">Exam</span>
                         <select class="exam-select" id="examSelect">
-                            <option value="{{ url_for('view_marks', class_name=selected_class) }}" {{ 'selected' if not selected_exam else '' }}>All Exams</option>
-                            {% for exam in all_exams %}
+                            {% for exam in selected_exams %}
                                 <option value="{{ url_for('view_marks', class_name=selected_class, exam_name=exam) }}" {{ 'selected' if selected_exam == exam else '' }}>{{ exam }}</option>
                             {% endfor %}
                         </select>
@@ -343,15 +344,12 @@
                                         <td class="student-roll">{{ row.roll_no }}</td>
                                         <td class="student-name" style="font-weight: 600;">{{ row.name }}</td>
                                         {% for sub in selected_data.subjects %}
-                                            <td class="subject-cell" data-subject="{{ sub }}">
-                                                {% set mark_val = row.marks.get(sub, '—') %}
+                                            {% set mark_raw = row.marks.get(sub) %}
+                                            {% set mark_val = '—' if mark_raw is none or mark_raw == 0 or mark_raw == 0.0 or mark_raw == '0' or mark_raw == '0.0' else mark_raw %}
+                                            <td class="subject-cell {{ 'selectable' if (not portal_locked and mark_val != '—') else '' }}"
+                                                data-subject="{{ sub }}"
+                                                data-key="{{ row.id }}|||{{ sub }}">
                                                 <span class="mark-value">{{ mark_val }}</span>
-                                                {% if not portal_locked and mark_val != '—' %}
-                                                    <input type="checkbox"
-                                                           class="mark-check"
-                                                           data-key="{{ row.id }}|||{{ sub }}"
-                                                           title="Select for batch delete">
-                                                {% endif %}
                                             </td>
                                         {% endfor %}
                                         <td>
@@ -453,7 +451,7 @@
     const batchForm = document.getElementById('batchDeleteForm');
     const batchCountEl = document.getElementById('batchSelectedCount');
     const batchClearBtn = document.getElementById('btnBatchClear');
-    const markChecks = Array.from(document.querySelectorAll('.mark-check'));
+    const markCells = Array.from(document.querySelectorAll('.subject-cell.selectable'));
     const selectedKeys = new Set();
 
     function syncBatchToolbar() {
@@ -470,12 +468,17 @@
         batchForm.classList.toggle('show', selectedKeys.size > 0);
     }
 
-    markChecks.forEach(chk => {
-        chk.addEventListener('change', function() {
+    markCells.forEach(cell => {
+        cell.addEventListener('click', function() {
             const key = this.dataset.key;
             if (!key) return;
-            if (this.checked) selectedKeys.add(key);
-            else selectedKeys.delete(key);
+            if (selectedKeys.has(key)) {
+                selectedKeys.delete(key);
+                this.classList.remove('selected');
+            } else {
+                selectedKeys.add(key);
+                this.classList.add('selected');
+            }
             syncBatchToolbar();
         });
     });
@@ -483,7 +486,7 @@
     if (batchClearBtn) {
         batchClearBtn.addEventListener('click', function() {
             selectedKeys.clear();
-            markChecks.forEach(chk => { chk.checked = false; });
+            markCells.forEach(cell => cell.classList.remove('selected'));
             syncBatchToolbar();
         });
     }

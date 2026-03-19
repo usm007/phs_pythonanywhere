@@ -271,6 +271,27 @@
             flex-wrap: wrap;
         }
 
+        .student-action-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+
+        .student-action-btn {
+            flex: 1;
+            min-width: 170px;
+        }
+
+        .student-action-panel {
+            display: none;
+            margin-top: 8px;
+        }
+
+        .student-action-panel.active {
+            display: block;
+        }
+
         .modal-overlay {
             display: none;
             position: fixed;
@@ -336,6 +357,64 @@
                 font-size: 0.8rem;
                 padding: 6px 10px;
                 min-height: 38px;
+            }
+            .focus-head {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .student-action-buttons {
+                flex-direction: column;
+            }
+            .student-action-btn {
+                width: 100%;
+                min-width: 0;
+            }
+            .phs-table thead {
+                display: none;
+            }
+            .phs-table table,
+            .phs-table tbody,
+            .phs-table tr,
+            .phs-table td {
+                display: block;
+                width: 100%;
+            }
+            .phs-table tr {
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                margin: 0 0 8px;
+                padding: 6px;
+                background: #fff;
+            }
+            .phs-table td {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+                padding: 6px 4px;
+                border-bottom: 1px dashed #e5dfd7;
+            }
+            .phs-table td:last-child {
+                border-bottom: none;
+            }
+            .phs-table td::before {
+                content: attr(data-label);
+                font-size: 0.68rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                color: var(--muted);
+                min-width: 84px;
+            }
+            .phs-table td[data-label="Select"]::before {
+                min-width: 56px;
+            }
+            .phs-table td .form-control {
+                width: min(62vw, 210px);
+            }
+            .phs-table td[data-label="Action"] .btn-delete {
+                width: auto;
+                margin-left: auto;
             }
         }
         .highlight-missing td {
@@ -572,7 +651,7 @@
                                     <div class="mini-title">Select Class</div>
                                     <form method="GET" action="{{ url_for('manage_students') }}" class="row g-2">
                                         <input type="hidden" name="setup_tab" value="students">
-                                        <div class="col-8">
+                                        <div class="col-sm-8 col-12">
                                             <select class="form-select" name="class_name" required>
                                                 <option value="" disabled {{ 'selected' if not class_name else '' }}>Choose a class...</option>
                                                 {% for c in classes %}
@@ -580,7 +659,7 @@
                                                 {% endfor %}
                                             </select>
                                         </div>
-                                        <div class="col-4">
+                                        <div class="col-sm-4 col-12">
                                             <button class="btn btn-navy w-100" type="submit">Load</button>
                                         </div>
                                     </form>
@@ -588,72 +667,76 @@
                             </div>
                             <div class="col-lg-4">
                                 <div class="mini-panel">
-                                    <div class="mini-title">Add Student</div>
-                                    <form method="POST" action="{{ url_for('manage_students') }}" class="row g-2 align-items-end">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <input type="hidden" name="setup_tab" value="students">
-                                        <input type="hidden" name="class_name" value="{{ class_name or '' }}">
-                                        <div class="col-3">
-                                            <input class="form-control" type="number" min="1" name="new_roll" placeholder="Roll" {{ 'required' if class_name else '' }} {{ 'disabled' if portal_locked else '' }}>
-                                        </div>
-                                        <div class="col-9">
-                                            <input class="form-control" type="text" name="new_name" placeholder="Student name" {{ 'required' if class_name else '' }} {{ 'disabled' if portal_locked else '' }}>
-                                        </div>
-                                        <div class="col-12">
-                                            <input class="form-control" type="text" name="new_dob" placeholder="DOB (DD/MM/YYYY)" pattern="\d{2}/\d{2}/\d{4}" title="Date of Birth in DD/MM/YYYY format, e.g. 15/08/2010" {{ 'disabled' if portal_locked else '' }}>
-                                        </div>
-                                        <div class="col-12">
-                                            <input class="form-control" type="text" name="new_father_name" placeholder="Father's name" {{ 'disabled' if portal_locked else '' }}>
-                                        </div>
-                                        <div class="col-12">
-                                            <input class="form-control" type="text" name="new_mother_name" placeholder="Mother's name" {{ 'disabled' if portal_locked else '' }}>
-                                        </div>
-                                        <div class="col-12">
-                                            <button class="btn btn-gold w-100" type="submit" {{ 'disabled' if not class_name or portal_locked else '' }}>Add</button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                            <div class="col-lg-4">
-                                <div class="mini-panel">
-                                    <div class="mini-title">Import Students CSV</div>
-                                    <form method="POST" action="{{ url_for('import_students') }}" enctype="multipart/form-data" class="row g-2 align-items-end">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <input type="hidden" name="setup_tab" value="students">
-                                        <input type="hidden" name="current_class_name" value="{{ class_name or '' }}">
-                                        <div class="col-5">
-                                            <select class="form-select" name="import_class_name">
-                                                <option value="">Multi-class</option>
-                                                {% for c in classes %}
-                                                    <option value="{{ c }}" {{ 'selected' if class_name == c else '' }}>{{ class_label(c) }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                        <div class="col-4">
-                                            <input class="form-control" type="file" name="csv_file" accept=".csv,text/csv" required {{ 'disabled' if portal_locked else '' }}>
-                                        </div>
-                                        <div class="col-3">
-                                            <button class="btn btn-navy w-100" type="submit" {{ 'disabled' if portal_locked else '' }}>Import</button>
-                                        </div>
-                                    </form>
-                                    <div class="import-note">Required: <code>roll_no</code>, <code>name</code>. Optional: <code>dob</code> (DD/MM/YYYY), <code>father_name</code>, <code>mother_name</code></div>
-                                    <div class="import-note" style="margin-top:3px;">For multi-class CSV, add <code>class_name</code> as the first column.</div>
-                                    <div class="actions-row" style="margin-top:6px;gap:6px;">
-                                        {% if class_name %}
-                                            <a href="{{ url_for('download_student_import_sample_single', class_name=class_name) }}" class="btn btn-navy" style="font-size:0.82rem;padding:7px 12px;">&#11015; Example CSV (Single Class)</a>
-                                        {% endif %}
-                                        <a href="{{ url_for('download_student_import_sample_multi') }}" class="btn btn-navy" style="font-size:0.82rem;padding:7px 12px;">&#11015; Example CSV (Multi-Class)</a>
+                                    <div class="mini-title">Student Actions</div>
+                                    <div class="student-action-buttons">
+                                        <button type="button" class="btn btn-gold student-action-btn" data-toggle-student-panel="addStudentPanel" aria-expanded="false">+ Add Student</button>
+                                        <button type="button" class="btn btn-navy student-action-btn" data-toggle-student-panel="importStudentPanel" aria-expanded="false">⬆ Import Students CSV</button>
                                     </div>
-                                    <details class="import-help">
-                                        <summary>How should the CSV file look?</summary>
-                                        <p><strong>Row 1:</strong> Headers exactly as shown. <strong>Row 2+:</strong> Data rows.</p>
-                                        <p>DOB must be <strong>DD/MM/YYYY</strong> (e.g. <code>15/08/2010</code>). CSV will be rejected if required columns are missing.</p>
-                                        <pre class="import-sample">roll_no,name,dob,father_name,mother_name
+                                    <div id="addStudentPanel" class="student-action-panel">
+                                        <form method="POST" action="{{ url_for('manage_students') }}" class="row g-2 align-items-end">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="setup_tab" value="students">
+                                            <input type="hidden" name="class_name" value="{{ class_name or '' }}">
+                                            <div class="col-sm-3 col-12">
+                                                <input class="form-control" type="number" min="1" name="new_roll" placeholder="Roll" {{ 'required' if class_name else '' }} {{ 'disabled' if portal_locked else '' }}>
+                                            </div>
+                                            <div class="col-sm-9 col-12">
+                                                <input class="form-control" type="text" name="new_name" placeholder="Student name" {{ 'required' if class_name else '' }} {{ 'disabled' if portal_locked else '' }}>
+                                            </div>
+                                            <div class="col-12">
+                                                <input class="form-control" type="text" name="new_dob" placeholder="DOB (DD/MM/YYYY)" pattern="\d{2}/\d{2}/\d{4}" title="Date of Birth in DD/MM/YYYY format, e.g. 15/08/2010" {{ 'disabled' if portal_locked else '' }}>
+                                            </div>
+                                            <div class="col-12">
+                                                <input class="form-control" type="text" name="new_father_name" placeholder="Father's name" {{ 'disabled' if portal_locked else '' }}>
+                                            </div>
+                                            <div class="col-12">
+                                                <input class="form-control" type="text" name="new_mother_name" placeholder="Mother's name" {{ 'disabled' if portal_locked else '' }}>
+                                            </div>
+                                            <div class="col-12">
+                                                <button class="btn btn-gold w-100" type="submit" {{ 'disabled' if not class_name or portal_locked else '' }}>Add</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    <div id="importStudentPanel" class="student-action-panel">
+                                        <form method="POST" action="{{ url_for('import_students') }}" enctype="multipart/form-data" class="row g-2 align-items-end">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="setup_tab" value="students">
+                                            <input type="hidden" name="current_class_name" value="{{ class_name or '' }}">
+                                            <div class="col-md-5 col-12">
+                                                <select class="form-select" name="import_class_name">
+                                                    <option value="">Multi-class</option>
+                                                    {% for c in classes %}
+                                                        <option value="{{ c }}" {{ 'selected' if class_name == c else '' }}>{{ class_label(c) }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4 col-12">
+                                                <input class="form-control" type="file" name="csv_file" accept=".csv,text/csv" required {{ 'disabled' if portal_locked else '' }}>
+                                            </div>
+                                            <div class="col-md-3 col-12">
+                                                <button class="btn btn-navy w-100" type="submit" {{ 'disabled' if portal_locked else '' }}>Import</button>
+                                            </div>
+                                        </form>
+                                        <div class="import-note">Required: <code>roll_no</code>, <code>name</code>. Optional: <code>dob</code> (DD/MM/YYYY), <code>father_name</code>, <code>mother_name</code></div>
+                                        <div class="import-note" style="margin-top:3px;">For multi-class CSV, add <code>class_name</code> as the first column.</div>
+                                        <div class="actions-row" style="margin-top:6px;gap:6px;">
+                                            {% if class_name %}
+                                                <a href="{{ url_for('download_student_import_sample_single', class_name=class_name) }}" class="btn btn-navy" style="font-size:0.82rem;padding:7px 12px;">&#11015; Example CSV (Single Class)</a>
+                                            {% endif %}
+                                            <a href="{{ url_for('download_student_import_sample_multi') }}" class="btn btn-navy" style="font-size:0.82rem;padding:7px 12px;">&#11015; Example CSV (Multi-Class)</a>
+                                        </div>
+                                        <details class="import-help">
+                                            <summary>How should the CSV file look?</summary>
+                                            <p><strong>Row 1:</strong> Headers exactly as shown. <strong>Row 2+:</strong> Data rows.</p>
+                                            <p>DOB must be <strong>DD/MM/YYYY</strong> (e.g. <code>15/08/2010</code>). CSV will be rejected if required columns are missing.</p>
+                                            <pre class="import-sample">roll_no,name,dob,father_name,mother_name
 1,Aman Das,15/08/2010,Raju Das,Priya Das
 2,Riya Sharma,23/04/2011,Suresh Sharma,Geeta Sharma</pre>
-                                    </details>
+                                        </details>
+                                    </div>
                                 </div>
                             </div>
+                            <div class="col-lg-4"></div>
                         </div>
 
                         {% if students %}
@@ -690,13 +773,13 @@
                                         <tbody id="studentTableBody">
                                             {% for s in students %}
                                                 <tr{% if (not s.roll_no or s.roll_no|trim == '' or not s.name or s.name|trim == '' or not s.dob or s.dob|trim == '' or s.dob|trim == 'DD/MM/YYYY' or not s.father_name or s.father_name|trim == '' or s.father_name|trim == "Father's name" or not s.mother_name or s.mother_name|trim == '' or s.mother_name|trim == "Mother's name") %} class="highlight-missing"{% endif %}>
-                                                    <td><input class="row-check" type="checkbox" name="delete_ids_inline" value="{{ s.id }}" {{ 'disabled' if portal_locked else '' }}></td>
-                                                    <td><input class="form-control" type="number" min="1" name="roll_{{ s.id }}" value="{{ s.roll_no }}" required {{ 'readonly' if portal_locked else '' }}></td>
-                                                    <td><input class="form-control" type="text" name="name_{{ s.id }}" value="{{ s.name }}" required {{ 'readonly' if portal_locked else '' }}></td>
-                                                    <td><input class="form-control" type="text" name="dob_{{ s.id }}" value="{{ s.dob or '' }}" placeholder="DD/MM/YYYY" pattern="\d{2}/\d{2}/\d{4}" title="DD/MM/YYYY e.g. 15/08/2010" {{ 'readonly' if portal_locked else '' }}></td>
-                                                    <td><input class="form-control" type="text" name="father_{{ s.id }}" value="{{ s.father_name or '' }}" placeholder="Father's name" {{ 'readonly' if portal_locked else '' }}></td>
-                                                    <td><input class="form-control" type="text" name="mother_{{ s.id }}" value="{{ s.mother_name or '' }}" placeholder="Mother's name" {{ 'readonly' if portal_locked else '' }}></td>
-                                                    <td>
+                                                    <td data-label="Select"><input class="row-check" type="checkbox" name="delete_ids_inline" value="{{ s.id }}" {{ 'disabled' if portal_locked else '' }}></td>
+                                                    <td data-label="Roll No"><input class="form-control" type="number" min="1" name="roll_{{ s.id }}" value="{{ s.roll_no }}" required {{ 'readonly' if portal_locked else '' }}></td>
+                                                    <td data-label="Student Name"><input class="form-control" type="text" name="name_{{ s.id }}" value="{{ s.name }}" required {{ 'readonly' if portal_locked else '' }}></td>
+                                                    <td data-label="DOB"><input class="form-control" type="text" name="dob_{{ s.id }}" value="{{ s.dob or '' }}" placeholder="DD/MM/YYYY" pattern="\d{2}/\d{2}/\d{4}" title="DD/MM/YYYY e.g. 15/08/2010" {{ 'readonly' if portal_locked else '' }}></td>
+                                                    <td data-label="Father's Name"><input class="form-control" type="text" name="father_{{ s.id }}" value="{{ s.father_name or '' }}" placeholder="Father's name" {{ 'readonly' if portal_locked else '' }}></td>
+                                                    <td data-label="Mother's Name"><input class="form-control" type="text" name="mother_{{ s.id }}" value="{{ s.mother_name or '' }}" placeholder="Mother's name" {{ 'readonly' if portal_locked else '' }}></td>
+                                                    <td data-label="Action">
                                                         {% if not portal_locked %}
                                                             <button type="submit" class="btn-delete" formaction="{{ url_for('delete_student', student_id=s.id, setup_tab='students') }}" formmethod="post" onclick="return confirm('Delete {{ s.name }} and all their marks?');">Delete</button>
                                                         {% else %}
@@ -904,6 +987,31 @@
             overlay.classList.remove('active');
         }
     }
+
+    // Student action panel toggles (Add / Import)
+    (function setupStudentActionPanels() {
+        const buttons = document.querySelectorAll('[data-toggle-student-panel]');
+        if (!buttons.length) return;
+        const panels = Array.from(buttons)
+            .map(btn => document.getElementById(btn.getAttribute('data-toggle-student-panel')))
+            .filter(Boolean);
+        const closeAll = () => {
+            panels.forEach(panel => panel.classList.remove('active'));
+            buttons.forEach(btn => btn.setAttribute('aria-expanded', 'false'));
+        };
+        buttons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const panel = document.getElementById(btn.getAttribute('data-toggle-student-panel'));
+                if (!panel) return;
+                const isActive = panel.classList.contains('active');
+                closeAll();
+                if (!isActive) {
+                    panel.classList.add('active');
+                    btn.setAttribute('aria-expanded', 'true');
+                }
+            });
+        });
+    })();
 
     // Student live search/filter
     function filterStudents(q) {

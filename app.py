@@ -5,7 +5,7 @@ import io
 import re
 import json
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import wraps
 
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -50,7 +50,11 @@ except ImportError:
     _load_workbook = None
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("PHS_SECRET_KEY", "change-me-in-env")
+_configured_secret = (os.environ.get("PHS_SECRET_KEY") or "").strip()
+if not _configured_secret or _configured_secret == "change-me-in-env":
+    _configured_secret = os.urandom(32).hex()
+app.secret_key = _configured_secret
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(minutes=int(os.environ.get("PHS_ADMIN_SESSION_TIMEOUT_MINUTES", "30")))
 
 # Gzip compression for all responses
 try:
@@ -467,6 +471,35 @@ def ensure_class_subject_seed(conn):
             upsert_class_subject(conn, class_name, subject, idx)
 
 
+def ensure_default_annual_exam_seed(conn):
+    subjects_dict = get_subjects_dict(conn)
+    for class_name, subjects in subjects_dict.items():
+        existing = fetch_one(
+            conn,
+            "SELECT id FROM class_exams WHERE class_name = %s AND LOWER(exam_name) = %s LIMIT 1",
+            (class_name, "annual examination"),
+        )
+        if existing:
+            continue
+        max_order_row = fetch_one(
+            conn,
+            "SELECT MAX(sort_order) AS mx FROM class_exams WHERE class_name = %s",
+            (class_name,),
+        )
+        next_order = (max_order_row["mx"] or 0) + 1 if max_order_row else 1
+        execute_stmt(
+            conn,
+            "INSERT INTO class_exams (class_name, exam_name, total_marks, sort_order) VALUES (%s, %s, %s, %s)",
+            (class_name, "Annual Examination", 600, next_order),
+        )
+        for subj in subjects:
+            execute_stmt(
+                conn,
+                "INSERT INTO exam_subject_maxmarks (class_name, exam_name, subject, max_marks) VALUES (%s, %s, %s, %s)",
+                (class_name, "Annual Examination", subj, 100),
+            )
+
+
 def get_csrf_token():
     token = session.get("_csrf_token")
     if not token:
@@ -650,7 +683,16 @@ def log_visitor(conn, ip_address, user_agent):
 
 def require_admin_view():
     if session.get("admin_unlocked"):
-        return None
+        unlocked_at_raw = session.get("admin_unlocked_at")
+        if unlocked_at_raw:
+            try:
+                unlocked_at = datetime.fromisoformat(unlocked_at_raw)
+                if datetime.utcnow() - unlocked_at <= app.config["PERMANENT_SESSION_LIFETIME"]:
+                    return None
+            except ValueError:
+                pass
+        session.pop("admin_unlocked", None)
+        session.pop("admin_unlocked_at", None)
     flash("Admin access is locked. Enter Master PIN.", "warning")
     return redirect(url_for("admin_lock"))
 
@@ -1024,6 +1066,7 @@ def init_db():
 
         ensure_setting_defaults(conn)
         ensure_class_subject_seed(conn)
+        ensure_default_annual_exam_seed(conn)
         _migrate_dob_to_4digit_year(conn)
         if not get_admin_pin_hash(conn):
             set_admin_pin_hash(conn, generate_password_hash(DEFAULT_ADMIN_PIN))
@@ -1300,10 +1343,8 @@ def notice_add():
 
 
 @app.route("/notice/delete/<int:notice_id>", methods=["POST"])
+@admin_required
 def notice_delete(notice_id):
-    if not session.get("admin_unlocked"):
-        flash("Admin access required to delete notices.", "warning")
-        return redirect(url_for("index"))
     conn = get_db_connection()
     try:
         execute_stmt(conn, "DELETE FROM notice_board WHERE id = %s", (notice_id,))
@@ -1425,6 +1466,7 @@ def index():
         visitor_count=visitor_count,
     ))
     session.pop("admin_unlocked", None)
+    session.pop("admin_unlocked_at", None)
     return response
 
 
@@ -1819,6 +1861,10 @@ def view_marks():
     selected_class = request.args.get("class_name")
     if selected_class not in classes:
         selected_class = classes[0] if classes else None
+    selected_exams = get_class_exams(selected_class) if selected_class else []
+    if exam_name and exam_name not in selected_exams:
+        annual_exam = next((ex for ex in selected_exams if "annual" in ex.lower()), None)
+        exam_name = annual_exam or (selected_exams[0] if selected_exams else None)
 
     # P2: only compute results for the selected class, not all classes
     grouped = {}
@@ -1858,7 +1904,6 @@ def view_marks():
     }
 
     # F6: per-exam marks for the selected class (used for exam-wise summary columns)
-    selected_exams = get_class_exams(selected_class) if selected_class else []
     per_exam_data = {}
     if selected_class and not exam_name and len(selected_exams) > 1:
         for ex in selected_exams:
@@ -2135,6 +2180,7 @@ def print_class_ledger(class_name):
 
 
 @app.route("/api/ledger-layout/save", methods=["POST"])
+@admin_required
 def ledger_layout_save():
     try:
         cfg = request.get_json(force=True, silent=True) or {}
@@ -2393,6 +2439,17 @@ def manage_structure():
             initial_subject = first_subject or EMPTY_CLASS_SUBJECT
             initial_sort_order = 1 if first_subject else 0
             upsert_class_subject(conn, new_class_name, initial_subject, initial_sort_order)
+            execute_stmt(
+                conn,
+                "INSERT INTO class_exams (class_name, exam_name, total_marks, sort_order) VALUES (%s, %s, %s, %s)",
+                (new_class_name, "Annual Examination", 600, 1),
+            )
+            if first_subject:
+                execute_stmt(
+                    conn,
+                    "INSERT INTO exam_subject_maxmarks (class_name, exam_name, subject, max_marks) VALUES (%s, %s, %s, %s)",
+                    (new_class_name, "Annual Examination", first_subject, 100),
+                )
             details = f"Added new {target_label} '{new_class_name}'."
             if first_subject:
                 details = f"Added new {target_label} '{new_class_name}' with first subject '{first_subject}'."
@@ -3117,6 +3174,7 @@ def admin_unlock():
         return redirect(url_for("admin_lock"))
 
     session["admin_unlocked"] = True
+    session["admin_unlocked_at"] = datetime.utcnow().isoformat()
     conn = get_db_connection()
     try:
         log_change(
@@ -3136,6 +3194,7 @@ def admin_unlock():
 @app.route("/admin/logout", methods=["POST"])
 def admin_logout():
     session.pop("admin_unlocked", None)
+    session.pop("admin_unlocked_at", None)
     flash("Admin dashboard locked.", "info")
     return redirect(url_for("admin_lock"))
 
@@ -3564,6 +3623,7 @@ def admin_import_master_excel():
             "dob": ["dob", "date of birth", "dateofbirth"],
             "father_name": ["father", "father_name", "father name"],
             "mother_name": ["mother", "mother_name", "mother name"],
+            "exam_name": ["exam", "exam_name", "exam name"],
             "subject": ["subject"],
             "marks_obtained": ["marks", "marks_obtained", "marks obtained"],
         }
@@ -3647,9 +3707,10 @@ def admin_import_master_excel():
                         continue
                     class_name = _cell(row, col_map, "class_name")
                     roll_no = _cell(row, col_map, "roll_no")
+                    exam_name = _cell(row, col_map, "exam_name") or "Annual Examination"
                     subject = _cell(row, col_map, "subject")
                     marks_raw = _cell(row, col_map, "marks_obtained")
-                    if not class_name or not roll_no or not subject or not marks_raw:
+                    if not class_name or not roll_no or not subject or marks_raw == "":
                         marks_skipped += 1
                         continue
                     canonical_cls = canonicalize_class_name(class_name)
@@ -3671,8 +3732,8 @@ def admin_import_master_excel():
                         continue
                     existing_mark = fetch_one(
                         conn,
-                        "SELECT id, marks_obtained FROM marks WHERE student_id = %s AND subject = %s",
-                        (student["id"], subject),
+                        "SELECT id, marks_obtained FROM marks WHERE student_id = %s AND subject = %s AND exam_name = %s",
+                        (student["id"], subject, exam_name),
                     )
                     if existing_mark:
                         if existing_mark["marks_obtained"] != marks_val:
@@ -3685,8 +3746,8 @@ def admin_import_master_excel():
                     else:
                         execute_stmt(
                             conn,
-                            "INSERT INTO marks (student_id, subject, marks_obtained) VALUES (%s, %s, %s)",
-                            (student["id"], subject, marks_val),
+                            "INSERT INTO marks (student_id, subject, exam_name, marks_obtained) VALUES (%s, %s, %s, %s)",
+                            (student["id"], subject, exam_name, marks_val),
                         )
                         marks_inserted += 1
 

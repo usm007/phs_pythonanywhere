@@ -607,6 +607,7 @@
     <script>
         const SERVER_CFG = {{ ledger_cfg_json | safe }};
         const LS_KEY = 'phs_ledger_layout';
+        const CSRF_TOKEN = "{{ csrf_token() }}";
         const DEFAULTS = {
             name: 140, subj: 30, hdrh: 52, font: 9.5, sfont: 8, pad: 4,
             rowh: 18, margin: 10, scale: 100,
@@ -731,7 +732,7 @@
             btn.textContent = 'Saving...'; btn.disabled = true;
             fetch('/api/ledger-layout/save', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: {'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN},
                 body: JSON.stringify(cfg)
             })
             .then(r => r.json())
